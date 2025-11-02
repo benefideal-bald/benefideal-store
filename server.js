@@ -81,6 +81,50 @@ app.post('/api/subscription', (req, res) => {
     stmt.finalize();
 });
 
+// Test endpoint - creates a test subscription with reminder in 2 minutes
+app.post('/api/test-reminder', (req, res) => {
+    const testPurchaseDate = new Date();
+    const testReminderDate = new Date();
+    testReminderDate.setMinutes(testReminderDate.getMinutes() + 2); // Reminder in 2 minutes
+    
+    // Create test subscription
+    const stmt = db.prepare(`
+        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(['Тестовый', 'test@test.com', 'Chat-GPT', 1, 1, testPurchaseDate.toISOString()], function(err) {
+        if (err) {
+            console.error('Error creating test subscription:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        const subscriptionId = this.lastID;
+        
+        // Create test reminder
+        db.run(`
+            INSERT INTO reminders (subscription_id, reminder_date, reminder_type)
+            VALUES (?, ?, ?)
+        `, [subscriptionId, testReminderDate.toISOString(), 'renewal_5months'], (err) => {
+            if (err) {
+                console.error('Error creating test reminder:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+            
+            res.json({ 
+                success: true, 
+                message: 'Test reminder created',
+                subscription_id: subscriptionId,
+                reminder_time: testReminderDate.toISOString(),
+                current_time: new Date().toISOString(),
+                note: 'You should receive a Telegram notification in ~2 minutes'
+            });
+        });
+    });
+    
+    stmt.finalize();
+});
+
 // Generate reminders for a subscription
 function generateReminders(subscriptionId, productId, months, purchaseDate) {
     console.log(`Generating reminders for subscription ${subscriptionId}, product ${productId}, ${months} months`);
