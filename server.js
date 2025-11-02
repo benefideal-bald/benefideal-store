@@ -117,7 +117,7 @@ app.post('/api/test-andrey', async (req, res) => {
             
             // Also send a test message immediately to show the format
             const testMessage = `⏰ Продлить подписку Chat-GPT Plus Андрей porkcity@gmail.com 2 месяца до окончания подписки`;
-            await sendTelegramMessage(testMessage);
+            const telegramSent = await sendTelegramMessage(testMessage);
             
             res.json({ 
                 success: true, 
@@ -125,7 +125,11 @@ app.post('/api/test-andrey', async (req, res) => {
                 subscription_id: subscriptionId,
                 purchase_date: purchaseDate.toISOString(),
                 test_reminder_time: testReminderDate.toISOString(),
-                note: 'You should receive a Telegram notification in ~1 minute, and one test message was sent immediately'
+                telegram_sent: telegramSent,
+                telegram_message: testMessage,
+                note: telegramSent 
+                    ? 'Telegram message sent successfully! You should receive another notification in ~1 minute.'
+                    : 'Telegram message failed. Check server logs for details.'
             });
         });
     });
@@ -248,15 +252,20 @@ function insertReminder(subscriptionId, reminderDate, reminderType) {
 // Send Telegram message
 async function sendTelegramMessage(message) {
     try {
+        console.log('Attempting to send Telegram message to chat:', CHAT_ID);
+        console.log('Message:', message);
         const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             chat_id: CHAT_ID,
             text: message,
             parse_mode: 'HTML'
         });
-        console.log('Telegram message sent successfully');
+        console.log('Telegram message sent successfully:', response.data);
         return true;
     } catch (error) {
-        console.error('Error sending Telegram message:', error.response?.data || error.message);
+        console.error('Error sending Telegram message:');
+        console.error('Status:', error.response?.status);
+        console.error('Data:', error.response?.data);
+        console.error('Message:', error.message);
         return false;
     }
 }
