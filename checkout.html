@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оформление – Benefideal</title>
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="nav">
+                <a href="index.html" class="logo">Benefideal</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="product-page" style="padding: var(--space-24) 0; background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%); min-height:80vh;">
+        <div class="container" style="display:flex; align-items:center; justify-content:center; min-height: 70vh;">
+            <div class="checkout-card">
+                <div id="checkoutItems" style="margin-bottom: var(--space-6);"></div>
+                <form id="checkoutForm" autocomplete="off">
+                    <div class="form-group">
+                        <label for="fullName">Имя и фамилия</label>
+                        <input type="text" id="fullName" name="fullName" required placeholder="Иван Иванов">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Электронная почта</label>
+                        <input type="email" id="email" name="email" required placeholder="you@example.com">
+                    </div>
+                    <div class="checkout-total">
+                        <div class="label">Итого к оплате:</div>
+                        <span id="checkoutTotal">0 ₽</span>
+                    </div>
+                    <button type="submit" id="payButton" class="btn btn-primary">Перейти к оплате</button>
+
+                    <div style="margin-top: var(--space-6);">
+                        <div class="guarantee" style="justify-content: center; padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); margin-bottom: var(--space-4);">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Гарантия качества и быстрая выдача данных</span>
+                        </div>
+                        <p style="font-size: 0.95rem; color: var(--gray-600); text-align: center; line-height: 1.7;">
+                            После успешной оплаты вам предоставляются необходимые данные. Информация передаётся через электронную почту от минуты до 2 часов после оплаты.
+                            <br><br>
+                            <span style="font-size: 0.9rem; color: var(--gray-500);">Обратите внимание: если вы берёте подписку на несколько месяцев, то данные могут обновляться один раз в месяц, в таком случае новые данные автоматически отправляются на указанную при заказе электронную почту.</span>
+                        </p>
+                    </div>
+                    <a href="index.html" class="btn btn-secondary" style="display: block; width: 100%; text-align: center; margin-top: var(--space-4);">
+                        Вернуться в магазин
+                    </a>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom" style="text-align:center;">
+                <p>&copy; 2024 Benefideal</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Read cart from localStorage and show total
+        (function() {
+            try {
+                const saved = localStorage.getItem('benefideal_cart');
+                if (saved) {
+                    const cart = JSON.parse(saved);
+
+                    // Render items (title + quantity)
+                    const list = document.getElementById('checkoutItems');
+                    if (list) {
+                        list.innerHTML = cart.map(item => (
+                            `<div class="cart-item">
+                                <div>
+                                    <h4>${item.title}</h4>
+                                    <p>${item.price.toLocaleString()} ₽ × ${item.quantity}</p>
+                                </div>
+                            </div>`
+                        )).join('');
+                    }
+
+                    // Total
+                    const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+                    const el = document.getElementById('checkoutTotal');
+                    if (el) {
+                        el.textContent = total.toLocaleString() + ' ₽';
+                    }
+                }
+            } catch (e) {}
+
+            // Save name/email for convenience
+            const form = document.getElementById('checkoutForm');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const name = document.getElementById('fullName').value.trim();
+                const email = document.getElementById('email').value.trim();
+                localStorage.setItem('benefideal_checkout_name', name);
+                localStorage.setItem('benefideal_checkout_email', email);
+                // Redirect to payment page
+                window.location.href = 'payment.html';
+            });
+
+        })();
+    </script>
+</body>
+</html>
+
+

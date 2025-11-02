@@ -1,0 +1,5 @@
+node_modules/
+subscriptions.db
+.env
+*.log
+.DS_Store

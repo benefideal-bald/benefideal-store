@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата – Benefideal</title>
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="nav">
+                <a href="index.html" class="logo">Benefideal</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="product-page" style="padding: var(--space-24) 0; background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%); min-height:80vh;">
+        <div class="container" style="display:flex; align-items:center; justify-content:center; min-height: 70vh;">
+            <div class="checkout-card" style="max-width: 600px;">
+                <div style="text-align: center; margin-bottom: var(--space-8);">
+                    <i class="fas fa-mobile-alt" style="font-size: 3rem; color: var(--primary); margin-bottom: var(--space-4);"></i>
+                    <h2 style="margin: 0; color: var(--gray-900);">Оплата заказа по СБП</h2>
+                </div>
+
+                <!-- СБП Payment Section -->
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); box-shadow: var(--shadow-lg);">
+                    <div style="margin-bottom: var(--space-4);">
+                        <span style="color: rgba(255,255,255,0.9); font-size: 0.9rem; display: block; margin-bottom: var(--space-2);">Номер телефона:</span>
+                        <div style="display: flex; align-items: center; gap: var(--space-2);">
+                            <input type="text" 
+                                   id="sbpNumber" 
+                                   value="+7 (902) 417-06-36" 
+                                   readonly 
+                                   style="flex: 1; background: white; border: none; border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: 1.3rem; font-weight: 600; color: var(--gray-900); text-align: center; letter-spacing: 2px;">
+                            <button onclick="copySBPNumber()" 
+                                    style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); cursor: pointer; transition: all 0.3s ease;">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                        <span style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Банк:</span>
+                        <strong style="color: white; font-size: 1.1rem;">Озон Банк</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                        <span style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Получатель:</span>
+                        <strong style="color: white; font-size: 1.1rem;">Валерий Б</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.15); border-radius: var(--radius-md); padding: var(--space-3); margin-top: var(--space-4);">
+                        <p style="color: white; font-size: 0.9rem; margin: 0; line-height: 1.6;">
+                            <i class="fas fa-info-circle" style="margin-right: var(--space-2);"></i>
+                            Переведите нужную сумму на этот номер через приложение вашего банка. Оплата проходит мгновенно через СБП.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="background: var(--gray-50); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                        <span style="color: var(--gray-600);">Итого к оплате:</span>
+                        <span id="totalAmount" style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">0 ₽</span>
+                    </div>
+                    <div style="background: white; border-radius: var(--radius-md); padding: var(--space-4);" id="orderItems">
+                        <!-- Order items will be shown here -->
+                    </div>
+                </div>
+
+                <!-- Upload Receipt Field -->
+                <div style="background: var(--gray-50); border: 2px solid var(--primary); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); text-align: center; transition: all 0.3s ease; cursor: pointer;" 
+                     id="uploadArea" 
+                     ondrop="handleDrop(event)" 
+                     ondragover="handleDragOver(event)" 
+                     ondragleave="handleDragLeave(event)"
+                     onmouseenter="document.getElementById('uploadArea').style.borderColor='var(--primary-dark)'; document.getElementById('uploadArea').style.background='var(--white)';"
+                     onmouseleave="document.getElementById('uploadArea').style.borderColor='var(--primary)'; document.getElementById('uploadArea').style.background='var(--gray-50)';">
+                    <input type="file" 
+                           id="receiptUpload" 
+                           accept="image/*" 
+                           style="display: none;" 
+                           onchange="handleFileSelect(event)">
+                    <div id="uploadContent">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: var(--primary); margin-bottom: var(--space-4);"></i>
+                        <p style="color: var(--gray-900); font-size: 1rem; margin-bottom: var(--space-2); font-weight: 600;">
+                            Нажмите, чтобы загрузить чек перевода
+                        </p>
+                        <p style="color: var(--gray-500); font-size: 0.85rem; margin: 0;">
+                            Или перетащите файл сюда (JPG, PNG, PDF)
+                        </p>
+                    </div>
+                    <div id="uploadPreview" style="display: none;">
+                        <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--success); margin-bottom: var(--space-4);"></i>
+                        <p style="color: var(--success); font-size: 0.95rem; margin-bottom: var(--space-4); font-weight: 600;">
+                            Чек успешно загружен
+                        </p>
+                        <button onclick="removeReceipt()" class="btn btn-secondary" style="padding: var(--space-2) var(--space-4); font-size: 0.9rem;">
+                            <i class="fas fa-times"></i> Удалить
+                        </button>
+                    </div>
+                </div>
+
+                <div style="background: #fef3c7; border-left: 4px solid var(--warning); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-8);">
+                    <div style="display: flex; align-items: start; gap: var(--space-3);">
+                        <i class="fas fa-info-circle" style="color: var(--warning); font-size: 1.2rem; margin-top: 2px;"></i>
+                        <div>
+                            <strong style="color: #78350f; display: block; margin-bottom: var(--space-1);">Внимание!</strong>
+                            <p style="color: #92400e; margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                                Перед подтверждением оплаты сохраните чек перевода и загрузите его в расположенное выше поле для подтверждения платежа и ускорения обработки данных.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center;">
+                    <button class="btn btn-primary" style="width: 100%;" onclick="confirmPayment()">
+                        Подтверждение оплаты
+                    </button>
+                </div>
+
+                <div style="text-align: center; margin-top: var(--space-6);">
+                    <a href="checkout.html" style="color: var(--gray-600); text-decoration: none; font-size: 0.9rem;">
+                        <i class="fas fa-arrow-left"></i> Вернуться назад
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Success Modal -->
+    <div id="successModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: var(--radius-2xl); padding: var(--space-10) var(--space-8); max-width: 500px; width: 90%; text-align: center; animation: modalFadeIn 0.3s ease;">
+            <i class="fas fa-check-circle" style="font-size: 4rem; color: var(--success); margin-bottom: var(--space-6);"></i>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--gray-900); margin-bottom: var(--space-4);">
+                Оплата успешно подтверждена!
+            </h2>
+            <p style="color: var(--gray-600); font-size: 1rem; line-height: 1.7; margin-bottom: var(--space-6);">
+                Администратор получил уведомление и уже обрабатывает ваш заказ.
+            </p>
+            <p style="color: var(--gray-600); font-size: 1rem; line-height: 1.7; margin-bottom: var(--space-8);">
+                Данные будут отправлены на указанную вами электронную почту в ближайшее время.
+            </p>
+            <a href="index.html" class="btn btn-primary" style="text-decoration: none; width: 100%; display: inline-block;">
+                Вернуться в магазин
+            </a>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom" style="text-align:center;">
+                <p>&copy; 2024 Benefideal</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Make upload area clickable
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadContent = document.getElementById('uploadContent');
+            
+            uploadContent.addEventListener('click', function() {
+                document.getElementById('receiptUpload').click();
+            });
+        });
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            uploadArea.style.borderColor = 'var(--primary)';
+            uploadArea.style.background = 'var(--gray-50)';
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            uploadArea.style.borderColor = 'var(--primary)';
+            uploadArea.style.background = 'rgba(99, 102, 241, 0.05)';
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            uploadArea.style.borderColor = 'var(--primary)';
+            uploadArea.style.background = 'var(--gray-50)';
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            const uploadContent = document.getElementById('uploadContent');
+            const uploadPreview = document.getElementById('uploadPreview');
+            
+            uploadContent.style.display = 'none';
+            uploadPreview.style.display = 'block';
+            
+            showNotification('Чек загружен успешно!', 'success');
+        }
+
+        function removeReceipt() {
+            const uploadContent = document.getElementById('uploadContent');
+            const uploadPreview = document.getElementById('uploadPreview');
+            const fileInput = document.getElementById('receiptUpload');
+            
+            uploadContent.style.display = 'block';
+            uploadPreview.style.display = 'none';
+            fileInput.value = '';
+        }
+
+        async function confirmPayment() {
+            // Get cart and customer data
+            const cart = JSON.parse(localStorage.getItem('benefideal_cart') || '[]');
+            const name = localStorage.getItem('benefideal_checkout_name') || 'Не указано';
+            const email = localStorage.getItem('benefideal_checkout_email') || 'Не указано';
+            
+            // Get uploaded receipt
+            const receiptFile = document.getElementById('receiptUpload').files[0];
+            
+            // Send subscriptions to backend for reminder scheduling
+            // Determine API URL - use current origin for production, localhost for development
+            const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? 'http://localhost:3000/api/subscription'
+                : `${window.location.origin}/api/subscription`;
+            
+            for (const item of cart) {
+                if (item.id === 1 || item.id === 3 || item.id === 7) {
+                    try {
+                        await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ item, name, email })
+                        });
+                    } catch (error) {
+                        console.error('Error sending subscription to backend:', error);
+                    }
+                }
+            }
+            
+            // Send each item as separate message to Telegram
+            cart.forEach((item, index) => {
+                setTimeout(() => {
+                    sendToTelegram(item, name, email, receiptFile, index + 1, cart.length);
+                }, index * 1000); // Stagger messages by 1 second
+            });
+            
+            // Clear cart after successful payment
+            localStorage.removeItem('benefideal_cart');
+            localStorage.removeItem('benefideal_cart_timestamp');
+            
+            // Show success modal after sending all messages
+            setTimeout(() => {
+                const modal = document.getElementById('successModal');
+                modal.style.display = 'flex';
+            }, cart.length * 1000);
+        }
+
+        async function sendToTelegram(item, name, email, receiptFile, messageNum, totalMessages) {
+            const botToken = '8460494431:AAFOmSEPrzQ1j4_L-4vBG_c38iL2rfx41us';
+            const chatId = 8334777900; // Андрей Benefiseller chat_id
+            
+            // Prepare message text
+            const months = item.months || 'Не указано';
+            const message = `
+🛒 Новый заказ ${messageNum}/${totalMessages}
+
+👤 Имя: ${name}
+📧 Email: ${email}
+📦 Товар: ${item.title}
+🔢 Количество: ${item.quantity}
+⏱ Срок подписки: ${months} ${typeof months === 'number' ? 'месяцев' : ''}
+💰 Сумма: ${item.price.toLocaleString()} ₽
+            `.trim();
+
+            try {
+                // Send text message
+                const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
+                });
+
+                // If receipt is uploaded, send it as photo
+                if (receiptFile) {
+                    const formData = new FormData();
+                    formData.append('photo', receiptFile);
+                    formData.append('chat_id', chatId);
+                    
+                    await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                }
+                
+                // Send renewal schedule for ChatGPT, CapCut, and Adobe
+                if (item.id === 1 || item.id === 3 || item.id === 7) {
+                    await sendRenewalSchedule(item, name, email, botToken, chatId);
+                }
+                
+            } catch (error) {
+                console.error('Error sending to Telegram:', error);
+            }
+        }
+        
+        async function sendRenewalSchedule(item, name, email, botToken, chatId) {
+            const months = item.months || 1;
+            const purchaseDate = new Date();
+            const productName = item.id === 1 ? 'Chat-GPT' : (item.id === 3 ? 'Adobe' : (item.id === 7 ? 'CapCut' : item.title));
+            
+            // Build renewal schedule message
+            let scheduleMessage = `\n\n📅 Расписание продлений ${productName}:\n`;
+            scheduleMessage += `👤 ${name} (${email})\n\n`;
+            
+            if (item.id === 3) {
+                // Adobe: fixed subscription periods
+                // 1 month -> buy 1 month
+                // 3 months -> buy 3 months
+                // 6 months -> buy 6 months
+                // 12 months -> buy 6 months twice
+                
+                if (months === 12) {
+                    // Year subscription: two 6-month purchases
+                    const firstRenewal = new Date(purchaseDate);
+                    firstRenewal.setMonth(firstRenewal.getMonth() + 6);
+                    const firstDateStr = firstRenewal.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                    scheduleMessage += `${firstDateStr} - Продлить подписку (6 месяцев до окончания)\n`;
+                    
+                    const secondRenewal = new Date(purchaseDate);
+                    secondRenewal.setMonth(secondRenewal.getMonth() + 12);
+                    const secondDateStr = secondRenewal.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                    scheduleMessage += `${secondDateStr} - 🔴 Подписка заканчивается\n`;
+                } else {
+                    // 1, 3, or 6 months: one purchase
+                    const renewalDate = new Date(purchaseDate);
+                    renewalDate.setMonth(renewalDate.getMonth() + months);
+                    const dateStr = renewalDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                    scheduleMessage += `${dateStr} - 🔴 Подписка заканчивается\n`;
+                }
+            } else {
+                // ChatGPT and CapCut: monthly renewals
+                for (let i = 1; i <= months; i++) {
+                    const renewalDate = new Date(purchaseDate);
+                    renewalDate.setMonth(renewalDate.getMonth() + i);
+                    
+                    const monthsRemaining = months - i;
+                    const dateStr = renewalDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                    
+                    if (monthsRemaining > 0) {
+                        scheduleMessage += `${dateStr} - Продлить подписку ${monthsRemaining} ${monthsRemaining === 1 ? 'месяц' : 'месяцев'} до окончания\n`;
+                    } else {
+                        scheduleMessage += `${dateStr} - 🔴 Подписка заканчивается\n`;
+                    }
+                }
+            }
+            
+            try {
+                // Send renewal schedule
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: scheduleMessage
+                    })
+                });
+            } catch (error) {
+                console.error('Error sending renewal schedule:', error);
+            }
+        }
+
+        function copySBPNumber() {
+            const sbpNumber = document.getElementById('sbpNumber');
+            sbpNumber.select();
+            sbpNumber.setSelectionRange(0, 99999);
+            
+            try {
+                navigator.clipboard.writeText('+79024170636');
+                showNotification('Номер для СБП скопирован!', 'success');
+            } catch (err) {
+                showNotification('Не удалось скопировать', 'error');
+            }
+
+            // Visual feedback
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            btn.style.background = 'rgba(76, 175, 80, 0.3)';
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.background = 'rgba(255,255,255,0.2)';
+            }, 1000);
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#4caf50' : '#f44336'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+                font-weight: 600;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Load order details from localStorage
+        (function() {
+            try {
+                const saved = localStorage.getItem('benefideal_cart');
+                if (saved) {
+                    const cart = JSON.parse(saved);
+
+                    // Calculate and display total
+                    const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+                    document.getElementById('totalAmount').textContent = total.toLocaleString() + ' ₽';
+
+                    // Display order items
+                    const itemsContainer = document.getElementById('orderItems');
+                    if (itemsContainer) {
+                        itemsContainer.innerHTML = cart.map(item => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--gray-200);">
+                                <span style="color: var(--gray-700); font-weight: 500;">${item.title}</span>
+                                <span style="color: var(--gray-600);">${item.price.toLocaleString()} ₽ × ${item.quantity}</span>
+                            </div>
+                        `).join('');
+                    }
+                } else {
+                    // No cart found, redirect back
+                    window.location.href = 'index.html';
+                }
+            } catch (e) {
+                console.error('Error loading cart:', e);
+                window.location.href = 'index.html';
+            }
+        })();
+    </script>
+
+    <style>
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</body>
+</html>
+
