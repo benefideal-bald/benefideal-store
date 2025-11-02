@@ -81,6 +81,58 @@ app.post('/api/subscription', (req, res) => {
     stmt.finalize();
 });
 
+// Test endpoint - simulates Andrey's subscription scenario
+app.post('/api/test-andrey', async (req, res) => {
+    // Simulate purchase date: October 2 at 22:03
+    const purchaseDate = new Date('2024-10-02T22:03:00');
+    
+    // Create test subscription for Andrey
+    const stmt = db.prepare(`
+        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(['Андрей', 'porkcity@gmail.com', 'Chat-GPT Plus', 1, 3, purchaseDate.toISOString()], async function(err) {
+        if (err) {
+            console.error('Error creating test subscription:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        const subscriptionId = this.lastID;
+        
+        // Create reminders as they would be created for real subscription
+        // But set the first reminder to trigger in 1 minute for testing
+        const testReminderDate = new Date();
+        testReminderDate.setMinutes(testReminderDate.getMinutes() + 1); // Test reminder in 1 minute
+        
+        // Create first reminder (2 months remaining) - set to trigger in 1 minute for test
+        db.run(`
+            INSERT INTO reminders (subscription_id, reminder_date, reminder_type)
+            VALUES (?, ?, ?)
+        `, [subscriptionId, testReminderDate.toISOString(), 'renewal_2months'], async (err) => {
+            if (err) {
+                console.error('Error creating test reminder:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+            
+            // Also send a test message immediately to show the format
+            const testMessage = `⏰ Продлить подписку Chat-GPT Plus Андрей porkcity@gmail.com 2 месяца до окончания подписки`;
+            await sendTelegramMessage(testMessage);
+            
+            res.json({ 
+                success: true, 
+                message: 'Test subscription created for Andrey',
+                subscription_id: subscriptionId,
+                purchase_date: purchaseDate.toISOString(),
+                test_reminder_time: testReminderDate.toISOString(),
+                note: 'You should receive a Telegram notification in ~1 minute, and one test message was sent immediately'
+            });
+        });
+    });
+    
+    stmt.finalize();
+});
+
 // Test endpoint - creates a test subscription with reminder in 2 minutes
 app.post('/api/test-reminder', (req, res) => {
     const testPurchaseDate = new Date();
