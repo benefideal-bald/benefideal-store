@@ -115,7 +115,7 @@ app.post('/api/test-andrey', async (req, res) => {
                 return res.status(500).json({ error: 'Database error' });
             }
             
-            // Also send a test message immediately to show the format
+            // Also send a test message immediately to show the format (correct declension)
             const testMessage = `⏰ Продлить подписку Chat-GPT Plus Андрей porkcity@gmail.com 2 месяца до окончания подписки`;
             const telegramSent = await sendTelegramMessage(testMessage);
             
@@ -275,10 +275,18 @@ function formatReminderMessage(subscription, reminderType) {
     const monthsRemaining = parseInt(reminderType.split('_')[1]) || 0;
     const productName = subscription.product_name;
     
+    // Правильное склонение месяцев в русском языке
+    let monthWord = 'месяцев';
+    if (monthsRemaining === 1) {
+        monthWord = 'месяц';
+    } else if (monthsRemaining >= 2 && monthsRemaining <= 4) {
+        monthWord = 'месяца';
+    }
+    
     if (reminderType === 'expiry') {
         return `🔴 У ${subscription.customer_name} ${subscription.customer_email} закончилась подписка на ${productName}`;
     } else {
-        return `⏰ Продлить подписку ${productName} ${subscription.customer_name} ${subscription.customer_email} ${monthsRemaining} ${monthsRemaining === 1 ? 'месяц' : 'месяцев'} до окончания подписки`;
+        return `⏰ Продлить подписку ${productName} ${subscription.customer_name} ${subscription.customer_email} ${monthsRemaining} ${monthWord} до окончания подписки`;
     }
 }
 
