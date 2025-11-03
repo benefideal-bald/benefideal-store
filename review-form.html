@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оставить отзыв – Benefideal</title>
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="nav">
+                <a href="index.html" class="logo">Benefideal</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="product-page" style="padding: var(--space-24) 0; background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%); min-height:80vh;">
+        <div class="container" style="display:flex; align-items:center; justify-content:center; min-height: 70vh;">
+            <div class="checkout-card">
+                <h2 style="text-align: center; margin-bottom: var(--space-8); color: var(--gray-900);">
+                    <i class="fas fa-star" style="color: var(--primary); margin-right: var(--space-2);"></i>
+                    Оставить отзыв
+                </h2>
+                <p style="text-align: center; color: var(--gray-600); margin-bottom: var(--space-8);">
+                    Поделитесь вашим опытом покупки. Ваш отзыв поможет другим клиентам сделать правильный выбор.
+                </p>
+                
+                <form id="reviewForm" autocomplete="off">
+                    <div class="form-group">
+                        <label for="reviewerName">Имя и фамилия</label>
+                        <input type="text" id="reviewerName" name="reviewerName" required placeholder="Иван Иванов">
+                    </div>
+                    <div class="form-group">
+                        <label for="reviewerEmail">Электронная почта</label>
+                        <input type="email" id="reviewerEmail" name="reviewerEmail" required placeholder="you@example.com">
+                        <small id="emailHelp" style="color: var(--gray-500); font-size: 0.85rem; margin-top: var(--space-1); display: block;">
+                            Введите email, который вы использовали при оформлении заказа
+                        </small>
+                        <div id="emailStatus" style="margin-top: var(--space-2); font-size: 0.9rem; display: none;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reviewText">Ваш отзыв</label>
+                        <textarea id="reviewText" name="reviewText" required rows="6" placeholder="Расскажите о вашем опыте покупки..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Оценка</label>
+                        <div style="display: flex; gap: var(--space-2); justify-content: center; margin-top: var(--space-2);">
+                            <input type="radio" name="rating" id="rating5" value="5" checked style="display: none;">
+                            <label for="rating5" class="star-rating" data-rating="5">
+                                <i class="fas fa-star"></i>
+                            </label>
+                            <input type="radio" name="rating" id="rating4" value="4" style="display: none;">
+                            <label for="rating4" class="star-rating" data-rating="4">
+                                <i class="fas fa-star"></i>
+                            </label>
+                            <input type="radio" name="rating" id="rating3" value="3" style="display: none;">
+                            <label for="rating3" class="star-rating" data-rating="3">
+                                <i class="fas fa-star"></i>
+                            </label>
+                            <input type="radio" name="rating" id="rating2" value="2" style="display: none;">
+                            <label for="rating2" class="star-rating" data-rating="2">
+                                <i class="fas fa-star"></i>
+                            </label>
+                            <input type="radio" name="rating" id="rating1" value="1" style="display: none;">
+                            <label for="rating1" class="star-rating" data-rating="1">
+                                <i class="fas fa-star"></i>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="errorMessage" style="display: none; background: var(--error); color: white; padding: var(--space-3); border-radius: var(--radius-lg); margin-bottom: var(--space-4); text-align: center; font-size: 0.9rem;"></div>
+                    <div id="successMessage" style="display: none; background: var(--success); color: white; padding: var(--space-3); border-radius: var(--radius-lg); margin-bottom: var(--space-4); text-align: center; font-size: 0.9rem;"></div>
+                    
+                    <button type="submit" id="submitReview" class="btn btn-primary">Отправить отзыв</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom" style="text-align:center;">
+                <p>&copy; 2024 Benefideal</p>
+            </div>
+        </div>
+    </footer>
+
+    <style>
+        textarea {
+            width: 100%;
+            padding: var(--space-4);
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            font-family: var(--font-primary);
+            font-size: 1rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .star-rating {
+            font-size: 2rem;
+            color: var(--gray-300);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .star-rating:hover,
+        .star-rating:hover ~ .star-rating {
+            color: var(--primary);
+        }
+        
+        input[type="radio"]:checked ~ .star-rating,
+        input[type="radio"]:checked ~ .star-rating ~ .star-rating {
+            color: var(--primary);
+        }
+        
+        .star-rating.active {
+            color: var(--primary);
+        }
+    </style>
+
+    <script>
+        // Star rating interaction
+        document.querySelectorAll('.star-rating').forEach((star, index) => {
+            star.addEventListener('click', function() {
+                const rating = 5 - index;
+                document.getElementById(`rating${rating}`).checked = true;
+                updateStarDisplay(rating);
+            });
+        });
+        
+        function updateStarDisplay(rating) {
+            document.querySelectorAll('.star-rating').forEach((star, index) => {
+                if (5 - index <= rating) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+        }
+        
+        // Initialize with 5 stars
+        updateStarDisplay(5);
+        
+        // Email verification on blur
+        let emailCheckTimeout;
+        const emailInput = document.getElementById('reviewerEmail');
+        const emailStatus = document.getElementById('emailStatus');
+        
+        emailInput.addEventListener('blur', function() {
+            const email = this.value.trim();
+            if (!email || !email.includes('@')) {
+                emailStatus.style.display = 'none';
+                return;
+            }
+            
+            clearTimeout(emailCheckTimeout);
+            emailStatus.style.display = 'block';
+            emailStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Проверка...';
+            emailStatus.style.color = 'var(--gray-600)';
+            
+            emailCheckTimeout = setTimeout(async () => {
+                try {
+                    const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                        ? 'http://localhost:3000/api/review/verify'
+                        : `${window.location.origin}/api/review/verify`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.can_review) {
+                        emailStatus.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i> Email подтвержден';
+                        emailStatus.style.color = 'var(--success)';
+                        emailInput.style.borderColor = 'var(--success)';
+                    } else {
+                        emailStatus.innerHTML = '<i class="fas fa-times-circle" style="color: var(--error);"></i> ' + data.error;
+                        emailStatus.style.color = 'var(--error)';
+                        emailInput.style.borderColor = 'var(--error)';
+                    }
+                } catch (error) {
+                    emailStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка проверки';
+                    emailStatus.style.color = 'var(--warning)';
+                }
+            }, 500);
+        });
+        
+        emailInput.addEventListener('input', function() {
+            this.style.borderColor = 'var(--gray-200)';
+            emailStatus.style.display = 'none';
+        });
+        
+        // Form submission
+        document.getElementById('reviewForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('reviewerName').value.trim();
+            const email = document.getElementById('reviewerEmail').value.trim();
+            const text = document.getElementById('reviewText').value.trim();
+            const rating = document.querySelector('input[name="rating"]:checked').value;
+            
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            const submitBtn = document.getElementById('submitReview');
+            
+            // Hide previous messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Отправка...';
+            
+            try {
+                // Determine API URL
+                const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'http://localhost:3000/api/review'
+                    : `${window.location.origin}/api/review`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, email, text, rating: parseInt(rating) })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    successDiv.textContent = 'Спасибо за ваш отзыв! Он был успешно отправлен.';
+                    successDiv.style.display = 'block';
+                    document.getElementById('reviewForm').reset();
+                    updateStarDisplay(5);
+                    
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                } else {
+                    errorDiv.textContent = data.error || 'Произошла ошибка при отправке отзыва';
+                    errorDiv.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Отправить отзыв';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Ошибка подключения к серверу. Попробуйте позже.';
+                errorDiv.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Отправить отзыв';
+            }
+        });
+    </script>
+</body>
+</html>
+

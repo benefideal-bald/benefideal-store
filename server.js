@@ -46,6 +46,18 @@ db.serialize(() => {
             FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
         )
     `);
+    
+    db.run(`
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_name TEXT NOT NULL,
+            customer_email TEXT NOT NULL,
+            review_text TEXT NOT NULL,
+            rating INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(customer_email)
+        )
+    `);
 });
 
 // API endpoint to receive subscription purchases
@@ -179,6 +191,135 @@ app.post('/api/test-reminder', (req, res) => {
     });
     
     stmt.finalize();
+});
+
+// API endpoint to verify email exists in orders
+app.post('/api/review/verify', (req, res) => {
+    const { email } = req.body;
+    
+    if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+    }
+    
+    // Check if email exists in subscriptions
+    db.get(`
+        SELECT COUNT(*) as count 
+        FROM subscriptions 
+        WHERE customer_email = ?
+    `, [email], (err, row) => {
+        if (err) {
+            console.error('Error checking email:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        if (row.count > 0) {
+            // Check if review already exists
+            db.get(`
+                SELECT COUNT(*) as count 
+                FROM reviews 
+                WHERE customer_email = ?
+            `, [email], (err, reviewRow) => {
+                if (err) {
+                    console.error('Error checking review:', err);
+                    return res.status(500).json({ error: 'Database error' });
+                }
+                
+                if (reviewRow.count > 0) {
+                    return res.json({ 
+                        success: false, 
+                        error: 'Вы уже оставили отзыв для этого email',
+                        can_review: false 
+                    });
+                }
+                
+                res.json({ 
+                    success: true, 
+                    can_review: true,
+                    message: 'Email найден. Вы можете оставить отзыв.' 
+                });
+            });
+        } else {
+            res.json({ 
+                success: false, 
+                error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
+                can_review: false 
+            });
+        }
+    });
+});
+
+// API endpoint to submit review
+app.post('/api/review', (req, res) => {
+    const { name, email, text, rating } = req.body;
+    
+    if (!name || !email || !text || !rating) {
+        return res.status(400).json({ error: 'Все поля обязательны для заполнения' });
+    }
+    
+    // First verify email exists in subscriptions
+    db.get(`
+        SELECT COUNT(*) as count 
+        FROM subscriptions 
+        WHERE customer_email = ?
+    `, [email], (err, row) => {
+        if (err) {
+            console.error('Error checking email:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        if (row.count === 0) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'Email не найден в системе. Проверьте правильность введенного адреса.' 
+            });
+        }
+        
+        // Check if review already exists
+        db.get(`
+            SELECT COUNT(*) as count 
+            FROM reviews 
+            WHERE customer_email = ?
+        `, [email], (err, reviewRow) => {
+            if (err) {
+                console.error('Error checking review:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+            
+            if (reviewRow.count > 0) {
+                return res.status(400).json({ 
+                    success: false,
+                    error: 'Вы уже оставили отзыв для этого email. Один заказ = один отзыв.' 
+                });
+            }
+            
+            // Insert review
+            const stmt = db.prepare(`
+                INSERT INTO reviews (customer_name, customer_email, review_text, rating)
+                VALUES (?, ?, ?, ?)
+            `);
+            
+            stmt.run([name, email, text, rating], function(err) {
+                if (err) {
+                    if (err.message.includes('UNIQUE constraint')) {
+                        return res.status(400).json({ 
+                            success: false,
+                            error: 'Вы уже оставили отзыв для этого email.' 
+                        });
+                    }
+                    console.error('Error inserting review:', err);
+                    return res.status(500).json({ error: 'Database error' });
+                }
+                
+                res.json({ 
+                    success: true, 
+                    message: 'Отзыв успешно отправлен',
+                    review_id: this.lastID 
+                });
+            });
+            
+            stmt.finalize();
+        });
+    });
 });
 
 // Generate reminders for a subscription
