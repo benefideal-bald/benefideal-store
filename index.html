@@ -460,8 +460,11 @@
                     apiUrl = `${window.location.origin}/api/reviews?limit=10&sort=DESC`;
                 }
                 
+                console.log('Fetching reviews from:', apiUrl);
                 const response = await fetch(apiUrl);
+                console.log('Response status:', response.status, response.statusText);
                 const data = await response.json();
+                console.log('API response:', data);
                 
                 if (data.success && data.reviews && data.reviews.length > 0) {
                     console.log('Loaded reviews from API:', data.reviews.length);

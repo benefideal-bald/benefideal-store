@@ -259,28 +259,53 @@ function initReviewsAutoScroll() {
     
     // Also check for duplicates by content (backup method)
     // Only if we have more than expected (static 10 + dynamic 10 = 20 max)
+    // BUT: we should only remove duplicates if they are actual clones (appear later in the list)
     const remainingCards = reviewsWrapper.querySelectorAll('.review-card');
+    console.log('Total cards before duplicate check:', remainingCards.length);
+    
     if (remainingCards.length > 20) {
         // Identify duplicates by content, but be careful - keep the FIRST occurrence
+        // Only remove if it's a clone (has data-is-clone) OR if it appears later in DOM
         const seenContents = new Map(); // Map content to first card index
         const cardsToRemove = [];
         
         Array.from(remainingCards).forEach((card, index) => {
+            // Skip if already marked as clone (will be removed above)
+            if (card.hasAttribute('data-is-clone')) {
+                return;
+            }
+            
             const name = card.querySelector('.review-name')?.textContent || '';
             const text = card.querySelector('.review-text')?.textContent || '';
             const content = `${name}|${text}`;
             
             if (seenContents.has(content)) {
-                // This is a duplicate - remove it (keep the first one)
-                cardsToRemove.push(card);
+                // This is a duplicate - but only remove if it's a clone or appears later
+                // Check if this card is a dynamic review that was added later
+                const isDynamic = card.classList.contains('dynamic-review');
+                const firstOccurrence = seenContents.get(content);
+                const firstCard = remainingCards[firstOccurrence];
+                const firstIsDynamic = firstCard.classList.contains('dynamic-review');
+                
+                // Only remove if:
+                // 1. Both are dynamic (duplicate dynamic review), OR
+                // 2. First is static and this is dynamic (keep static, remove dynamic duplicate)
+                // BUT: Actually, we should keep ALL unique reviews, so let's be very conservative
+                // Only remove if we have more than 30 cards (meaning we definitely have clones)
+                if (remainingCards.length > 30) {
+                    cardsToRemove.push(card);
+                }
             } else {
                 seenContents.set(content, index);
             }
         });
         
         // Remove only duplicates (not the first occurrence)
-        cardsToRemove.forEach(card => card.remove());
-        console.log('Removed duplicate cards:', cardsToRemove.length, 'Original cards kept:', seenContents.size);
+        if (cardsToRemove.length > 0) {
+            console.log('Removing duplicate cards:', cardsToRemove.length);
+            cardsToRemove.forEach(card => card.remove());
+            console.log('Original cards kept:', seenContents.size);
+        }
     }
     
     const finalCards = reviewsWrapper.querySelectorAll('.review-card');
