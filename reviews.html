@@ -121,11 +121,12 @@
                     const data = await response.json();
                     
                     if (data.success && data.reviews && data.reviews.length > 0) {
-                        allReviews = data.reviews; // Sorted DESC (newest first, oldest last)
+                        // Use ALL reviews from API (already sorted DESC - newest first)
+                        allReviews = data.reviews;
                         console.log('Loaded all reviews:', allReviews.length, 'First (newest):', allReviews[0]?.customer_name, 'Last (oldest):', allReviews[allReviews.length - 1]?.customer_name);
-                        // Initially show first 10 dynamic reviews (after static ones)
-                        displayedCount = 0; // Start from 0
-                        displayReviews(); // Will show first 10
+                        // Start from 0 - show first 10 reviews (newest first)
+                        displayedCount = 0;
+                        displayReviews(); // Will show first 10 reviews (newest first)
                     } else {
                         // No dynamic reviews, but static ones are still visible
                         allReviews = [];
