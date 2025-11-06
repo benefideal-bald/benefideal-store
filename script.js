@@ -86,7 +86,12 @@ document.addEventListener('DOMContentLoaded', function() {
     initAnimations();
     initScrollAnimations();
     initParticles();
-    initReviewsAutoScroll();
+    // Only initialize reviews carousel if reviews section exists
+    // It will be reinitialized after dynamic reviews load
+    const reviewsWrapper = document.getElementById('reviewsWrapper') || document.querySelector('.reviews-wrapper');
+    if (reviewsWrapper && reviewsWrapper.querySelectorAll('.review-card').length > 0) {
+        initReviewsAutoScroll();
+    }
     setupSubscriptionOptions();
 });
 
@@ -223,17 +228,80 @@ function initParticles() {
 }
 
 // Initialize reviews auto-scroll
-function initReviewsAutoScroll() {
-    const reviewsWrapper = document.querySelector('.reviews-wrapper');
-    if (!reviewsWrapper) return;
+let carouselAnimation = null;
 
-    const reviewCards = reviewsWrapper.querySelectorAll('.review-card');
-    if (reviewCards.length === 0) return;
+function initReviewsAutoScroll() {
+    // Try both ID and class selector for compatibility
+    const reviewsWrapper = document.getElementById('reviewsWrapper') || document.querySelector('.reviews-wrapper');
+    if (!reviewsWrapper) {
+        console.error('Reviews wrapper not found!');
+        return;
+    }
     
-    // Calculate width of one set (10 cards)
+    // Stop existing animation if any
+    if (carouselAnimation) {
+        cancelAnimationFrame(carouselAnimation);
+        carouselAnimation = null;
+    }
+
+    // Remove any existing clones - identify duplicates by checking if cards repeat
+    // Clones are always added AFTER all original cards
+    const allCards = reviewsWrapper.querySelectorAll('.review-card');
+    const totalCards = allCards.length;
+    
+    // If we have more cards than expected (original + clones), remove clones
+    // Original cards = static (10) + dynamic (up to 10) = up to 20
+    // Clones would double this, so if totalCards > 20, we have clones
+    if (totalCards > 20) {
+        // Identify original cards by their unique content (name + text)
+        const seenContents = new Set();
+        const originalCards = [];
+        const cardsToRemove = [];
+        
+        allCards.forEach((card, index) => {
+            const name = card.querySelector('.review-name')?.textContent || '';
+            const text = card.querySelector('.review-text')?.textContent || '';
+            const content = `${name}|${text}`;
+            
+            if (!seenContents.has(content)) {
+                seenContents.add(content);
+                originalCards.push(card);
+            } else {
+                // This is a duplicate/clone, mark for removal
+                cardsToRemove.push(card);
+            }
+        });
+        
+        // Remove only clones, keep all originals
+        cardsToRemove.forEach(card => card.remove());
+        
+        console.log('Removed clones. Original cards:', originalCards.length, 'Clones removed:', cardsToRemove.length);
+    }
+    
+    // No need to rearrange if we just removed clones
+    
+    const reviewCards = reviewsWrapper.querySelectorAll('.review-card');
+    if (reviewCards.length === 0) {
+        console.log('No review cards found, cannot initialize carousel');
+        return;
+    }
+    
+    console.log('Initializing carousel with', reviewCards.length, 'cards');
+    
+    // Calculate width of all cards for seamless infinite scroll
     const cardWidth = reviewCards[0].offsetWidth;
     const gap = 24; // var(--space-6) = 1.5rem = 24px
-    const oneSetWidth = (cardWidth * 10) + (gap * 9); // 10 cards + 9 gaps
+    const originalCardCount = reviewCards.length;
+    const totalWidth = (cardWidth * originalCardCount) + (gap * (originalCardCount - 1));
+    
+    // Clone all cards for seamless infinite scroll
+    reviewCards.forEach(card => {
+        const clone = card.cloneNode(true);
+        reviewsWrapper.appendChild(clone);
+    });
+    
+    const oneSetWidth = totalWidth;
+    console.log('Carousel setup: cardWidth=', cardWidth, 'originalCardCount=', originalCardCount, 'oneSetWidth=', oneSetWidth);
 
     let scrollPosition = 0;
     let lastTimestamp = 0;
@@ -252,10 +320,16 @@ function initReviewsAutoScroll() {
         
         reviewsWrapper.style.transform = `translate3d(-${scrollPosition.toFixed(2)}px, 0, 0)`;
 
-        requestAnimationFrame(animateScroll);
+        carouselAnimation = requestAnimationFrame(animateScroll);
     }
 
-    requestAnimationFrame(animateScroll);
+    // Reset transform before starting animation
+    reviewsWrapper.style.transform = 'translate3d(0, 0, 0)';
+    scrollPosition = 0;
+    lastTimestamp = 0;
+    
+    carouselAnimation = requestAnimationFrame(animateScroll);
+    console.log('Carousel animation started');
 }
 
 // Toggle cart modal
