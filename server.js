@@ -502,7 +502,7 @@ app.get('/api/reviews', (req, res) => {
     
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
-    const sortOrder = req.query.sort || 'DESC'; // DESC for main page (newest first), ASC for all reviews page (oldest first)
+    const sortOrder = req.query.sort || 'DESC'; // DESC = newest first (same for both pages)
     
     // Validate sort order
     const validSort = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';

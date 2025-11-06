@@ -46,46 +46,7 @@
         </div>
         
         <div style="display: grid; grid-template-columns: 1fr; gap: var(--space-6);" id="reviewsContainer">
-                <!-- LATEST REVIEWS - Максим first (newest: 15:42), then Тимур (13:57) -->
-                <div class="review-card" style="background: var(--white); border-radius: 16px; padding: var(--space-6); box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Максим</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="far fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Приобрел кепкат про на месяц, все работает как следует</p>
-                </div>
-                <div class="review-card" style="background: var(--white); border-radius: 16px; padding: var(--space-6); box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Тимур</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡</p>
-                </div>
-                
-                <!-- Dynamic reviews will be added here after Максим and Тимур (newest first) -->
-                <!-- Static reviews will be added after dynamic ones via JavaScript -->
+                <!-- All reviews from API will be loaded here (newest first) -->
             </div>
             
         <div id="reviewsLoader" style="display: none;"></div>
@@ -236,51 +197,19 @@
                     }
                 });
                 
-                // If this is the first load (displayedCount === 0), insert after Максим and Тимур
-                // Otherwise, append to the end (showing older reviews)
+                // Always append cards in order (newest first, then older)
+                // If first load, remove any existing cards
                 if (displayedCount === 0) {
-                    // Remove all existing dynamic reviews (but keep Максим and Тимур which are in HTML)
+                    // Remove all existing cards
                     const existingCards = reviewsContainer.querySelectorAll('.review-card');
-                    existingCards.forEach(card => {
-                        const nameEl = card.querySelector('.review-name');
-                        const name = nameEl ? nameEl.textContent : '';
-                        if (name !== 'Максим' && name !== 'Тимур') {
-                            // Remove dynamic reviews only
-                            if (card.hasAttribute('data-dynamic') || card.classList.contains('dynamic-review')) {
-                                card.remove();
-                            }
-                        }
-                    });
+                    existingCards.forEach(card => card.remove());
                     
-                    // Insert new cards after Тимур (which is second, after Максим)
-                    // Максим and Тимур are already first in HTML (newest first)
-                    const timurCard = Array.from(reviewsContainer.querySelectorAll('.review-card')).find(c => {
-                        const nameEl = c.querySelector('.review-name');
-                        return nameEl && nameEl.textContent === 'Тимур';
+                    // Append first 10 reviews (newest first)
+                    cardsToAdd.forEach(card => {
+                        reviewsContainer.appendChild(card);
                     });
-                    
-                    if (timurCard && timurCard.nextSibling) {
-                        // Insert after Тимур (newest dynamic reviews)
-                        cardsToAdd.forEach(card => {
-                            reviewsContainer.insertBefore(card, timurCard.nextSibling);
-                        });
-                    } else {
-                        // Fallback: append after Максим
-                        const maximCard = Array.from(reviewsContainer.querySelectorAll('.review-card')).find(c => {
-                            const nameEl = c.querySelector('.review-name');
-                            return nameEl && nameEl.textContent === 'Максим';
-                        });
-                        if (maximCard && maximCard.nextSibling) {
-                            cardsToAdd.forEach(card => {
-                                reviewsContainer.insertBefore(card, maximCard.nextSibling);
-                            });
-                        } else {
-                            // Last resort: append to container
-                            cardsToAdd.forEach(card => reviewsContainer.appendChild(card));
-                        }
-                    }
                 } else {
-                    // Subsequent loads: append to the end (older reviews)
+                    // Subsequent loads: append to the end (showing older reviews)
                     cardsToAdd.forEach(card => {
                         reviewsContainer.appendChild(card);
                     });
