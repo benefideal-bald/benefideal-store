@@ -8,7 +8,7 @@
     <meta http-equiv="Expires" content="0">
     <meta http-equiv="Last-Modified" content="0">
     <title>Benefideal - Подписки на популярные сервисы</title>
-    <link rel="stylesheet" href="styles.css?v=2.7">
+    <link rel="stylesheet" href="styles.css?v=2.8">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -159,8 +159,8 @@
                 <div class="reviews-wrapper" id="reviewsWrapper">
                 <!-- Dynamic reviews from API will be inserted here (Тимур and Максим should be first) -->
                 
-                <!-- LATEST REVIEWS - Максим and Тимур (newest first) -->
-                <div class="review-card dynamic-review">
+                <!-- LATEST REVIEWS - Максим first (newest: 15:42), then Тимур (13:57) -->
+                <div class="review-card dynamic-review" data-keep="true" data-review-order="1">
                     <div class="review-header">
                         <div class="review-avatar">
                             <i class="fas fa-user"></i>
@@ -178,7 +178,7 @@
                     </div>
                     <p class="review-text">Приобрел кепкат про на месяц, все работает как следует</p>
                 </div>
-                <div class="review-card dynamic-review" data-keep="true">
+                <div class="review-card dynamic-review" data-keep="true" data-review-order="2">
                     <div class="review-header">
                         <div class="review-avatar">
                             <i class="fas fa-user"></i>

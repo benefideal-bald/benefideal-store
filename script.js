@@ -223,17 +223,80 @@ function initParticles() {
 }
 
 // Initialize reviews auto-scroll
-function initReviewsAutoScroll() {
-    const reviewsWrapper = document.querySelector('.reviews-wrapper');
-    if (!reviewsWrapper) return;
+// Initialize reviews auto-scroll
+let carouselAnimation = null;
 
-    const reviewCards = reviewsWrapper.querySelectorAll('.review-card');
-    if (reviewCards.length === 0) return;
+function initReviewsAutoScroll() {
+    // Try both ID and class selector for compatibility
+    const reviewsWrapper = document.getElementById('reviewsWrapper') || document.querySelector('.reviews-wrapper');
+    if (!reviewsWrapper) {
+        console.log('Reviews wrapper not found');
+        return;
+    }
     
-    // Calculate width of one set (10 cards)
+    // Stop existing animation if any
+    if (carouselAnimation) {
+        cancelAnimationFrame(carouselAnimation);
+        carouselAnimation = null;
+    }
+    
+    // Remove any existing clones
+    const existingClones = reviewsWrapper.querySelectorAll('.review-card[data-is-clone="true"]');
+    existingClones.forEach(clone => clone.remove());
+
+    // Get all original cards (static + dynamic, but not clones)
+    // Sort them to ensure Максим and Тимур are first
+    const allCards = Array.from(reviewsWrapper.querySelectorAll('.review-card:not([data-is-clone="true"])'));
+    
+    // Sort cards: Максим first, then Тимур, then others
+    allCards.sort((a, b) => {
+        const aName = a.querySelector('.review-name')?.textContent || '';
+        const bName = b.querySelector('.review-name')?.textContent || '';
+        
+        if (aName === 'Максим') return -1;
+        if (bName === 'Максим') return 1;
+        if (aName === 'Тимур') return -1;
+        if (bName === 'Тимур') return 1;
+        return 0;
+    });
+    
+    // Move Максим and Тимур to the beginning of the wrapper
+    const maximCard = allCards.find(c => c.querySelector('.review-name')?.textContent === 'Максим');
+    const timurCard = allCards.find(c => c.querySelector('.review-name')?.textContent === 'Тимур');
+    
+    if (maximCard && maximCard.parentNode === reviewsWrapper) {
+        reviewsWrapper.insertBefore(maximCard, reviewsWrapper.firstChild);
+    }
+    if (timurCard && timurCard.parentNode === reviewsWrapper && timurCard !== maximCard) {
+        if (maximCard && maximCard.parentNode === reviewsWrapper) {
+            reviewsWrapper.insertBefore(timurCard, maximCard.nextSibling);
+        } else {
+            reviewsWrapper.insertBefore(timurCard, reviewsWrapper.firstChild);
+        }
+    }
+    
+    // Get all cards again after reordering
+    const reviewCards = reviewsWrapper.querySelectorAll('.review-card:not([data-is-clone="true"])');
+    if (reviewCards.length === 0) {
+        console.log('No review cards found');
+        return;
+    }
+    
+    console.log('Initializing carousel with', reviewCards.length, 'cards');
+    console.log('First card:', reviewCards[0].querySelector('.review-name')?.textContent);
+    
+    // Calculate width of all original cards
     const cardWidth = reviewCards[0].offsetWidth;
     const gap = 24; // var(--space-6) = 1.5rem = 24px
-    const oneSetWidth = (cardWidth * 10) + (gap * 9); // 10 cards + 9 gaps
+    const originalCardCount = reviewCards.length;
+    const oneSetWidth = (cardWidth * originalCardCount) + (gap * (originalCardCount - 1));
+    
+    // Clone all cards for seamless infinite scroll
+    reviewCards.forEach((card, index) => {
+        const clone = card.cloneNode(true);
+        clone.setAttribute('data-is-clone', 'true');
+        reviewsWrapper.appendChild(clone);
+    });
 
     let scrollPosition = 0;
     let lastTimestamp = 0;
@@ -252,10 +315,16 @@ function initReviewsAutoScroll() {
         
         reviewsWrapper.style.transform = `translate3d(-${scrollPosition.toFixed(2)}px, 0, 0)`;
 
-        requestAnimationFrame(animateScroll);
+        carouselAnimation = requestAnimationFrame(animateScroll);
     }
 
-    requestAnimationFrame(animateScroll);
+    // Reset transform before starting
+    reviewsWrapper.style.transform = 'translate3d(0, 0, 0)';
+    scrollPosition = 0;
+    lastTimestamp = 0;
+    
+    carouselAnimation = requestAnimationFrame(animateScroll);
+    console.log('Carousel animation started with', originalCardCount, 'original cards');
 }
 
 // Toggle cart modal
