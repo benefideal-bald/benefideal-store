@@ -883,9 +883,13 @@
                     }, 500);
                 } else {
                     console.log('No reviews found in API response');
+                    console.log('Response data:', data);
                 }
             } catch (error) {
                 console.error('Error loading reviews:', error);
+                console.error('Error details:', error.message, error.stack);
+                // Show error to user in console
+                console.warn('⚠️ Не удалось загрузить динамические отзывы. Показываются только статические отзывы.');
             }
         };
         
