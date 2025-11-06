@@ -17,11 +17,17 @@ const CHAT_ID = 8334777900;
 app.use(cors());
 app.use(bodyParser.json());
 
+// Initialize SQLite database FIRST
+const db = new sqlite3.Database('subscriptions.db', (err) => {
+    if (err) {
+        console.error('Error opening database:', err);
+    } else {
+        console.log('Database opened successfully');
+    }
+});
+
 // API routes must come BEFORE static files
 // This ensures /api/* requests are handled by Express, not static files
-
-// Initialize SQLite database
-const db = new sqlite3.Database('subscriptions.db');
 
 // Create tables
 db.serialize(() => {
@@ -487,6 +493,9 @@ app.post('/api/review', (req, res) => {
 
 // API endpoint to get reviews
 app.get('/api/reviews', (req, res) => {
+    console.log('GET /api/reviews - Request received');
+    console.log('Query params:', req.query);
+    
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     const sortOrder = req.query.sort || 'DESC'; // DESC for main page (newest first), ASC for all reviews page (oldest first)
@@ -499,11 +508,15 @@ app.get('/api/reviews', (req, res) => {
     let query = `SELECT * FROM reviews`;
     const params = [];
     
+    console.log('Executing query:', query);
+    
     db.all(query, params, (err, rows) => {
         if (err) {
             console.error('Error fetching reviews:', err);
-            return res.status(500).json({ error: 'Database error' });
+            return res.status(500).json({ error: 'Database error', details: err.message });
         }
+        
+        console.log(`Found ${rows.length} reviews in database`);
         
         // Sort in JavaScript to handle mixed date formats properly
         rows.sort((a, b) => {
