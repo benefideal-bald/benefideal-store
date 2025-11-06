@@ -16,7 +16,9 @@ const CHAT_ID = 8334777900;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('.'));
+
+// API routes must come BEFORE static files
+// This ensures /api/* requests are handled by Express, not static files
 
 // Initialize SQLite database
 const db = new sqlite3.Database('subscriptions.db');
@@ -32,6 +34,7 @@ db.serialize(() => {
             product_id INTEGER NOT NULL,
             subscription_months INTEGER NOT NULL,
             purchase_date DATETIME NOT NULL,
+            order_id TEXT,
             is_active INTEGER DEFAULT 1
         )
     `);
@@ -54,15 +57,67 @@ db.serialize(() => {
             customer_email TEXT NOT NULL,
             review_text TEXT NOT NULL,
             rating INTEGER NOT NULL,
+            order_id TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(customer_email)
+            UNIQUE(customer_email, order_id)
         )
     `);
+    
+    // Insert static reviews if they don't exist
+    db.get(`SELECT COUNT(*) as count FROM reviews`, (err, row) => {
+        if (err) {
+            console.error('Error checking reviews:', err);
+            return;
+        }
+        
+        if (row && row.count === 0) {
+            const staticReviews = [
+                { name: 'София', email: 'static_review_1@benefideal.com', text: 'Заказала CapCut Pro для создания контента в TikTok. Активация прошла за минуты, все функции работают, включая премиум эффекты. Огромная экономия!', rating: 5, order_id: 'STATIC_REVIEW_1' },
+                { name: 'Павел', email: 'static_review_2@benefideal.com', text: 'Прекрасный сервис! ChatGPT Plus работает идеально, быстрые ответы, доступ к GPT-4. Пользуюсь уже месяц, всё стабильно. Обязательно продлю подписку!', rating: 5, order_id: 'STATIC_REVIEW_2' },
+                { name: 'Юлия', email: 'static_review_3@benefideal.com', text: 'Adobe заказала для работы над дизайн-проектами. Photoshop, Illustrator, InDesign — все работает без глюков. Поддержка оперативно отвечает на вопросы. Рекомендую!', rating: 5, order_id: 'STATIC_REVIEW_3' },
+                { name: 'Роман', email: 'static_review_4@benefideal.com', text: 'CapCut Pro стал моим основным редактором. Премиум шаблоны и эффекты открывают новые возможности для творчества. Активация мгновенная, цена приятная!', rating: 5, order_id: 'STATIC_REVIEW_4' },
+                { name: 'Татьяна', email: 'static_review_5@benefideal.com', text: 'ChatGPT Plus использую для написания текстов и исследования. За такие деньги — просто находка! Все возможности GPT-4 доступны, скорость ответов отличная.', rating: 5, order_id: 'STATIC_REVIEW_5' },
+                { name: 'Никита', email: 'static_review_6@benefideal.com', text: 'Adobe Creative Cloud — лучшая покупка! Использую для фриланса. Premiere Pro, After Effects работают без нареканий. Экономия огромная, качество не уступает официальной версии!', rating: 5, order_id: 'STATIC_REVIEW_6' },
+                { name: 'Арина', email: 'static_review_7@benefideal.com', text: 'CapCut Pro покупала для блога в Instagram. Все премиум функции доступны: убираю водяные знаки, использую эксклюзивные эффекты. Сервис на высоте!', rating: 5, order_id: 'STATIC_REVIEW_7' },
+                { name: 'Константин', email: 'static_review_8@benefideal.com', text: 'ChatGPT Plus приобрел для работы над стартапом. AI помощник невероятный! Генерирую идеи, пишу код, анализирую данные. Скорость и качество превосходят ожидания!', rating: 5, order_id: 'STATIC_REVIEW_8' },
+                { name: 'Карина', email: 'static_review_9@benefideal.com', text: 'Adobe заказала для обучения дизайну. Полный доступ ко всем программам по разумной цене. Учеба теперь намного интереснее, все инструменты под рукой!', rating: 5, order_id: 'STATIC_REVIEW_9' },
+                { name: 'Андрей', email: 'static_review_10@benefideal.com', text: 'Купил Adobe Creative Cloud для видеомонтажа. Все программы работают отлично, обновления приходят регулярно. Цена очень выгодная по сравнению с официальной подпиской!', rating: 5, order_id: 'STATIC_REVIEW_10' },
+                { name: 'Алексей', email: 'static_review_11@benefideal.com', text: 'Отличный сервис! Получил данные для ChatGPT Plus буквально через час после оплаты. Всё работает идеально, качество на высоте. Рекомендую!', rating: 5, order_id: 'STATIC_REVIEW_11' },
+                { name: 'Мария', email: 'static_review_12@benefideal.com', text: 'Заказала Adobe Creative Cloud на 3 месяца. Данные пришли очень быстро, всё активировалось без проблем. Поддержка отвечает оперативно. Спасибо!', rating: 5, order_id: 'STATIC_REVIEW_12' },
+                { name: 'Дмитрий', email: 'static_review_13@benefideal.com', text: 'Пользуюсь уже несколько месяцев, всё стабильно работает. Цены очень выгодные по сравнению с официальными подписками. Обязательно буду заказывать снова!', rating: 5, order_id: 'STATIC_REVIEW_13' },
+                { name: 'Елена', email: 'static_review_14@benefideal.com', text: 'Качественный сервис и быстрая выдача данных. CapCut Pro работает отлично, все функции доступны. Очень довольна покупкой!', rating: 5, order_id: 'STATIC_REVIEW_14' },
+                { name: 'Иван', email: 'static_review_15@benefideal.com', text: 'Быстрая обработка заказа, всё четко и по делу. Оплатил, получил данные, активировал, никаких проблем. Сервис на пять звёзд!', rating: 5, order_id: 'STATIC_REVIEW_15' },
+                { name: 'Ольга', email: 'static_review_16@benefideal.com', text: 'Отличные цены и быстрое обслуживание! Получила доступ к Adobe почти сразу после оплаты. Очень рекомендую этот магазин.', rating: 5, order_id: 'STATIC_REVIEW_16' }
+            ];
+            
+            const stmt = db.prepare(`
+                INSERT OR IGNORE INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `);
+            
+            staticReviews.forEach((review, index) => {
+                // Spread out creation dates over the past 60 days
+                const daysAgo = Math.floor(Math.random() * 60);
+                const createdAt = new Date();
+                createdAt.setDate(createdAt.getDate() - daysAgo);
+                
+                stmt.run([review.name, review.email, review.text, review.rating, review.order_id, createdAt.toISOString()], (err) => {
+                    if (err) {
+                        console.error('Error inserting static review:', err);
+                    }
+                });
+            });
+            
+            stmt.finalize(() => {
+                console.log('Static reviews inserted successfully');
+            });
+        }
+    });
 });
 
 // API endpoint to receive subscription purchases
 app.post('/api/subscription', (req, res) => {
-    const { item, name, email } = req.body;
+    const { item, name, email, order_id } = req.body;
     
     if (!item || !name || !email) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -72,11 +127,11 @@ app.post('/api/subscription', (req, res) => {
     
     // Insert subscription into database
     const stmt = db.prepare(`
-        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     
-    stmt.run([name, email, item.title, item.id, item.months || 1, purchaseDate.toISOString()], function(err) {
+    stmt.run([name, email, item.title, item.id, item.months || 1, purchaseDate.toISOString(), order_id || null], function(err) {
         if (err) {
             console.error('Error inserting subscription:', err);
             return res.status(500).json({ error: 'Database error' });
@@ -98,13 +153,16 @@ app.post('/api/test-andrey', async (req, res) => {
     // Simulate purchase date: October 2 at 22:03
     const purchaseDate = new Date('2024-10-02T22:03:00');
     
+    // Generate test order_id
+    const testOrderId = `TEST_ORDER_${Date.now()}`;
+    
     // Create test subscription for Andrey
     const stmt = db.prepare(`
-        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     
-    stmt.run(['Андрей', 'porkcity@gmail.com', 'Chat-GPT Plus', 1, 3, purchaseDate.toISOString()], async function(err) {
+    stmt.run(['Андрей', 'porkcity@gmail.com', 'Chat-GPT Plus', 1, 3, purchaseDate.toISOString(), testOrderId], async function(err) {
         if (err) {
             console.error('Error creating test subscription:', err);
             return res.status(500).json({ error: 'Database error' });
@@ -201,33 +259,91 @@ app.post('/api/review/verify', (req, res) => {
         return res.status(400).json({ error: 'Email is required' });
     }
     
-    // Check if email exists in subscriptions
+    // Normalize email to lowercase for case-insensitive comparison
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    console.log('Review verify request for email:', normalizedEmail);
+    
+    // First check if email exists in subscriptions at all (protection against spam)
+    // Use LOWER() for case-insensitive comparison
     db.get(`
         SELECT COUNT(*) as count 
         FROM subscriptions 
-        WHERE customer_email = ?
-    `, [email], (err, row) => {
+        WHERE LOWER(customer_email) = LOWER(?)
+    `, [normalizedEmail], (err, emailCheck) => {
         if (err) {
             console.error('Error checking email:', err);
             return res.status(500).json({ error: 'Database error' });
         }
         
-        if (row.count > 0) {
-            // Check if review already exists
-            db.get(`
-                SELECT COUNT(*) as count 
-                FROM reviews 
-                WHERE customer_email = ?
-            `, [email], (err, reviewRow) => {
+        if (!emailCheck || emailCheck.count === 0) {
+            return res.json({ 
+                success: false, 
+                error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
+                can_review: false 
+            });
+        }
+        
+        // Check all orders (with or without order_id), get newest first
+        // Use LOWER() for case-insensitive comparison
+        db.all(`
+            SELECT DISTINCT 
+                COALESCE(s.order_id, 'NULL_ORDER') as order_id,
+                MIN(s.purchase_date) as purchase_date
+            FROM subscriptions s
+            WHERE LOWER(s.customer_email) = LOWER(?)
+            GROUP BY COALESCE(s.order_id, 'NULL_ORDER')
+            ORDER BY purchase_date DESC
+        `, [normalizedEmail], (err, allOrders) => {
+            if (err) {
+                console.error('Error checking orders:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+            
+            if (!allOrders || allOrders.length === 0) {
+                return res.json({ 
+                    success: false, 
+                    error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
+                    can_review: false 
+                });
+            }
+            
+            // Get the newest order (first in sorted list)
+            const newestOrder = allOrders[0];
+            const newestOrderId = newestOrder.order_id === 'NULL_ORDER' ? null : newestOrder.order_id;
+            
+            // Check if this order already has a review
+            let reviewCheckQuery;
+            let reviewCheckParams;
+            
+            if (newestOrderId === null) {
+                // For orders without order_id, check reviews with NULL order_id
+                reviewCheckQuery = `
+                    SELECT COUNT(*) as count 
+                    FROM reviews 
+                    WHERE LOWER(customer_email) = LOWER(?) AND (order_id IS NULL OR order_id = '')
+                `;
+                reviewCheckParams = [normalizedEmail];
+            } else {
+                // For orders with order_id, check reviews with that order_id
+                reviewCheckQuery = `
+                    SELECT COUNT(*) as count 
+                    FROM reviews 
+                    WHERE LOWER(customer_email) = LOWER(?) AND order_id = ?
+                `;
+                reviewCheckParams = [normalizedEmail, newestOrderId];
+            }
+            
+            db.get(reviewCheckQuery, reviewCheckParams, (err, reviewedCheck) => {
                 if (err) {
-                    console.error('Error checking review:', err);
+                    console.error('Error checking reviews:', err);
                     return res.status(500).json({ error: 'Database error' });
                 }
                 
-                if (reviewRow.count > 0) {
+                if (reviewedCheck && reviewedCheck.count > 0) {
                     return res.json({ 
                         success: false, 
-                        error: 'Вы уже оставили отзыв для этого email',
+                        error: 'Вы уже оставили отзыв для вашего последнего заказа',
                         can_review: false 
                     });
                 }
@@ -235,16 +351,11 @@ app.post('/api/review/verify', (req, res) => {
                 res.json({ 
                     success: true, 
                     can_review: true,
-                    message: 'Email найден. Вы можете оставить отзыв.' 
+                    message: 'Email найден. Вы можете оставить отзыв.',
+                    available_orders: 1
                 });
             });
-        } else {
-            res.json({ 
-                success: false, 
-                error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
-                can_review: false 
-            });
-        }
+        });
     });
 });
 
@@ -256,68 +367,189 @@ app.post('/api/review', (req, res) => {
         return res.status(400).json({ error: 'Все поля обязательны для заполнения' });
     }
     
-    // First verify email exists in subscriptions
+    // Normalize email to lowercase for case-insensitive comparison
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    console.log('Review submit request for email:', normalizedEmail);
+    
+    // First verify email exists in subscriptions at all (protection against spam)
+    // Use LOWER() for case-insensitive comparison
     db.get(`
         SELECT COUNT(*) as count 
         FROM subscriptions 
-        WHERE customer_email = ?
-    `, [email], (err, row) => {
+        WHERE LOWER(customer_email) = LOWER(?)
+    `, [normalizedEmail], (err, emailCheck) => {
         if (err) {
             console.error('Error checking email:', err);
             return res.status(500).json({ error: 'Database error' });
         }
         
-        if (row.count === 0) {
+        if (!emailCheck || emailCheck.count === 0) {
             return res.status(400).json({ 
                 success: false,
                 error: 'Email не найден в системе. Проверьте правильность введенного адреса.' 
             });
         }
         
-        // Check if review already exists
-        db.get(`
-            SELECT COUNT(*) as count 
-            FROM reviews 
-            WHERE customer_email = ?
-        `, [email], (err, reviewRow) => {
+        // Get all orders (with or without order_id), get newest first
+        // Use LOWER() for case-insensitive comparison
+        db.all(`
+            SELECT DISTINCT 
+                COALESCE(s.order_id, 'NULL_ORDER') as order_id,
+                MIN(s.purchase_date) as purchase_date
+            FROM subscriptions s
+            WHERE LOWER(s.customer_email) = LOWER(?)
+            GROUP BY COALESCE(s.order_id, 'NULL_ORDER')
+            ORDER BY purchase_date DESC
+        `, [normalizedEmail], (err, allOrders) => {
             if (err) {
-                console.error('Error checking review:', err);
+                console.error('Error checking orders:', err);
                 return res.status(500).json({ error: 'Database error' });
             }
-            
-            if (reviewRow.count > 0) {
+        
+            if (!allOrders || allOrders.length === 0) {
                 return res.status(400).json({ 
                     success: false,
-                    error: 'Вы уже оставили отзыв для этого email. Один заказ = один отзыв.' 
+                    error: 'У вас нет заказов для отзыва.' 
                 });
             }
             
-            // Insert review
-            const stmt = db.prepare(`
-                INSERT INTO reviews (customer_name, customer_email, review_text, rating)
-                VALUES (?, ?, ?, ?)
-            `);
+            // Get the newest order (first in sorted list)
+            const newestOrder = allOrders[0];
+            const newestOrderId = newestOrder.order_id === 'NULL_ORDER' ? null : newestOrder.order_id;
             
-            stmt.run([name, email, text, rating], function(err) {
+            // Check if this order already has a review
+            let reviewCheckQuery;
+            let reviewCheckParams;
+            
+            if (newestOrderId === null) {
+                // For orders without order_id, check reviews with NULL order_id
+                reviewCheckQuery = `
+                    SELECT COUNT(*) as count 
+                    FROM reviews 
+                    WHERE LOWER(customer_email) = LOWER(?) AND (order_id IS NULL OR order_id = '')
+                `;
+                reviewCheckParams = [normalizedEmail];
+            } else {
+                // For orders with order_id, check reviews with that order_id
+                reviewCheckQuery = `
+                    SELECT COUNT(*) as count 
+                    FROM reviews 
+                    WHERE LOWER(customer_email) = LOWER(?) AND order_id = ?
+                `;
+                reviewCheckParams = [normalizedEmail, newestOrderId];
+            }
+            
+            db.get(reviewCheckQuery, reviewCheckParams, (err, reviewedCheck) => {
                 if (err) {
-                    if (err.message.includes('UNIQUE constraint')) {
-                        return res.status(400).json({ 
-                            success: false,
-                            error: 'Вы уже оставили отзыв для этого email.' 
-                        });
-                    }
-                    console.error('Error inserting review:', err);
+                    console.error('Error checking reviews:', err);
                     return res.status(500).json({ error: 'Database error' });
                 }
                 
-                res.json({ 
-                    success: true, 
-                    message: 'Отзыв успешно отправлен',
-                    review_id: this.lastID 
+                if (reviewedCheck && reviewedCheck.count > 0) {
+                    return res.status(400).json({ 
+                        success: false,
+                        error: 'Вы уже оставили отзыв для вашего последнего заказа.' 
+                    });
+                }
+                
+                // Insert review with order_id (or NULL if no order_id)
+                // Use normalized email for consistency
+                const stmt = db.prepare(`
+                    INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id)
+                    VALUES (?, ?, ?, ?, ?)
+                `);
+                
+                stmt.run([name, normalizedEmail, text, rating, newestOrderId], function(err) {
+                    if (err) {
+                        if (err.message.includes('UNIQUE constraint')) {
+                            return res.status(400).json({ 
+                                success: false,
+                                error: 'Вы уже оставили отзыв для этого заказа. Один заказ = один отзыв.' 
+                            });
+                        }
+                        console.error('Error inserting review:', err);
+                        return res.status(500).json({ error: 'Database error' });
+                    }
+                    
+                    res.json({ 
+                        success: true, 
+                        message: 'Отзыв успешно отправлен',
+                        review_id: this.lastID 
+                    });
                 });
+                
+                stmt.finalize();
             });
+        });
+    });
+});
+
+// API endpoint to get reviews
+app.get('/api/reviews', (req, res) => {
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+    const sortOrder = req.query.sort || 'DESC'; // DESC for main page (newest first), ASC for all reviews page (oldest first)
+    
+    // Validate sort order
+    const validSort = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    
+    // Don't sort in SQL - we'll sort in JavaScript to handle mixed date formats
+    // Don't apply LIMIT in SQL - apply it after sorting in JavaScript
+    let query = `SELECT * FROM reviews`;
+    const params = [];
+    
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            console.error('Error fetching reviews:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        // Sort in JavaScript to handle mixed date formats properly
+        rows.sort((a, b) => {
+            const normalizeDate = (dateStr) => {
+                // Handle both '2025-11-04 13:57:52' and '2025-10-20T12:47:36.395Z'
+                let normalized = dateStr.replace('T', ' ').replace('Z', '');
+                // Remove milliseconds if present (everything after '.')
+                const dotIndex = normalized.indexOf('.');
+                if (dotIndex > 0) {
+                    normalized = normalized.substring(0, dotIndex);
+                }
+                // Ensure format is 'YYYY-MM-DD HH:MM:SS' for reliable Date parsing
+                // JavaScript Date constructor expects ISO format or 'YYYY-MM-DD HH:MM:SS'
+                try {
+                    const date = new Date(normalized);
+                    return date.getTime();
+                } catch (e) {
+                    console.error('Error parsing date:', normalized, e);
+                    return 0;
+                }
+            };
             
-            stmt.finalize();
+            const timeA = normalizeDate(a.created_at);
+            const timeB = normalizeDate(b.created_at);
+            
+            const result = validSort === 'ASC' ? timeA - timeB : timeB - timeA;
+            return result;
+        });
+        
+        // Apply limit and offset after sorting
+        let paginatedRows = rows;
+        if (limit) {
+            const start = offset || 0;
+            const end = start + limit;
+            paginatedRows = rows.slice(start, end);
+        }
+        
+        // Log first and last review for debugging
+        if (paginatedRows.length > 0) {
+            console.log(`Reviews sorted ${validSort}: First=${paginatedRows[0].customer_name} (${paginatedRows[0].created_at}), Last=${paginatedRows[paginatedRows.length-1].customer_name} (${paginatedRows[paginatedRows.length-1].created_at})`);
+        }
+        
+        res.json({ 
+            success: true,
+            reviews: paginatedRows,
+            count: paginatedRows.length
         });
     });
 });
@@ -468,10 +700,24 @@ cron.schedule('* * * * *', async () => {
     });
 });
 
+// Serve static files AFTER API routes
+// This ensures API routes are processed first
+app.use(express.static('.'));
+
+// Handle all other routes - serve index.html for SPA
+app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log('Subscription reminders scheduled');
+    console.log('API routes available at /api/reviews, /api/review, /api/subscription');
 });
 
 // Graceful shutdown
