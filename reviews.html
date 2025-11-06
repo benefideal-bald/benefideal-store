@@ -236,17 +236,58 @@
                         }
                     });
                 
-                // Always append cards in order (newest first, then older)
-                // If first load, remove any existing cards
+                // Максим and Тимур already in HTML (first, newest) - keep them!
+                // If first load, remove only previously added dynamic reviews
                 if (displayedCount === 0) {
-                    // Remove all existing cards
+                    // Remove only previously added dynamic reviews (not Максим and Тимур)
                     const existingCards = reviewsContainer.querySelectorAll('.review-card');
-                    existingCards.forEach(card => card.remove());
-                    
-                    // Append first 10 reviews (newest first)
-                    cardsToAdd.forEach(card => {
-                        reviewsContainer.appendChild(card);
+                    existingCards.forEach(card => {
+                        const nameEl = card.querySelector('.review-name');
+                        const name = nameEl ? nameEl.textContent : '';
+                        // Keep Максим and Тимур (they're in HTML)
+                        if (name !== 'Максим' && name !== 'Тимур') {
+                            // Remove dynamic reviews
+                            if (card.hasAttribute('data-dynamic') || card.classList.contains('dynamic-review')) {
+                                card.remove();
+                            }
+                        }
                     });
+                    
+                    // Insert new cards after Тимур (which is second, after Максим)
+                    const timurCard = Array.from(reviewsContainer.querySelectorAll('.review-card')).find(c => {
+                        const nameEl = c.querySelector('.review-name');
+                        return nameEl && nameEl.textContent === 'Тимур';
+                    });
+                    
+                    if (timurCard) {
+                        // Insert after Тимур (newest dynamic reviews)
+                        cardsToAdd.forEach(card => {
+                            // If there's a next sibling, insert before it, otherwise append after Тимур
+                            if (timurCard.nextSibling) {
+                                reviewsContainer.insertBefore(card, timurCard.nextSibling);
+                            } else {
+                                reviewsContainer.appendChild(card);
+                            }
+                        });
+                    } else {
+                        // Fallback: append after Максим
+                        const maximCard = Array.from(reviewsContainer.querySelectorAll('.review-card')).find(c => {
+                            const nameEl = c.querySelector('.review-name');
+                            return nameEl && nameEl.textContent === 'Максим';
+                        });
+                        if (maximCard) {
+                            cardsToAdd.forEach(card => {
+                                if (maximCard.nextSibling) {
+                                    reviewsContainer.insertBefore(card, maximCard.nextSibling);
+                                } else {
+                                    reviewsContainer.appendChild(card);
+                                }
+                            });
+                        } else {
+                            // Last resort: append to container
+                            cardsToAdd.forEach(card => reviewsContainer.appendChild(card));
+                        }
+                    }
                 } else {
                     // Subsequent loads: append to the end (showing older reviews)
                     cardsToAdd.forEach(card => {
