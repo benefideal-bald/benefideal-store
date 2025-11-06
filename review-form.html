@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Оставить отзыв – Benefideal</title>
-    <link rel="stylesheet" href="styles.css?v=2.0">
+    <link rel="stylesheet" href="styles.css?v=2.4">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
@@ -31,8 +34,8 @@
                 
                 <form id="reviewForm" autocomplete="off">
                     <div class="form-group">
-                        <label for="reviewerName">Имя и фамилия</label>
-                        <input type="text" id="reviewerName" name="reviewerName" required placeholder="Иван Иванов">
+                        <label for="reviewerName" style="display: block; margin-bottom: 0.5rem;">Имя</label>
+                        <input type="text" id="reviewerName" name="reviewerName" required placeholder="Иван" style="width: 100%;">
                     </div>
                     <div class="form-group">
                         <label for="reviewerEmail">Электронная почта</label>
@@ -50,26 +53,26 @@
                     
                     <div class="form-group">
                         <label>Оценка</label>
-                        <div style="display: flex; gap: var(--space-2); justify-content: center; margin-top: var(--space-2);">
-                            <input type="radio" name="rating" id="rating5" value="5" checked style="display: none;">
-                            <label for="rating5" class="star-rating" data-rating="5">
-                                <i class="fas fa-star"></i>
-                            </label>
-                            <input type="radio" name="rating" id="rating4" value="4" style="display: none;">
-                            <label for="rating4" class="star-rating" data-rating="4">
-                                <i class="fas fa-star"></i>
-                            </label>
-                            <input type="radio" name="rating" id="rating3" value="3" style="display: none;">
-                            <label for="rating3" class="star-rating" data-rating="3">
-                                <i class="fas fa-star"></i>
+                        <div class="star-rating-container" style="display: flex; gap: var(--space-2); justify-content: center; margin-top: var(--space-2);">
+                            <input type="radio" name="rating" id="rating1" value="1" style="display: none;">
+                            <label for="rating1" class="star-rating" data-rating="1">
+                                <i class="fas fa-star" style="color: #ffffff !important; text-shadow: -0.5px -0.5px 0 #9ca3af, 0.5px -0.5px 0 #9ca3af, -0.5px 0.5px 0 #9ca3af, 0.5px 0.5px 0 #9ca3af, 0 -0.5px 0 #9ca3af, 0 0.5px 0 #9ca3af, -0.5px 0 0 #9ca3af, 0.5px 0 0 #9ca3af !important;"></i>
                             </label>
                             <input type="radio" name="rating" id="rating2" value="2" style="display: none;">
                             <label for="rating2" class="star-rating" data-rating="2">
-                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star" style="color: #ffffff !important; text-shadow: -0.5px -0.5px 0 #9ca3af, 0.5px -0.5px 0 #9ca3af, -0.5px 0.5px 0 #9ca3af, 0.5px 0.5px 0 #9ca3af, 0 -0.5px 0 #9ca3af, 0 0.5px 0 #9ca3af, -0.5px 0 0 #9ca3af, 0.5px 0 0 #9ca3af !important;"></i>
                             </label>
-                            <input type="radio" name="rating" id="rating1" value="1" style="display: none;">
-                            <label for="rating1" class="star-rating" data-rating="1">
-                                <i class="fas fa-star"></i>
+                            <input type="radio" name="rating" id="rating3" value="3" style="display: none;">
+                            <label for="rating3" class="star-rating" data-rating="3">
+                                <i class="fas fa-star" style="color: #ffffff !important; text-shadow: -0.5px -0.5px 0 #9ca3af, 0.5px -0.5px 0 #9ca3af, -0.5px 0.5px 0 #9ca3af, 0.5px 0.5px 0 #9ca3af, 0 -0.5px 0 #9ca3af, 0 0.5px 0 #9ca3af, -0.5px 0 0 #9ca3af, 0.5px 0 0 #9ca3af !important;"></i>
+                            </label>
+                            <input type="radio" name="rating" id="rating4" value="4" style="display: none;">
+                            <label for="rating4" class="star-rating" data-rating="4">
+                                <i class="fas fa-star" style="color: #ffffff !important; text-shadow: -0.5px -0.5px 0 #9ca3af, 0.5px -0.5px 0 #9ca3af, -0.5px 0.5px 0 #9ca3af, 0.5px 0.5px 0 #9ca3af, 0 -0.5px 0 #9ca3af, 0 0.5px 0 #9ca3af, -0.5px 0 0 #9ca3af, 0.5px 0 0 #9ca3af !important;"></i>
+                            </label>
+                            <input type="radio" name="rating" id="rating5" value="5" checked style="display: none;">
+                            <label for="rating5" class="star-rating active" data-rating="5">
+                                <i class="fas fa-star" style="color: #fbbf24 !important; text-shadow: none !important;"></i>
                             </label>
                         </div>
                     </div>
@@ -77,7 +80,9 @@
                     <div id="errorMessage" style="display: none; background: var(--error); color: white; padding: var(--space-3); border-radius: var(--radius-lg); margin-bottom: var(--space-4); text-align: center; font-size: 0.9rem;"></div>
                     <div id="successMessage" style="display: none; background: var(--success); color: white; padding: var(--space-3); border-radius: var(--radius-lg); margin-bottom: var(--space-4); text-align: center; font-size: 0.9rem;"></div>
                     
-                    <button type="submit" id="submitReview" class="btn btn-primary">Отправить отзыв</button>
+                    <div style="width: 100%; text-align: center !important; margin-top: 1.5rem; display: flex; justify-content: center; align-items: center;">
+                        <button type="submit" id="submitReview" class="btn btn-primary" style="width: 100% !important; max-width: 100% !important; display: block !important; text-align: center !important; margin: 0 auto !important;">Отправить отзыв</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -92,6 +97,59 @@
     </footer>
 
     <style>
+        /* Переопределяем все возможные стили для звезд на этой странице - используем максимальную специфичность */
+        body #reviewForm .star-rating-container .star-rating i.fa-star,
+        body #reviewForm .star-rating-container .star-rating i.fas,
+        body #reviewForm .star-rating-container .star-rating i,
+        body .star-rating-container .star-rating i.fa-star,
+        body .star-rating-container .star-rating i.fas,
+        body .star-rating-container .star-rating i {
+            color: #ffffff !important;
+            font-size: 1rem !important;
+            text-shadow: 
+                -0.5px -0.5px 0 #9ca3af,
+                0.5px -0.5px 0 #9ca3af,
+                -0.5px 0.5px 0 #9ca3af,
+                0.5px 0.5px 0 #9ca3af,
+                0 -0.5px 0 #9ca3af,
+                0 0.5px 0 #9ca3af,
+                -0.5px 0 0 #9ca3af,
+                0.5px 0 0 #9ca3af !important;
+            transition: color 0.2s ease, text-shadow 0.2s ease;
+        }
+        
+        body #reviewForm .star-rating-container .star-rating.active i.fa-star,
+        body #reviewForm .star-rating-container .star-rating.active i.fas,
+        body #reviewForm .star-rating-container .star-rating.active i,
+        body .star-rating-container .star-rating.active i.fa-star,
+        body .star-rating-container .star-rating.active i.fas,
+        body .star-rating-container .star-rating.active i {
+            color: #fbbf24 !important;
+            text-shadow: none !important;
+        }
+        
+        /* Центрируем кнопку */
+        #submitReview,
+        button#submitReview,
+        .btn.btn-primary#submitReview {
+            width: 100% !important;
+            display: block !important;
+            text-align: center !important;
+            margin: 0 auto !important;
+            margin-top: var(--space-4) !important;
+        }
+        
+        /* Убеждаемся, что форма центрирована */
+        #reviewForm {
+            width: 100%;
+        }
+        
+        #reviewForm button {
+            width: 100% !important;
+            display: block !important;
+            text-align: center !important;
+        }
+        
         textarea {
             width: 100%;
             padding: var(--space-4);
@@ -110,160 +168,260 @@
         }
         
         .star-rating {
-            font-size: 2rem;
-            color: var(--gray-300);
-            cursor: pointer;
+            font-size: 1rem;
+            cursor: pointer !important;
             transition: all 0.2s ease;
+            position: relative;
+            display: inline-block;
+            width: 2rem;
+            height: 2rem;
+            line-height: 2rem;
+            text-align: center;
+            user-select: none;
+            -webkit-user-select: none;
+            pointer-events: auto !important;
+            z-index: 1;
         }
         
-        .star-rating:hover,
-        .star-rating:hover ~ .star-rating {
-            color: var(--primary);
+        .star-rating:hover {
+            cursor: pointer !important;
         }
         
-        input[type="radio"]:checked ~ .star-rating,
-        input[type="radio"]:checked ~ .star-rating ~ .star-rating {
-            color: var(--primary);
+        .star-rating * {
+            cursor: pointer !important;
+            pointer-events: none;
         }
         
-        .star-rating.active {
-            color: var(--primary);
+        label.star-rating {
+            cursor: pointer !important;
         }
+        
     </style>
 
     <script>
-        // Star rating interaction
-        document.querySelectorAll('.star-rating').forEach((star, index) => {
-            star.addEventListener('click', function() {
-                const rating = 5 - index;
-                document.getElementById(`rating${rating}`).checked = true;
-                updateStarDisplay(rating);
-            });
-        });
-        
-        function updateStarDisplay(rating) {
-            document.querySelectorAll('.star-rating').forEach((star, index) => {
-                if (5 - index <= rating) {
-                    star.classList.add('active');
-                } else {
+        document.addEventListener('DOMContentLoaded', function() {
+            // Star rating interaction
+            function updateStarDisplay(rating) {
+                const ratingNum = parseInt(rating);
+                // Удаляем все активные классы
+                document.querySelectorAll('.star-rating').forEach((star) => {
                     star.classList.remove('active');
-                }
-            });
-        }
-        
-        // Initialize with 5 stars
-        updateStarDisplay(5);
-        
-        // Email verification on blur
-        let emailCheckTimeout;
-        const emailInput = document.getElementById('reviewerEmail');
-        const emailStatus = document.getElementById('emailStatus');
-        
-        emailInput.addEventListener('blur', function() {
-            const email = this.value.trim();
-            if (!email || !email.includes('@')) {
-                emailStatus.style.display = 'none';
-                return;
+                });
+                
+                // Добавляем active ко всем звездам слева до выбранной включительно (как стакан с водой)
+                document.querySelectorAll('.star-rating').forEach((star) => {
+                    const starRating = parseInt(star.getAttribute('data-rating'));
+                    if (starRating <= ratingNum) {
+                        star.classList.add('active');
+                    }
+                });
             }
             
-            clearTimeout(emailCheckTimeout);
-            emailStatus.style.display = 'block';
-            emailStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Проверка...';
-            emailStatus.style.color = 'var(--gray-600)';
+            // Handle clicks directly on labels and ensure cursor
+            document.querySelectorAll('.star-rating').forEach((star) => {
+                // Устанавливаем курсор через JavaScript для гарантии
+                star.style.cursor = 'pointer';
+                
+                star.addEventListener('mouseenter', function() {
+                    this.style.cursor = 'pointer';
+                });
+                
+                star.addEventListener('mouseleave', function() {
+                    this.style.cursor = 'pointer';
+                });
+                
+                star.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const rating = this.getAttribute('data-rating');
+                    const radio = document.getElementById(`rating${rating}`);
+                    if (radio) {
+                        radio.checked = true;
+                        updateStarDisplay(rating);
+                    }
+                });
+            });
             
-            emailCheckTimeout = setTimeout(async () => {
+            // Also listen for changes on radio buttons (backup)
+            document.querySelectorAll('input[name="rating"]').forEach((radio) => {
+                radio.addEventListener('change', function() {
+                    updateStarDisplay(this.value);
+                });
+            });
+            
+            // Initialize with 5 stars (default checked)
+            const defaultRating = document.querySelector('input[name="rating"]:checked');
+            if (defaultRating) {
+                updateStarDisplay(defaultRating.value);
+            } else {
+                // Fallback: check rating5 if nothing is checked
+                const rating5 = document.getElementById('rating5');
+                if (rating5) {
+                    rating5.checked = true;
+                    updateStarDisplay('5');
+                }
+            }
+            
+            // Принудительно применяем стили для звезд через JavaScript - МАКСИМАЛЬНО ПРИНУДИТЕЛЬНО
+            function applyStarStyles() {
+                const stars = document.querySelectorAll('.star-rating-container .star-rating i, .star-rating i');
+                stars.forEach(star => {
+                    const label = star.closest('.star-rating');
+                    if (label && label.classList.contains('active')) {
+                        star.style.setProperty('color', '#fbbf24', 'important');
+                        star.style.setProperty('text-shadow', 'none', 'important');
+                        star.style.setProperty('-webkit-text-fill-color', '#fbbf24', 'important');
+                    } else {
+                        star.style.setProperty('color', '#ffffff', 'important');
+                        star.style.setProperty('text-shadow', '-0.5px -0.5px 0 #9ca3af, 0.5px -0.5px 0 #9ca3af, -0.5px 0.5px 0 #9ca3af, 0.5px 0.5px 0 #9ca3af, 0 -0.5px 0 #9ca3af, 0 0.5px 0 #9ca3af, -0.5px 0 0 #9ca3af, 0.5px 0 0 #9ca3af', 'important');
+                        star.style.setProperty('-webkit-text-fill-color', '#ffffff', 'important');
+                    }
+                });
+            }
+            
+            // Применяем стили сразу и постоянно
+            setTimeout(applyStarStyles, 0);
+            setTimeout(applyStarStyles, 50);
+            setTimeout(applyStarStyles, 100);
+            setTimeout(applyStarStyles, 200);
+            setInterval(applyStarStyles, 50);
+            
+            // Применяем стили после каждого обновления звезд
+            const originalUpdateStarDisplay = updateStarDisplay;
+            updateStarDisplay = function(rating) {
+                originalUpdateStarDisplay(rating);
+                setTimeout(applyStarStyles, 0);
+                setTimeout(applyStarStyles, 10);
+                setTimeout(applyStarStyles, 50);
+            };
+            
+            // Также применяем при любом изменении DOM
+            const observer = new MutationObserver(applyStarStyles);
+            observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+            
+            // Email verification on blur
+            let emailCheckTimeout;
+            const emailInput = document.getElementById('reviewerEmail');
+            const emailStatus = document.getElementById('emailStatus');
+            
+            emailInput.addEventListener('blur', function() {
+                const email = this.value.trim();
+                if (!email || !email.includes('@')) {
+                    emailStatus.style.display = 'none';
+                    return;
+                }
+                
+                clearTimeout(emailCheckTimeout);
+                emailStatus.style.display = 'block';
+                emailStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Проверка...';
+                emailStatus.style.color = 'var(--gray-600)';
+                
+                emailCheckTimeout = setTimeout(async () => {
+                    try {
+                        // Determine API URL - try current origin first, then localhost
+                        let apiUrl;
+                        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+                            apiUrl = 'http://localhost:3000/api/review/verify';
+                        } else {
+                            apiUrl = `${window.location.origin}/api/review/verify`;
+                        }
+                        
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ email: email.trim() })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        
+                        if (data.can_review) {
+                            emailStatus.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i> Email подтвержден';
+                            emailStatus.style.color = 'var(--success)';
+                            emailInput.style.borderColor = 'var(--success)';
+                        } else {
+                            emailStatus.innerHTML = '<i class="fas fa-times-circle" style="color: var(--error);"></i> ' + (data.error || 'Ошибка проверки');
+                            emailStatus.style.color = 'var(--error)';
+                            emailInput.style.borderColor = 'var(--error)';
+                        }
+                    } catch (error) {
+                        console.error('Email verification error:', error);
+                        emailStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка проверки: ' + (error.message || 'Не удалось подключиться к серверу');
+                        emailStatus.style.color = 'var(--warning)';
+                    }
+                }, 500);
+            });
+            
+            emailInput.addEventListener('input', function() {
+                this.style.borderColor = 'var(--gray-200)';
+                emailStatus.style.display = 'none';
+            });
+            
+            // Form submission
+            document.getElementById('reviewForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('reviewerName').value.trim();
+                const email = document.getElementById('reviewerEmail').value.trim();
+                const text = document.getElementById('reviewText').value.trim();
+                const rating = document.querySelector('input[name="rating"]:checked').value;
+                
+                const errorDiv = document.getElementById('errorMessage');
+                const successDiv = document.getElementById('successMessage');
+                const submitBtn = document.getElementById('submitReview');
+                
+                // Hide previous messages
+                errorDiv.style.display = 'none';
+                successDiv.style.display = 'none';
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Отправка...';
+                
                 try {
-                    const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                        ? 'http://localhost:3000/api/review/verify'
-                        : `${window.location.origin}/api/review/verify`;
+                    // Determine API URL - try current origin first, then localhost
+                    let apiUrl;
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+                        apiUrl = 'http://localhost:3000/api/review';
+                    } else {
+                        apiUrl = `${window.location.origin}/api/review`;
+                    }
                     
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ email })
+                        body: JSON.stringify({ name, email: email.trim(), text, rating: parseInt(rating) })
                     });
                     
                     const data = await response.json();
                     
-                    if (data.can_review) {
-                        emailStatus.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i> Email подтвержден';
-                        emailStatus.style.color = 'var(--success)';
-                        emailInput.style.borderColor = 'var(--success)';
+                    if (response.ok && data.success) {
+                        successDiv.textContent = 'Спасибо за ваш отзыв! Он был успешно отправлен.';
+                        successDiv.style.display = 'block';
+                        document.getElementById('reviewForm').reset();
+                        updateStarDisplay(5);
+                        
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 2000);
                     } else {
-                        emailStatus.innerHTML = '<i class="fas fa-times-circle" style="color: var(--error);"></i> ' + data.error;
-                        emailStatus.style.color = 'var(--error)';
-                        emailInput.style.borderColor = 'var(--error)';
+                        errorDiv.textContent = data.error || 'Произошла ошибка при отправке отзыва';
+                        errorDiv.style.display = 'block';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Отправить отзыв';
                     }
                 } catch (error) {
-                    emailStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка проверки';
-                    emailStatus.style.color = 'var(--warning)';
-                }
-            }, 500);
-        });
-        
-        emailInput.addEventListener('input', function() {
-            this.style.borderColor = 'var(--gray-200)';
-            emailStatus.style.display = 'none';
-        });
-        
-        // Form submission
-        document.getElementById('reviewForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const name = document.getElementById('reviewerName').value.trim();
-            const email = document.getElementById('reviewerEmail').value.trim();
-            const text = document.getElementById('reviewText').value.trim();
-            const rating = document.querySelector('input[name="rating"]:checked').value;
-            
-            const errorDiv = document.getElementById('errorMessage');
-            const successDiv = document.getElementById('successMessage');
-            const submitBtn = document.getElementById('submitReview');
-            
-            // Hide previous messages
-            errorDiv.style.display = 'none';
-            successDiv.style.display = 'none';
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Отправка...';
-            
-            try {
-                // Determine API URL
-                const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                    ? 'http://localhost:3000/api/review'
-                    : `${window.location.origin}/api/review`;
-                
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ name, email, text, rating: parseInt(rating) })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok && data.success) {
-                    successDiv.textContent = 'Спасибо за ваш отзыв! Он был успешно отправлен.';
-                    successDiv.style.display = 'block';
-                    document.getElementById('reviewForm').reset();
-                    updateStarDisplay(5);
-                    
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 2000);
-                } else {
-                    errorDiv.textContent = data.error || 'Произошла ошибка при отправке отзыва';
+                    errorDiv.textContent = 'Ошибка подключения к серверу. Попробуйте позже.';
                     errorDiv.style.display = 'block';
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Отправить отзыв';
                 }
-            } catch (error) {
-                errorDiv.textContent = 'Ошибка подключения к серверу. Попробуйте позже.';
-                errorDiv.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Отправить отзыв';
-            }
+            });
         });
     </script>
 </body>
