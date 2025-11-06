@@ -735,11 +735,17 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+// Start server - bind to 0.0.0.0 for Render
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log('Subscription reminders scheduled');
-    console.log('API routes available at /api/reviews, /api/review, /api/subscription');
+    console.log('API routes available:');
+    console.log('  GET  /api/test - Test endpoint');
+    console.log('  GET  /api/reviews - Get reviews');
+    console.log('  POST /api/review - Submit review');
+    console.log('  POST /api/review/verify - Verify review eligibility');
+    console.log('  POST /api/subscription - Submit subscription');
 });
 
 // Graceful shutdown
