@@ -713,6 +713,15 @@ cron.schedule('* * * * *', async () => {
     });
 });
 
+// Test endpoint to verify server is running
+app.get('/api/test', (req, res) => {
+    res.json({ 
+        success: true, 
+        message: 'Server is running!',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Serve static files AFTER API routes
 // This ensures API routes are processed first
 app.use(express.static('.'));
@@ -721,7 +730,7 @@ app.use(express.static('.'));
 app.get('*', (req, res) => {
     // Don't serve index.html for API routes
     if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
+        return res.status(404).json({ error: 'API endpoint not found', path: req.path });
     }
     res.sendFile(path.join(__dirname, 'index.html'));
 });
