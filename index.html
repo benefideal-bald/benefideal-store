@@ -911,32 +911,31 @@
                         }
                     });
                     
-                    // Insert dynamic reviews AFTER Максим and Тимур, but BEFORE static ones
+                    // Insert dynamic reviews AFTER Максим and Тимур (which are already in HTML), but BEFORE static ones
+                    // The API returns reviews sorted DESC (newest first), so we insert them in that order
+                    // Максим and Тимур are already first in HTML (newest), so we insert after them
                     if (timurCard && timurCard.nextSibling) {
-                        // Insert after Тимур card
+                        // Insert after Тимур card (newest dynamic reviews go here)
                         reviewsWrapper.insertBefore(fragment, timurCard.nextSibling);
+                    } else if (maximCard && maximCard.nextSibling) {
+                        // If no Тимур, insert after Максим
+                        reviewsWrapper.insertBefore(fragment, maximCard.nextSibling);
                     } else if (firstStaticCard) {
-                        // If no Тимур card, insert before first static card
+                        // If no Максим/Тимур, insert before first static card
                         reviewsWrapper.insertBefore(fragment, firstStaticCard);
                     } else {
-                        // Fallback: insert at beginning
-                        reviewsWrapper.insertBefore(fragment, reviewsWrapper.firstChild);
+                        // Fallback: append to container
+                        reviewsWrapper.appendChild(fragment);
                     }
                     
-                    console.log('✅ Dynamic reviews inserted. Total cards:', reviewsWrapper.querySelectorAll('.review-card').length);
+                    console.log('✅ Dynamic reviews inserted. Total cards:', reviewsWrapper.querySelectorAll('.review-card:not([data-is-clone="true"])').length);
+                    console.log('Order preserved: Максим (first) -> Тимур -> Dynamic (newest) -> Static (oldest)');
                     
-                    // Check if Тимур and Максим are present
-                    const allCards = reviewsWrapper.querySelectorAll('.review-card:not([data-is-clone="true"])');
-                    const allNames = Array.from(allCards).map(c => c.querySelector('.review-name')?.textContent || '');
-                    const timurFound = allNames.includes('Тимур');
-                    const maximFound = allNames.includes('Максим');
-                    console.log('Тимур found:', timurFound, 'Максим found:', maximFound);
-                    
-                    // Reinitialize carousel after loading reviews
+                    // Reinitialize carousel after loading reviews (DO NOT reorder cards - order is already correct!)
                     reviewsWrapper.style.transform = 'translate3d(0, 0, 0)';
                     setTimeout(() => {
                         if (typeof initReviewsAutoScroll === 'function') {
-                            console.log('Reinitializing carousel...');
+                            console.log('Reinitializing carousel (preserving order)...');
                             initReviewsAutoScroll();
                         }
                     }, 500);
