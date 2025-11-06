@@ -86,10 +86,13 @@ document.addEventListener('DOMContentLoaded', function() {
     initAnimations();
     initScrollAnimations();
     initParticles();
-    // Only initialize reviews carousel if reviews section exists
-    // It will be reinitialized after dynamic reviews load
+    // DO NOT initialize reviews carousel here on main page
+    // It will be initialized AFTER dynamic reviews are loaded in index.html
+    // Only initialize if we're NOT on the main page (e.g., reviews.html)
     const reviewsWrapper = document.getElementById('reviewsWrapper') || document.querySelector('.reviews-wrapper');
-    if (reviewsWrapper && reviewsWrapper.querySelectorAll('.review-card').length > 0) {
+    const isMainPage = window.location.pathname === '/' || window.location.pathname.endsWith('index.html');
+    if (reviewsWrapper && reviewsWrapper.querySelectorAll('.review-card').length > 0 && !isMainPage) {
+        // Only initialize on other pages (like reviews.html), not on main page
         initReviewsAutoScroll();
     }
     setupSubscriptionOptions();
