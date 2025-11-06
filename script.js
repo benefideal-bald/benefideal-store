@@ -244,39 +244,45 @@ function initReviewsAutoScroll() {
         carouselAnimation = null;
     }
 
-    // Remove any existing clones - identify duplicates by checking if cards repeat
-    // Clones are always added AFTER all original cards
+    // Remove any existing clones - identify by data-is-clone attribute
+    // This is the safest way to identify clones
     const allCards = reviewsWrapper.querySelectorAll('.review-card');
-    const totalCards = allCards.length;
+    const clones = reviewsWrapper.querySelectorAll('.review-card[data-is-clone="true"]');
     
-    // If we have more cards than expected (original + clones), remove clones
-    // Original cards = static (10) + dynamic (up to 10) = up to 20
-    // Clones would double this, so if totalCards > 20, we have clones
-    if (totalCards > 20) {
-        // Identify original cards by their unique content (name + text)
-        const seenContents = new Set();
-        const originalCards = [];
+    if (clones.length > 0) {
+        console.log('Removing', clones.length, 'existing clones');
+        clones.forEach(clone => clone.remove());
+    }
+    
+    // Also check for duplicates by content (backup method)
+    // Only if we have more than expected (static 10 + dynamic 10 = 20 max)
+    const remainingCards = reviewsWrapper.querySelectorAll('.review-card');
+    if (remainingCards.length > 20) {
+        // Identify duplicates by content, but be careful - keep the FIRST occurrence
+        const seenContents = new Map(); // Map content to first card index
         const cardsToRemove = [];
         
-        allCards.forEach((card, index) => {
+        Array.from(remainingCards).forEach((card, index) => {
             const name = card.querySelector('.review-name')?.textContent || '';
             const text = card.querySelector('.review-text')?.textContent || '';
             const content = `${name}|${text}`;
             
-            if (!seenContents.has(content)) {
-                seenContents.add(content);
-                originalCards.push(card);
-            } else {
-                // This is a duplicate/clone, mark for removal
+            if (seenContents.has(content)) {
+                // This is a duplicate - remove it (keep the first one)
                 cardsToRemove.push(card);
+            } else {
+                seenContents.set(content, index);
             }
         });
         
-        // Remove only clones, keep all originals
+        // Remove only duplicates (not the first occurrence)
         cardsToRemove.forEach(card => card.remove());
-        
-        console.log('Removed clones. Original cards:', originalCards.length, 'Clones removed:', cardsToRemove.length);
+        console.log('Removed duplicate cards:', cardsToRemove.length, 'Original cards kept:', seenContents.size);
     }
+    
+    const finalCards = reviewsWrapper.querySelectorAll('.review-card');
+    const finalCardNames = Array.from(finalCards).map(c => c.querySelector('.review-name')?.textContent || 'Unknown');
+    console.log('Final cards after cleanup:', finalCardNames.slice(0, 12));
     
     // No need to rearrange if we just removed clones
     
@@ -288,6 +294,10 @@ function initReviewsAutoScroll() {
     
     console.log('Initializing carousel with', reviewCards.length, 'cards');
     
+    // Log all card names for debugging
+    const cardNames = Array.from(reviewCards).map(c => c.querySelector('.review-name')?.textContent || 'Unknown');
+    console.log('Cards before cloning:', cardNames.slice(0, 12));
+    
     // Calculate width of all cards for seamless infinite scroll
     const cardWidth = reviewCards[0].offsetWidth;
     const gap = 24; // var(--space-6) = 1.5rem = 24px
@@ -295,10 +305,15 @@ function initReviewsAutoScroll() {
     const totalWidth = (cardWidth * originalCardCount) + (gap * (originalCardCount - 1));
     
     // Clone all cards for seamless infinite scroll
-    reviewCards.forEach(card => {
+    // Mark clones so we can identify them later
+    reviewCards.forEach((card, index) => {
         const clone = card.cloneNode(true);
+        clone.setAttribute('data-is-clone', 'true');
+        clone.setAttribute('data-original-index', index);
         reviewsWrapper.appendChild(clone);
     });
+    
+    console.log('After cloning, total cards:', reviewsWrapper.querySelectorAll('.review-card').length);
     
     const oneSetWidth = totalWidth;
     console.log('Carousel setup: cardWidth=', cardWidth, 'originalCardCount=', originalCardCount, 'oneSetWidth=', oneSetWidth);
