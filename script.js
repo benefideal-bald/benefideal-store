@@ -328,9 +328,11 @@ function initReviewsAutoScroll() {
     
     const reviewCards = reviewsWrapper.querySelectorAll('.review-card');
     if (reviewCards.length === 0) {
-        console.log('No review cards found, cannot initialize carousel');
+        console.error('❌ No review cards found, cannot initialize carousel');
         return;
     }
+    
+    console.log('✅ Found', reviewCards.length, 'review cards, initializing carousel...');
     
     console.log('Initializing carousel with', reviewCards.length, 'cards');
     
