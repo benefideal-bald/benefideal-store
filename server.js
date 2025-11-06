@@ -18,11 +18,15 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Initialize SQLite database FIRST
-const db = new sqlite3.Database('subscriptions.db', (err) => {
+// On Render, use absolute path for database
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'subscriptions.db');
+const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error opening database:', err);
+        console.error('Database path:', dbPath);
+        // Don't exit - let server start even if DB fails
     } else {
-        console.log('Database opened successfully');
+        console.log('Database opened successfully at:', dbPath);
     }
 });
 
@@ -735,10 +739,22 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Error handler for unhandled errors
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+    // Don't exit on Render - let it restart
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // Don't exit on Render - let it restart
+});
+
 // Start server - bind to 0.0.0.0 for Render
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`✅ Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Database path: ${dbPath}`);
     console.log('Subscription reminders scheduled');
     console.log('API routes available:');
     console.log('  GET  /api/test - Test endpoint');
@@ -746,6 +762,11 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('  POST /api/review - Submit review');
     console.log('  POST /api/review/verify - Verify review eligibility');
     console.log('  POST /api/subscription - Submit subscription');
+}).on('error', (err) => {
+    console.error('❌ Server error:', err);
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use`);
+    }
 });
 
 // Graceful shutdown
