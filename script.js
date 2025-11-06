@@ -223,7 +223,6 @@ function initParticles() {
 }
 
 // Initialize reviews auto-scroll
-// Initialize reviews auto-scroll
 let carouselAnimation = null;
 
 function initReviewsAutoScroll() {
@@ -244,38 +243,8 @@ function initReviewsAutoScroll() {
     const existingClones = reviewsWrapper.querySelectorAll('.review-card[data-is-clone="true"]');
     existingClones.forEach(clone => clone.remove());
 
-    // Get all original cards (static + dynamic, but not clones)
-    // Sort them to ensure Максим and Тимур are first
-    const allCards = Array.from(reviewsWrapper.querySelectorAll('.review-card:not([data-is-clone="true"])'));
-    
-    // Sort cards: Максим first, then Тимур, then others
-    allCards.sort((a, b) => {
-        const aName = a.querySelector('.review-name')?.textContent || '';
-        const bName = b.querySelector('.review-name')?.textContent || '';
-        
-        if (aName === 'Максим') return -1;
-        if (bName === 'Максим') return 1;
-        if (aName === 'Тимур') return -1;
-        if (bName === 'Тимур') return 1;
-        return 0;
-    });
-    
-    // Move Максим and Тимур to the beginning of the wrapper
-    const maximCard = allCards.find(c => c.querySelector('.review-name')?.textContent === 'Максим');
-    const timurCard = allCards.find(c => c.querySelector('.review-name')?.textContent === 'Тимур');
-    
-    if (maximCard && maximCard.parentNode === reviewsWrapper) {
-        reviewsWrapper.insertBefore(maximCard, reviewsWrapper.firstChild);
-    }
-    if (timurCard && timurCard.parentNode === reviewsWrapper && timurCard !== maximCard) {
-        if (maximCard && maximCard.parentNode === reviewsWrapper) {
-            reviewsWrapper.insertBefore(timurCard, maximCard.nextSibling);
-        } else {
-            reviewsWrapper.insertBefore(timurCard, reviewsWrapper.firstChild);
-        }
-    }
-    
-    // Get all cards again after reordering
+    // Get all original cards in their current order (newest first)
+    // DO NOT reorder them - they are already in the correct order!
     const reviewCards = reviewsWrapper.querySelectorAll('.review-card:not([data-is-clone="true"])');
     if (reviewCards.length === 0) {
         console.log('No review cards found');
@@ -283,7 +252,7 @@ function initReviewsAutoScroll() {
     }
     
     console.log('Initializing carousel with', reviewCards.length, 'cards');
-    console.log('First card:', reviewCards[0].querySelector('.review-name')?.textContent);
+    console.log('First card (newest):', reviewCards[0].querySelector('.review-name')?.textContent);
     
     // Calculate width of all original cards
     const cardWidth = reviewCards[0].offsetWidth;
@@ -291,8 +260,8 @@ function initReviewsAutoScroll() {
     const originalCardCount = reviewCards.length;
     const oneSetWidth = (cardWidth * originalCardCount) + (gap * (originalCardCount - 1));
     
-    // Clone all cards for seamless infinite scroll
-    reviewCards.forEach((card, index) => {
+    // Clone all cards for seamless infinite scroll (preserve order)
+    reviewCards.forEach((card) => {
         const clone = card.cloneNode(true);
         clone.setAttribute('data-is-clone', 'true');
         reviewsWrapper.appendChild(clone);
@@ -324,7 +293,7 @@ function initReviewsAutoScroll() {
     lastTimestamp = 0;
     
     carouselAnimation = requestAnimationFrame(animateScroll);
-    console.log('Carousel animation started with', originalCardCount, 'original cards');
+    console.log('Carousel animation started with', originalCardCount, 'original cards (order preserved)');
 }
 
 // Toggle cart modal
