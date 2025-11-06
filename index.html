@@ -157,6 +157,46 @@
             </div>
             <div class="reviews-grid">
                 <div class="reviews-wrapper" id="reviewsWrapper">
+                <!-- Dynamic reviews from API will be inserted here (Тимур and Максим should be first) -->
+                
+                <!-- LATEST REVIEWS - Максим and Тимур (newest first) -->
+                <div class="review-card dynamic-review">
+                    <div class="review-header">
+                        <div class="review-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="review-info">
+                            <h4 class="review-name">Максим</h4>
+                            <div class="review-stars">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="far fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="review-text">Приобрел кепкат про на месяц, все работает как следует</p>
+                </div>
+                <div class="review-card dynamic-review" data-keep="true">
+                    <div class="review-header">
+                        <div class="review-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="review-info">
+                            <h4 class="review-name">Тимур</h4>
+                            <div class="review-stars">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="review-text">Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡</p>
+                </div>
+                
                 <!-- LAST 10 REVIEWS - These will show on main page -->
                 <div class="review-card">
                     <div class="review-header">
@@ -836,16 +876,30 @@
                     console.log('Loaded', data.reviews.length, 'reviews from API');
                     console.log('First review:', data.reviews[0]?.customer_name);
                     
-                    // Remove any previously added dynamic reviews
-                    const existingDynamic = reviewsWrapper.querySelectorAll('.dynamic-review');
-                    existingDynamic.forEach(el => el.remove());
+                    // Remove any previously added dynamic reviews (except Максим and Тимур which are now in HTML)
+                    // Keep Максим and Тимур cards that are already in HTML
+                    const existingDynamic = reviewsWrapper.querySelectorAll('.dynamic-review:not([data-keep])');
+                    existingDynamic.forEach(el => {
+                        // Only remove if it's not Максим or Тимур (check by name)
+                        const name = el.querySelector('.review-name')?.textContent || '';
+                        if (name !== 'Максим' && name !== 'Тимур') {
+                            el.remove();
+                        }
+                    });
                     
-                    // Get all static cards
+                    // Get all static cards (not dynamic, and not Максим/Тимур which are already in HTML)
                     const staticCards = reviewsWrapper.querySelectorAll('.review-card:not(.dynamic-review)');
                     const firstStaticCard = staticCards[0];
                     
-                    // Create review cards from API data
-                    const reviewsToAdd = data.reviews.slice(0, 10);
+                    // Get Максим and Тимур cards that are already in HTML
+                    const maximCard = Array.from(reviewsWrapper.querySelectorAll('.review-card')).find(c => c.querySelector('.review-name')?.textContent === 'Максим');
+                    const timurCard = Array.from(reviewsWrapper.querySelectorAll('.review-card')).find(c => c.querySelector('.review-name')?.textContent === 'Тимур');
+                    
+                    // Filter out Максим and Тимур from API response (they're already in HTML)
+                    const reviewsToAdd = data.reviews
+                        .filter(review => review.customer_name !== 'Максим' && review.customer_name !== 'Тимур')
+                        .slice(0, 8); // Only 8 more since Максим and Тимур are already there
+                    
                     const fragment = document.createDocumentFragment();
                     
                     reviewsToAdd.forEach((review) => {
@@ -857,10 +911,15 @@
                         }
                     });
                     
-                    // Insert dynamic reviews BEFORE static ones (newest first)
-                    if (firstStaticCard) {
+                    // Insert dynamic reviews AFTER Максим and Тимур, but BEFORE static ones
+                    if (timurCard && timurCard.nextSibling) {
+                        // Insert after Тимур card
+                        reviewsWrapper.insertBefore(fragment, timurCard.nextSibling);
+                    } else if (firstStaticCard) {
+                        // If no Тимур card, insert before first static card
                         reviewsWrapper.insertBefore(fragment, firstStaticCard);
                     } else {
+                        // Fallback: insert at beginning
                         reviewsWrapper.insertBefore(fragment, reviewsWrapper.firstChild);
                     }
                     

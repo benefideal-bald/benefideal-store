@@ -46,301 +46,46 @@
         </div>
         
         <div style="display: grid; grid-template-columns: 1fr; gap: var(--space-6);" id="reviewsContainer">
-                <!-- ALL REVIEWS: Newest first (10 latest), oldest last (6 older) -->
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
+                <!-- LATEST REVIEWS - Максим and Тимур (newest first) -->
+                <div class="review-card" style="background: var(--white); border-radius: 16px; padding: var(--space-6); box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                    <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4);">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
                             <i class="fas fa-user"></i>
                         </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Андрей</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-strong);">Максим</h4>
+                            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                <i class="fas fa-star" style="color: #fbbf24;"></i>
+                                <i class="fas fa-star" style="color: #fbbf24;"></i>
+                                <i class="fas fa-star" style="color: #fbbf24;"></i>
+                                <i class="fas fa-star" style="color: #fbbf24;"></i>
+                                <i class="far fa-star" style="color: #d1d5db;"></i>
                             </div>
                         </div>
                     </div>
-                    <p class="review-text">Купил Adobe Creative Cloud для видеомонтажа. Все программы работают отлично, обновления приходят регулярно. Цена очень выгодная по сравнению с официальной подпиской!</p>
+                    <p style="margin: 0; color: var(--text-primary); line-height: 1.6; font-size: 0.95rem;">Приобрел кепкат про на месяц, все работает как следует</p>
                 </div>
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
+                <div class="review-card" style="background: var(--white); border-radius: 16px; padding: var(--space-6); box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                    <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4);">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
                             <i class="fas fa-user"></i>
                         </div>
-                        <div class="review-info">
-                            <h4 class="review-name">София</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-strong);">Тимур</h4>
+                            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                                <i class="fas fa-star" style="color: #fbbf24;"></i>
+                                <i class="fas fa-star" style="color: #fbbf24;"></i>
+                                <i class="fas fa-star" style="color: #fbbf24;"></i>
+                                <i class="fas fa-star" style="color: #fbbf24;"></i>
+                                <i class="fas fa-star" style="color: #fbbf24;"></i>
                             </div>
                         </div>
                     </div>
-                    <p class="review-text">Заказала CapCut Pro для создания контента в TikTok. Активация прошла за минуты, все функции работают, включая премиум эффекты. Огромная экономия!</p>
-                </div>
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Павел</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Прекрасный сервис! ChatGPT Plus работает идеально, быстрые ответы, доступ к GPT-4. Пользуюсь уже месяц, всё стабильно. Обязательно продлю подписку!</p>
-                </div>
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Юлия</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Adobe заказала для работы над дизайн-проектами. Photoshop, Illustrator, InDesign — все работает без глюков. Поддержка оперативно отвечает на вопросы. Рекомендую!</p>
-                </div>
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Роман</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">CapCut Pro стал моим основным редактором. Премиум шаблоны и эффекты открывают новые возможности для творчества. Активация мгновенная, цена приятная!</p>
-                </div>
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Татьяна</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">ChatGPT Plus использую для написания текстов и исследования. За такие деньги — просто находка! Все возможности GPT-4 доступны, скорость ответов отличная.</p>
-                </div>
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Никита</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Adobe Creative Cloud — лучшая покупка! Использую для фриланса. Premiere Pro, After Effects работают без нареканий. Экономия огромная, качество не уступает официальной версии!</p>
-                </div>
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Арина</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">CapCut Pro покупала для блога в Instagram. Все премиум функции доступны: убираю водяные знаки, использую эксклюзивные эффекты. Сервис на высоте!</p>
-                </div>
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Константин</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">ChatGPT Plus приобрел для работы над стартапом. AI помощник невероятный! Генерирую идеи, пишу код, анализирую данные. Скорость и качество превосходят ожидания!</p>
-                </div>
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Карина</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Adobe заказала для обучения дизайну. Полный доступ ко всем программам по разумной цене. Учеба теперь намного интереснее, все инструменты под рукой!</p>
-                </div>
-                <!-- OLDER REVIEWS (kept for history) -->
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Алексей</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Отличный сервис! Получил данные для ChatGPT Plus буквально через час после оплаты. Всё работает идеально, качество на высоте. Рекомендую!</p>
+                    <p style="margin: 0; color: var(--text-primary); line-height: 1.6; font-size: 0.95rem;">Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡</p>
                 </div>
                 
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Мария</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Заказала Adobe Creative Cloud на 3 месяца. Данные пришли очень быстро, всё активировалось без проблем. Поддержка отвечает оперативно. Спасибо!</p>
-                </div>
-                
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Дмитрий</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Пользуюсь уже несколько месяцев, всё стабильно работает. Цены очень выгодные по сравнению с официальными подписками. Обязательно буду заказывать снова!</p>
-                </div>
-                
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Елена</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Качественный сервис и быстрая выдача данных. CapCut Pro работает отлично, все функции доступны. Очень довольна покупкой!</p>
-                </div>
-                
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Иван</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Быстрая обработка заказа, всё четко и по делу. Оплатил, получил данные, активировал, никаких проблем. Сервис на пять звёзд!</p>
-                </div>
-                
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Ольга</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Отличные цены и быстрое обслуживание! Получила доступ к Adobe почти сразу после оплаты. Очень рекомендую этот магазин.</p>
-                </div>
+                <!-- Dynamic reviews will be added here after Максим and Тимур (newest first) -->
+                <!-- Static reviews will be added after dynamic ones via JavaScript -->
             </div>
             
         <div id="reviewsLoader" style="display: none;"></div>
@@ -388,49 +133,141 @@
         </div>
     </footer>
 
-    <script src="script.js?v=3.6"></script>
+    <script src="script.js?v=3.8"></script>
     <script>
-        // Pagination for reviews page
+        // Dynamic loading and pagination for reviews page
         document.addEventListener('DOMContentLoaded', function() {
-            const reviews = document.querySelectorAll('.review-card');
+            const reviewsContainer = document.getElementById('reviewsContainer');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            const showMoreBtn = document.getElementById('showMoreBtn');
+            
+            let allReviews = [];
+            let displayedCount = 0;
             const reviewsPerPage = 10;
-            let currentPage = 1;
             
-            // Hide all reviews initially
-            reviews.forEach(review => {
-                review.style.display = 'none';
-            });
-            
-            // Show first 10 reviews
-            function showReviews(page) {
-                const startIndex = 0;
-                const endIndex = page * reviewsPerPage;
-                
-                reviews.forEach((review, index) => {
-                    if (index >= startIndex && index < endIndex) {
-                        review.style.display = 'block';
+            async function loadAllReviews() {
+                try {
+                    // Determine API URL - try current origin first, then localhost
+                    // For all reviews page, sort DESC (newest first, oldest last)
+                    let apiUrl;
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+                        apiUrl = 'http://localhost:3000/api/reviews?sort=DESC';
+                    } else {
+                        apiUrl = `${window.location.origin}/api/reviews?sort=DESC`;
                     }
-                });
+                    
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+                    
+                    if (data.success && data.reviews && data.reviews.length > 0) {
+                        allReviews = data.reviews; // Sorted DESC (newest first, oldest last)
+                        console.log('Loaded all reviews:', allReviews.length, 'First (newest):', allReviews[0]?.customer_name, 'Last (oldest):', allReviews[allReviews.length - 1]?.customer_name);
+                        // Initially show first 10 dynamic reviews (after static ones)
+                        displayedCount = 0; // Start from 0
+                        displayReviews(); // Will show first 10
+                    } else {
+                        // No dynamic reviews, but static ones are still visible
+                        allReviews = [];
+                    }
+                } catch (error) {
+                    console.error('Error loading reviews:', error);
+                    // Keep static reviews even if API fails
+                    allReviews = [];
+                }
             }
             
-            // Show initial reviews
-            showReviews(currentPage);
+            function createReviewCard(review) {
+                if (!review || !review.customer_name || !review.review_text) {
+                    console.error('Invalid review data:', review);
+                    return null;
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'review-card';
+                
+                const rating = review.rating || 5;
+                const stars = Array(rating).fill(0).map(() => '<i class="fas fa-star"></i>').join('');
+                const emptyStars = Array(5 - rating).fill(0).map(() => '<i class="far fa-star"></i>').join('');
+                
+                function escapeHtml(text) {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                }
+                
+                card.innerHTML = `
+                    <div class="review-header">
+                        <div class="review-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="review-info">
+                            <h4 class="review-name">${escapeHtml(review.customer_name)}</h4>
+                            <div class="review-stars">
+                                ${stars}${emptyStars}
+                            </div>
+                        </div>
+                    </div>
+                    <p class="review-text">${escapeHtml(review.review_text)}</p>
+                `;
+                
+                return card;
+            }
             
-            // Show load more button if there are more reviews
-            if (reviews.length > reviewsPerPage) {
-                document.getElementById('loadMoreBtn').style.display = 'block';
+            function displayReviews() {
+                // Display dynamic reviews from displayedCount to displayedCount + reviewsPerPage
+                // Dynamic reviews come FIRST (newest first) - Тимур should be at the top!
+                const reviewsToShow = allReviews.slice(displayedCount, displayedCount + reviewsPerPage);
+                
+                if (reviewsToShow.length === 0) {
+                    // No more reviews to show
+                    loadMoreBtn.style.display = 'none';
+                    return;
+                }
+                
+                // Create all cards first
+                const cardsToAdd = [];
+                reviewsToShow.forEach(review => {
+                    const card = createReviewCard(review);
+                    if (card) {
+                        card.classList.add('dynamic-review');
+                        cardsToAdd.push(card);
+                    } else {
+                        console.error('Failed to create review card for:', review);
+                    }
+                });
+                
+                // If this is the first load (displayedCount === 0), insert at beginning
+                // Otherwise, append to the end (after already displayed reviews)
+                if (displayedCount === 0) {
+                    // First load: insert at beginning (newest first)
+                    // Insert in reverse order because insertBefore with firstChild inserts before current first
+                    for (let i = cardsToAdd.length - 1; i >= 0; i--) {
+                        reviewsContainer.insertBefore(cardsToAdd[i], reviewsContainer.firstChild);
+                    }
+                } else {
+                    // Subsequent loads: append to the end (older reviews)
+                    cardsToAdd.forEach(card => {
+                        reviewsContainer.appendChild(card);
+                    });
+                }
+                
+                displayedCount += reviewsToShow.length;
+                
+                // Show/hide "Load More" button
+                if (displayedCount < allReviews.length) {
+                    loadMoreBtn.style.display = 'block';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                }
             }
             
             // Load more button click handler
-            document.getElementById('showMoreBtn').addEventListener('click', function() {
-                currentPage++;
-                showReviews(currentPage);
-                
-                // Hide button if all reviews are shown
-                if (currentPage * reviewsPerPage >= reviews.length) {
-                    document.getElementById('loadMoreBtn').style.display = 'none';
-                }
+            showMoreBtn.addEventListener('click', function() {
+                displayReviews();
             });
+            
+            // Initial load - show static reviews immediately, then load dynamic ones
+            loadAllReviews();
         });
     </script>
 </body>
