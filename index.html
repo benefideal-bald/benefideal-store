@@ -157,64 +157,7 @@
             </div>
             <div class="reviews-grid">
                 <div class="reviews-wrapper" id="reviewsWrapper">
-                <!-- Dynamic reviews from API will be inserted here (Тимур and Максим should be first) -->
-                
-                <!-- LATEST REVIEWS - Максим first (newest: 15:42), then Тимур (13:57) -->
-                <div class="review-card dynamic-review" data-keep="true" data-review-order="1">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Максим</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="far fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Приобрел кепкат про на месяц, все работает как следует</p>
-                </div>
-                <div class="review-card dynamic-review" data-keep="true" data-review-order="2">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Тимур</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡</p>
-                </div>
-                
-                <!-- LAST 10 REVIEWS - These will show on main page -->
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="review-info">
-                            <h4 class="review-name">Андрей</h4>
-                            <div class="review-stars">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="review-text">Купил Adobe Creative Cloud для видеомонтажа. Все программы работают отлично, обновления приходят регулярно. Цена очень выгодная по сравнению с официальной подпиской!</p>
+                <!-- Last 10 reviews from API will be loaded here (newest first) -->
                 </div>
                 <div class="review-card">
                     <div class="review-header">
@@ -911,25 +854,11 @@
                         }
                     });
                     
-                    // Insert dynamic reviews AFTER Максим and Тимур (which are already in HTML), but BEFORE static ones
-                    // The API returns reviews sorted DESC (newest first), so we insert them in that order
-                    // Максим and Тимур are already first in HTML (newest), so we insert after them
-                    if (timurCard && timurCard.nextSibling) {
-                        // Insert after Тимур card (newest dynamic reviews go here)
-                        reviewsWrapper.insertBefore(fragment, timurCard.nextSibling);
-                    } else if (maximCard && maximCard.nextSibling) {
-                        // If no Тимур, insert after Максим
-                        reviewsWrapper.insertBefore(fragment, maximCard.nextSibling);
-                    } else if (firstStaticCard) {
-                        // If no Максим/Тимур, insert before first static card
-                        reviewsWrapper.insertBefore(fragment, firstStaticCard);
-                    } else {
-                        // Fallback: append to container
-                        reviewsWrapper.appendChild(fragment);
-                    }
+                    // Append all 10 reviews to wrapper (already sorted DESC - newest first)
+                    reviewsWrapper.appendChild(fragment);
                     
-                    console.log('✅ Dynamic reviews inserted. Total cards:', reviewsWrapper.querySelectorAll('.review-card:not([data-is-clone="true"])').length);
-                    console.log('Order preserved: Максим (first) -> Тимур -> Dynamic (newest) -> Static (oldest)');
+                    console.log('✅ Last 10 reviews loaded. Total cards:', reviewsWrapper.querySelectorAll('.review-card:not([data-is-clone="true"])').length);
+                    console.log('Order: newest first (from API, sorted DESC)');
                     
                     // Reinitialize carousel after loading reviews (DO NOT reorder cards - order is already correct!)
                     reviewsWrapper.style.transform = 'translate3d(0, 0, 0)';
