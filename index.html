@@ -329,17 +329,23 @@
                 
                 if (data.success && data.reviews && data.reviews.length > 0) {
                     console.log('Loaded', data.reviews.length, 'reviews from API');
-                    console.log('First review:', data.reviews[0]?.customer_name);
                     
-                    // Remove ALL existing cards - we're replacing everything with the last 10 from API
-                    const existingCards = reviewsWrapper.querySelectorAll('.review-card');
-                    existingCards.forEach(card => card.remove());
+                    // Максим and Тимур already in HTML (first, newest) - keep them!
+                    // Remove only previously added dynamic reviews (not Максим and Тимур)
+                    const existingDynamic = reviewsWrapper.querySelectorAll('.dynamic-review:not([data-keep])');
+                    existingDynamic.forEach(card => card.remove());
                     
-                    // Use ALL 10 reviews from API (already sorted DESC - newest first by API)
-                    // Максим should be first (newest), Тимур second, then others
-                    const reviewsToAdd = data.reviews.slice(0, 10);
+                    // Get Максим and Тимур cards that are already in HTML
+                    const maximCard = Array.from(reviewsWrapper.querySelectorAll('.review-card[data-keep]')).find(c => c.querySelector('.review-name')?.textContent === 'Максим');
+                    const timurCard = Array.from(reviewsWrapper.querySelectorAll('.review-card[data-keep]')).find(c => c.querySelector('.review-name')?.textContent === 'Тимур');
                     
-                    console.log('Loading', reviewsToAdd.length, 'reviews. First:', reviewsToAdd[0]?.customer_name, 'Last:', reviewsToAdd[reviewsToAdd.length - 1]?.customer_name);
+                    // Filter out Максим and Тимур from API response (they're already in HTML as first)
+                    // Need 8 more reviews to make total 10 (Максим + Тимур + 8 others)
+                    const reviewsToAdd = data.reviews
+                        .filter(review => review.customer_name !== 'Максим' && review.customer_name !== 'Тимур')
+                        .slice(0, 8);
+                    
+                    console.log('Loading', reviewsToAdd.length, 'reviews from API (after Максим and Тимур). Total will be:', reviewsToAdd.length + 2);
                     
                     const fragment = document.createDocumentFragment();
                     
@@ -352,11 +358,21 @@
                         }
                     });
                     
-                    // Append all 10 reviews to wrapper (already sorted DESC - newest first)
-                    reviewsWrapper.appendChild(fragment);
+                    // Insert dynamic reviews AFTER Тимур (which is second, after Максим)
+                    // Максим and Тимур are already first in HTML (newest), so we insert after them
+                    if (timurCard && timurCard.nextSibling) {
+                        // Insert after Тимур card (newest dynamic reviews)
+                        reviewsWrapper.insertBefore(fragment, timurCard.nextSibling);
+                    } else if (maximCard && maximCard.nextSibling) {
+                        // If no Тимур, insert after Максим
+                        reviewsWrapper.insertBefore(fragment, maximCard.nextSibling);
+                    } else {
+                        // Fallback: append to wrapper
+                        reviewsWrapper.appendChild(fragment);
+                    }
                     
                     console.log('✅ Last 10 reviews loaded. Total cards:', reviewsWrapper.querySelectorAll('.review-card:not([data-is-clone="true"])').length);
-                    console.log('Order: newest first (Максим -> Тимур -> others)');
+                    console.log('Order: Максим (first, newest) -> Тимур (second) -> 8 others (newest first)');
                     
                     // Reinitialize carousel after loading reviews (DO NOT reorder cards - order is already correct!)
                     reviewsWrapper.style.transform = 'translate3d(0, 0, 0)';
