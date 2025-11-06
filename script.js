@@ -86,27 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initAnimations();
     initScrollAnimations();
     initParticles();
-    // Initialize reviews carousel if reviews section exists
-    // On main page, it will be reinitialized after dynamic reviews load in index.html
-    // On other pages (like reviews.html), initialize immediately
-    const reviewsWrapper = document.getElementById('reviewsWrapper') || document.querySelector('.reviews-wrapper');
-    if (reviewsWrapper && reviewsWrapper.querySelectorAll('.review-card').length > 0) {
-        // Check if we're on the main page by checking if loadReviews function exists
-        // If loadReviews exists, it will reinitialize carousel after loading dynamic reviews
-        const isMainPageWithDynamicReviews = typeof window.loadReviews === 'function';
-        if (isMainPageWithDynamicReviews) {
-            // Main page - initialize with static reviews first, then will be reinitialized after dynamic reviews load
-            // Wait a bit to ensure DOM is ready
-            setTimeout(() => {
-                console.log('Initializing carousel with static reviews (main page)');
-                initReviewsAutoScroll();
-            }, 500);
-        } else {
-            // Not main page, initialize immediately
-            console.log('Initializing carousel (not main page)');
-            initReviewsAutoScroll();
-        }
-    }
+    initReviewsAutoScroll();
     setupSubscriptionOptions();
 });
 
@@ -243,122 +223,17 @@ function initParticles() {
 }
 
 // Initialize reviews auto-scroll
-let carouselAnimation = null;
-
 function initReviewsAutoScroll() {
-    // Try both ID and class selector for compatibility
-    const reviewsWrapper = document.getElementById('reviewsWrapper') || document.querySelector('.reviews-wrapper');
-    if (!reviewsWrapper) {
-        console.error('Reviews wrapper not found!');
-        return;
-    }
-    
-    // Stop existing animation if any
-    if (carouselAnimation) {
-        cancelAnimationFrame(carouselAnimation);
-        carouselAnimation = null;
-    }
+    const reviewsWrapper = document.querySelector('.reviews-wrapper');
+    if (!reviewsWrapper) return;
 
-    // Remove any existing clones - identify by data-is-clone attribute
-    // This is the safest way to identify clones
-    const allCards = reviewsWrapper.querySelectorAll('.review-card');
-    const clones = reviewsWrapper.querySelectorAll('.review-card[data-is-clone="true"]');
-    
-    if (clones.length > 0) {
-        console.log('Removing', clones.length, 'existing clones');
-        clones.forEach(clone => clone.remove());
-    }
-    
-    // Also check for duplicates by content (backup method)
-    // Only if we have more than expected (static 10 + dynamic 10 = 20 max)
-    // BUT: we should only remove duplicates if they are actual clones (appear later in the list)
-    const remainingCards = reviewsWrapper.querySelectorAll('.review-card');
-    console.log('Total cards before duplicate check:', remainingCards.length);
-    
-    if (remainingCards.length > 20) {
-        // Identify duplicates by content, but be careful - keep the FIRST occurrence
-        // Only remove if it's a clone (has data-is-clone) OR if it appears later in DOM
-        const seenContents = new Map(); // Map content to first card index
-        const cardsToRemove = [];
-        
-        Array.from(remainingCards).forEach((card, index) => {
-            // Skip if already marked as clone (will be removed above)
-            if (card.hasAttribute('data-is-clone')) {
-                return;
-            }
-            
-            const name = card.querySelector('.review-name')?.textContent || '';
-            const text = card.querySelector('.review-text')?.textContent || '';
-            const content = `${name}|${text}`;
-            
-            if (seenContents.has(content)) {
-                // This is a duplicate - but only remove if it's a clone or appears later
-                // Check if this card is a dynamic review that was added later
-                const isDynamic = card.classList.contains('dynamic-review');
-                const firstOccurrence = seenContents.get(content);
-                const firstCard = remainingCards[firstOccurrence];
-                const firstIsDynamic = firstCard.classList.contains('dynamic-review');
-                
-                // Only remove if:
-                // 1. Both are dynamic (duplicate dynamic review), OR
-                // 2. First is static and this is dynamic (keep static, remove dynamic duplicate)
-                // BUT: Actually, we should keep ALL unique reviews, so let's be very conservative
-                // Only remove if we have more than 30 cards (meaning we definitely have clones)
-                if (remainingCards.length > 30) {
-                    cardsToRemove.push(card);
-                }
-            } else {
-                seenContents.set(content, index);
-            }
-        });
-        
-        // Remove only duplicates (not the first occurrence)
-        if (cardsToRemove.length > 0) {
-            console.log('Removing duplicate cards:', cardsToRemove.length);
-            cardsToRemove.forEach(card => card.remove());
-            console.log('Original cards kept:', seenContents.size);
-        }
-    }
-    
-    const finalCards = reviewsWrapper.querySelectorAll('.review-card');
-    const finalCardNames = Array.from(finalCards).map(c => c.querySelector('.review-name')?.textContent || 'Unknown');
-    console.log('Final cards after cleanup:', finalCardNames.slice(0, 12));
-    
-    // No need to rearrange if we just removed clones
-    
     const reviewCards = reviewsWrapper.querySelectorAll('.review-card');
-    if (reviewCards.length === 0) {
-        console.error('❌ No review cards found, cannot initialize carousel');
-        return;
-    }
+    if (reviewCards.length === 0) return;
     
-    console.log('✅ Found', reviewCards.length, 'review cards, initializing carousel...');
-    
-    console.log('Initializing carousel with', reviewCards.length, 'cards');
-    
-    // Log all card names for debugging
-    const cardNames = Array.from(reviewCards).map(c => c.querySelector('.review-name')?.textContent || 'Unknown');
-    console.log('Cards before cloning:', cardNames.slice(0, 12));
-    
-    // Calculate width of all cards for seamless infinite scroll
+    // Calculate width of one set (10 cards)
     const cardWidth = reviewCards[0].offsetWidth;
     const gap = 24; // var(--space-6) = 1.5rem = 24px
-    const originalCardCount = reviewCards.length;
-    const totalWidth = (cardWidth * originalCardCount) + (gap * (originalCardCount - 1));
-    
-    // Clone all cards for seamless infinite scroll
-    // Mark clones so we can identify them later
-    reviewCards.forEach((card, index) => {
-        const clone = card.cloneNode(true);
-        clone.setAttribute('data-is-clone', 'true');
-        clone.setAttribute('data-original-index', index);
-        reviewsWrapper.appendChild(clone);
-    });
-    
-    console.log('After cloning, total cards:', reviewsWrapper.querySelectorAll('.review-card').length);
-    
-    const oneSetWidth = totalWidth;
-    console.log('Carousel setup: cardWidth=', cardWidth, 'originalCardCount=', originalCardCount, 'oneSetWidth=', oneSetWidth);
+    const oneSetWidth = (cardWidth * 10) + (gap * 9); // 10 cards + 9 gaps
 
     let scrollPosition = 0;
     let lastTimestamp = 0;
@@ -377,16 +252,10 @@ function initReviewsAutoScroll() {
         
         reviewsWrapper.style.transform = `translate3d(-${scrollPosition.toFixed(2)}px, 0, 0)`;
 
-        carouselAnimation = requestAnimationFrame(animateScroll);
+        requestAnimationFrame(animateScroll);
     }
 
-    // Reset transform before starting animation
-    reviewsWrapper.style.transform = 'translate3d(0, 0, 0)';
-    scrollPosition = 0;
-    lastTimestamp = 0;
-    
-    carouselAnimation = requestAnimationFrame(animateScroll);
-    console.log('Carousel animation started');
+    requestAnimationFrame(animateScroll);
 }
 
 // Toggle cart modal
