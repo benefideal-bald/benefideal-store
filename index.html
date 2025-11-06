@@ -446,7 +446,8 @@
             loadReviews();
         });
         
-        async function loadReviews() {
+        // Make loadReviews available globally for script.js
+        window.loadReviews = async function loadReviews() {
             const reviewsWrapper = document.getElementById('reviewsWrapper');
             if (!reviewsWrapper) return;
             

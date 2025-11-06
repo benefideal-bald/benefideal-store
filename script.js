@@ -86,14 +86,26 @@ document.addEventListener('DOMContentLoaded', function() {
     initAnimations();
     initScrollAnimations();
     initParticles();
-    // DO NOT initialize reviews carousel here on main page
-    // It will be initialized AFTER dynamic reviews are loaded in index.html
-    // Only initialize if we're NOT on the main page (e.g., reviews.html)
+    // Initialize reviews carousel if reviews section exists
+    // On main page, it will be reinitialized after dynamic reviews load in index.html
+    // On other pages (like reviews.html), initialize immediately
     const reviewsWrapper = document.getElementById('reviewsWrapper') || document.querySelector('.reviews-wrapper');
-    const isMainPage = window.location.pathname === '/' || window.location.pathname.endsWith('index.html');
-    if (reviewsWrapper && reviewsWrapper.querySelectorAll('.review-card').length > 0 && !isMainPage) {
-        // Only initialize on other pages (like reviews.html), not on main page
-        initReviewsAutoScroll();
+    if (reviewsWrapper && reviewsWrapper.querySelectorAll('.review-card').length > 0) {
+        // Check if we're on the main page by checking if loadReviews function exists
+        // If loadReviews exists, it will reinitialize carousel after loading dynamic reviews
+        const isMainPageWithDynamicReviews = typeof window.loadReviews === 'function';
+        if (isMainPageWithDynamicReviews) {
+            // Main page - initialize with static reviews first, then will be reinitialized after dynamic reviews load
+            // Wait a bit to ensure DOM is ready
+            setTimeout(() => {
+                console.log('Initializing carousel with static reviews (main page)');
+                initReviewsAutoScroll();
+            }, 500);
+        } else {
+            // Not main page, initialize immediately
+            console.log('Initializing carousel (not main page)');
+            initReviewsAutoScroll();
+        }
     }
     setupSubscriptionOptions();
 });
