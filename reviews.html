@@ -46,42 +46,42 @@
         </div>
         
         <div style="display: grid; grid-template-columns: 1fr; gap: var(--space-6);" id="reviewsContainer">
-                <!-- LATEST REVIEWS - Максим and Тимур (newest first) -->
+                <!-- LATEST REVIEWS - Максим first (newest: 15:42), then Тимур (13:57) -->
                 <div class="review-card" style="background: var(--white); border-radius: 16px; padding: var(--space-6); box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-                    <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4);">
-                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
+                    <div class="review-header">
+                        <div class="review-avatar">
                             <i class="fas fa-user"></i>
                         </div>
-                        <div style="flex: 1;">
-                            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-strong);">Максим</h4>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="far fa-star" style="color: #d1d5db;"></i>
+                        <div class="review-info">
+                            <h4 class="review-name">Максим</h4>
+                            <div class="review-stars">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="far fa-star"></i>
                             </div>
                         </div>
                     </div>
-                    <p style="margin: 0; color: var(--text-primary); line-height: 1.6; font-size: 0.95rem;">Приобрел кепкат про на месяц, все работает как следует</p>
+                    <p class="review-text">Приобрел кепкат про на месяц, все работает как следует</p>
                 </div>
                 <div class="review-card" style="background: var(--white); border-radius: 16px; padding: var(--space-6); box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-                    <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4);">
-                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
+                    <div class="review-header">
+                        <div class="review-avatar">
                             <i class="fas fa-user"></i>
                         </div>
-                        <div style="flex: 1;">
-                            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-strong);">Тимур</h4>
-                            <div style="display: flex; gap: 4px; margin-top: 4px;">
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
-                                <i class="fas fa-star" style="color: #fbbf24;"></i>
+                        <div class="review-info">
+                            <h4 class="review-name">Тимур</h4>
+                            <div class="review-stars">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
                             </div>
                         </div>
                     </div>
-                    <p style="margin: 0; color: var(--text-primary); line-height: 1.6; font-size: 0.95rem;">Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡</p>
+                    <p class="review-text">Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡</p>
                 </div>
                 
                 <!-- Dynamic reviews will be added here after Максим and Тимур (newest first) -->
