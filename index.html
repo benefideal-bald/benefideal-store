@@ -538,42 +538,60 @@
                     reviewsWrapper.style.willChange = 'transform';
                     
                     // Wait for DOM to be ready and cards to be rendered
+                    // Increased timeout to ensure DOM is fully updated
                     setTimeout(() => {
                         const cardCount = reviewsWrapper.querySelectorAll('.review-card').length;
-                        console.log('Initializing carousel with', cardCount, 'total cards (static + dynamic)');
+                        console.log('=== CAROUSEL INITIALIZATION ===');
+                        console.log('Total cards before init:', cardCount);
                         
                         // Check if Тимур and Максим are in DOM BEFORE initializing carousel
-                        const allCardNamesBefore = Array.from(reviewsWrapper.querySelectorAll('.review-card')).map(c => c.querySelector('.review-name')?.textContent || '');
-                        const timurFoundBefore = allCardNamesBefore.includes('Тимур');
-                        const maximFoundBefore = allCardNamesBefore.includes('Максим');
+                        const allCardsBefore = reviewsWrapper.querySelectorAll('.review-card');
+                        const allCardNamesBefore = Array.from(allCardsBefore).map(c => {
+                            const name = c.querySelector('.review-name')?.textContent || '';
+                            const isDynamic = c.classList.contains('dynamic-review');
+                            return `${name}${isDynamic ? ' (dynamic)' : ' (static)'}`;
+                        });
+                        const timurFoundBefore = allCardNamesBefore.some(n => n.includes('Тимур'));
+                        const maximFoundBefore = allCardNamesBefore.some(n => n.includes('Максим'));
                         console.log('BEFORE carousel init - Тимур found:', timurFoundBefore, 'Максим found:', maximFoundBefore);
-                        console.log('BEFORE carousel init - First 5 names:', allCardNamesBefore.slice(0, 5));
+                        console.log('BEFORE carousel init - All card names:', allCardNamesBefore.slice(0, 12));
                         
                         if (cardCount > 0) {
                             // Initialize carousel - it should preserve all cards
                             if (typeof initReviewsAutoScroll === 'function') {
+                                console.log('Calling initReviewsAutoScroll()...');
                                 initReviewsAutoScroll();
+                                console.log('initReviewsAutoScroll() completed');
                             } else {
-                                console.error('initReviewsAutoScroll function not found!');
+                                console.error('❌ initReviewsAutoScroll function not found!');
                             }
                             
                             // Check AFTER carousel initialization
                             setTimeout(() => {
-                                const allCardNamesAfter = Array.from(reviewsWrapper.querySelectorAll('.review-card')).map(c => c.querySelector('.review-name')?.textContent || '');
-                                const timurFoundAfter = allCardNamesAfter.includes('Тимур');
-                                const maximFoundAfter = allCardNamesAfter.includes('Максим');
-                                console.log('AFTER carousel init - Тимур found:', timurFoundAfter, 'Максим found:', maximFoundAfter);
-                                console.log('AFTER carousel init - First 5 names:', allCardNamesAfter.slice(0, 5));
-                                console.log('Total cards after init:', reviewsWrapper.querySelectorAll('.review-card').length);
+                                const allCardsAfter = reviewsWrapper.querySelectorAll('.review-card');
+                                const allCardNamesAfter = Array.from(allCardsAfter).map(c => {
+                                    const name = c.querySelector('.review-name')?.textContent || '';
+                                    const isDynamic = c.classList.contains('dynamic-review');
+                                    const isClone = c.hasAttribute('data-is-clone');
+                                    return `${name}${isDynamic ? ' (dynamic)' : ' (static)'}${isClone ? ' [CLONE]' : ''}`;
+                                });
+                                const timurFoundAfter = allCardNamesAfter.some(n => n.includes('Тимур') && !n.includes('CLONE'));
+                                const maximFoundAfter = allCardNamesAfter.some(n => n.includes('Максим') && !n.includes('CLONE'));
+                                console.log('AFTER carousel init - Тимур found (original):', timurFoundAfter, 'Максим found (original):', maximFoundAfter);
+                                console.log('AFTER carousel init - All card names:', allCardNamesAfter.slice(0, 15));
+                                console.log('Total cards after init:', allCardsAfter.length);
                                 
                                 if (!timurFoundAfter || !maximFoundAfter) {
                                     console.error('❌ ERROR: Тимур or Максим disappeared after carousel init!');
+                                    console.error('This means initReviewsAutoScroll() is removing original reviews!');
+                                } else {
+                                    console.log('✅ SUCCESS: Тимур and Максим are present after carousel init!');
                                 }
-                            }, 100);
+                            }, 200);
                         } else {
-                            console.warn('No cards found, cannot initialize carousel');
+                            console.warn('❌ No cards found, cannot initialize carousel');
                         }
-                    }, 500);
+                    }, 800);
                 } else {
                     console.log('No reviews found in API response');
                 }
