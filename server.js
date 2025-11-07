@@ -879,6 +879,16 @@ app.post('/api/review', (req, res) => {
                     // Finalize statement AFTER getting the ID
                     stmt.finalize();
                     
+                    // КРИТИЧЕСКИ ВАЖНО: Принудительно синхронизируем данные с диском
+                    // Это гарантирует, что отзыв будет сохранен даже при сбое или перезапуске
+                    db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
+                        if (checkpointErr) {
+                            console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
+                        } else {
+                            console.log('✅ WAL checkpoint completed - review is safely saved to disk');
+                        }
+                    });
+                    
                     // КРИТИЧЕСКИ ВАЖНО: Сразу проверяем, что отзыв действительно сохранен!
                     // Делаем несколько проверок с небольшими задержками
                     const verifyReview = (attempt = 1) => {
