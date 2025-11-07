@@ -596,15 +596,33 @@ app.get('/api/reviews', (req, res) => {
             paginatedRows = rows.slice(start, end);
         }
         
-        // Log first and last review for debugging
+        // Log first and last review for debugging - ВАЖНО: первый должен быть НОВЕЙШИМ!
         if (paginatedRows.length > 0) {
-            console.log(`Reviews sorted ${validSort}: First=${paginatedRows[0].customer_name} (${paginatedRows[0].created_at}), Last=${paginatedRows[paginatedRows.length-1].customer_name} (${paginatedRows[paginatedRows.length-1].created_at})`);
+            console.log(`✅ Reviews sorted DESC (newest first):`);
+            console.log(`   FIRST (newest): ${paginatedRows[0].customer_name} - ${paginatedRows[0].created_at}`);
+            if (paginatedRows.length > 1) {
+                console.log(`   SECOND: ${paginatedRows[1].customer_name} - ${paginatedRows[1].created_at}`);
+            }
+            if (paginatedRows.length > 2) {
+                console.log(`   THIRD: ${paginatedRows[2].customer_name} - ${paginatedRows[2].created_at}`);
+            }
+            console.log(`   LAST (oldest in this page): ${paginatedRows[paginatedRows.length-1].customer_name} - ${paginatedRows[paginatedRows.length-1].created_at}`);
+            
+            // Check if Илья is in the results
+            const ilyaReview = rows.find(r => r.customer_name === 'Илья');
+            if (ilyaReview) {
+                const ilyaIndex = rows.indexOf(ilyaReview);
+                console.log(`   ✅ Илья found at index ${ilyaIndex} with date: ${ilyaReview.created_at}`);
+            } else {
+                console.log(`   ⚠️ Илья NOT FOUND in database!`);
+            }
         }
         
         res.json({ 
             success: true,
             reviews: paginatedRows,
-            count: paginatedRows.length
+            count: paginatedRows.length,
+            total: rows.length
         });
     });
 });
