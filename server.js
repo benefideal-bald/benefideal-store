@@ -949,6 +949,15 @@ app.get('/api/reviews', (req, res) => {
     console.log('Executing query:', query);
     
     db.all(query, params, (err, rows) => {
+        // Check for Тихон reviews immediately after fetching
+        if (!err && rows) {
+            const tikhonReviews = rows.filter(r => r.customer_name === 'Тихон');
+            if (tikhonReviews.length > 0) {
+                console.log(`🔍 Found ${tikhonReviews.length} Тихон review(s) in database:`, tikhonReviews.map(r => ({ id: r.id, created_at: r.created_at })));
+            } else {
+                console.log(`⚠️ NO Тихон reviews found in database! Total reviews: ${rows.length}`);
+            }
+        }
         if (err) {
             console.error('Error fetching reviews:', err);
             return res.status(500).json({ error: 'Database error', details: err.message });
@@ -1355,14 +1364,17 @@ app.get('/api/debug/find-tikhon', (req, res) => {
 // Restore Тихон review if it was lost - uses order from database
 app.get('/api/debug/restore-tikhon', (req, res) => {
     // Find Тихон order
-    db.get(`SELECT * FROM subscriptions WHERE customer_name LIKE '%Тихон%' ORDER BY purchase_date DESC LIMIT 1`, [], (err, tikhonOrder) => {
+    db.all(`SELECT * FROM subscriptions WHERE customer_name LIKE '%Тихон%' ORDER BY purchase_date DESC LIMIT 5`, [], (err, tikhonOrders) => {
         if (err) {
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
-        if (!tikhonOrder) {
-            return res.json({ success: false, message: 'No Тихон order found in database' });
+        if (!tikhonOrders || tikhonOrders.length === 0) {
+            return res.json({ success: false, message: 'No Тихон orders found in database' });
         }
+        
+        const tikhonOrder = tikhonOrders[0];
+        console.log(`📦 Found Тихон order: email=${tikhonOrder.customer_email}, order_id=${tikhonOrder.order_id}`);
         
         // Check if review already exists
         db.get(`SELECT * FROM reviews WHERE order_id = ? OR (LOWER(customer_email) = LOWER(?) AND customer_name = 'Тихон')`, [tikhonOrder.order_id || '', tikhonOrder.customer_email], (err, existing) => {
@@ -1371,10 +1383,26 @@ app.get('/api/debug/restore-tikhon', (req, res) => {
             }
             
             if (existing) {
-                return res.json({ success: true, message: 'Тихон review already exists', review: existing });
+                console.log(`✅ Тихон review already exists: ID=${existing.id}, created_at=${existing.created_at}`);
+                
+                // Verify it's in top 10
+                db.all(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 10`, [], (err, top10) => {
+                    if (!err && top10) {
+                        const position = top10.findIndex(r => r.id === existing.id);
+                        return res.json({
+                            success: true,
+                            message: 'Тихон review already exists',
+                            review: existing,
+                            position_in_top_10: position >= 0 ? position : 'not in top 10',
+                            top_10_first: top10[0]?.customer_name
+                        });
+                    }
+                    return res.json({ success: true, message: 'Тихон review already exists', review: existing });
+                });
             }
             
             // Create Тихон review with CURRENT_TIMESTAMP (will be newest)
+            console.log(`📝 Creating Тихон review with CURRENT_TIMESTAMP...`);
             const stmt = db.prepare(`
                 INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
                 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -1383,19 +1411,46 @@ app.get('/api/debug/restore-tikhon', (req, res) => {
             stmt.run(['Тихон', tikhonOrder.customer_email, 'Купил кепкат про на 3 месяца я доволен', 5, tikhonOrder.order_id || null], function(insertErr) {
                 if (insertErr) {
                     stmt.finalize();
+                    console.error(`❌ Error inserting Тихон review:`, insertErr);
                     return res.status(500).json({ error: 'Database error', details: insertErr.message });
                 }
                 
                 const reviewId = this.lastID;
+                console.log(`✅ Тихон review inserted: ID=${reviewId}`);
                 stmt.finalize();
                 
-                res.json({
-                    success: true,
-                    message: '✅ Тихон review RESTORED successfully - it will be FIRST in the list!',
-                    review_id: reviewId,
-                    order_id: tikhonOrder.order_id,
-                    email: tikhonOrder.customer_email
-                });
+                // Verify it was inserted and check position
+                setTimeout(() => {
+                    db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, savedReview) => {
+                        if (err || !savedReview) {
+                            return res.json({
+                                success: true,
+                                message: '✅ Тихон review RESTORED successfully!',
+                                review_id: reviewId,
+                                order_id: tikhonOrder.order_id,
+                                email: tikhonOrder.customer_email,
+                                warning: 'Could not verify review after insertion'
+                            });
+                        }
+                        
+                        // Check position in top 10
+                        db.all(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 10`, [], (err, top10) => {
+                            const position = top10 ? top10.findIndex(r => r.id === reviewId) : -1;
+                            
+                            res.json({
+                                success: true,
+                                message: '✅ Тихон review RESTORED successfully - it will be FIRST in the list!',
+                                review_id: reviewId,
+                                review: savedReview,
+                                position_in_top_10: position >= 0 ? position : 'not in top 10',
+                                created_at: savedReview.created_at,
+                                order_id: tikhonOrder.order_id,
+                                email: tikhonOrder.customer_email,
+                                top_10_preview: top10 ? top10.slice(0, 3).map(r => `${r.customer_name} (${r.created_at})`) : []
+                            });
+                        });
+                    });
+                }, 200);
             });
         });
     });
