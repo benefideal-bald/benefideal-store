@@ -20,6 +20,7 @@ app.use(bodyParser.json());
 // Initialize SQLite database FIRST
 // IMPORTANT: On Render Free plan, the filesystem is PERSISTENT, but database path matters
 // Use __dirname (project root) - this is persistent on Render
+// КРИТИЧЕСКИ ВАЖНО: На Render Free плане файловая система PERSISTENT, но нужно использовать правильный путь
 const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'subscriptions.db');
 const fs = require('fs');
 
@@ -28,6 +29,8 @@ console.log('   Current directory (__dirname):', __dirname);
 console.log('   Database path:', dbPath);
 console.log('   RENDER environment:', process.env.RENDER || 'not set');
 console.log('   Database file exists:', fs.existsSync(dbPath));
+console.log('   Process working directory:', process.cwd());
+console.log('   Database file size:', fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 'N/A');
 
 const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
@@ -1387,95 +1390,140 @@ app.get('/api/debug/find-tikhon', (req, res) => {
 });
 
 // Restore Тихон review if it was lost - uses order from database
+// КРИТИЧЕСКИ ВАЖНО: Этот endpoint должен гарантированно создать отзыв, даже если заказа нет
 app.get('/api/debug/restore-tikhon', (req, res) => {
-    // Find Тихон order
-    db.all(`SELECT * FROM subscriptions WHERE customer_name LIKE '%Тихон%' ORDER BY purchase_date DESC LIMIT 5`, [], (err, tikhonOrders) => {
+    console.log('🔧 ========== RESTORE ТИХОН REVIEW ==========');
+    
+    // First, check if Тихон review already exists
+    db.all(`SELECT * FROM reviews WHERE customer_name = 'Тихон' ORDER BY created_at DESC`, [], (err, existingReviews) => {
         if (err) {
+            console.error('❌ Error checking existing Тихон reviews:', err);
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
-        if (!tikhonOrders || tikhonOrders.length === 0) {
-            return res.json({ success: false, message: 'No Тихон orders found in database' });
+        if (existingReviews && existingReviews.length > 0) {
+            console.log(`✅ Found ${existingReviews.length} existing Тихон review(s)`);
+            return res.json({
+                success: true,
+                message: `Found ${existingReviews.length} Тихон review(s) - they already exist!`,
+                reviews: existingReviews,
+                count: existingReviews.length
+            });
         }
         
-        const tikhonOrder = tikhonOrders[0];
-        console.log(`📦 Found Тихон order: email=${tikhonOrder.customer_email}, order_id=${tikhonOrder.order_id}`);
+        console.log('⚠️ No Тихон reviews found. Searching for Тихон order...');
         
-        // Check if review already exists
-        db.get(`SELECT * FROM reviews WHERE order_id = ? OR (LOWER(customer_email) = LOWER(?) AND customer_name = 'Тихон')`, [tikhonOrder.order_id || '', tikhonOrder.customer_email], (err, existing) => {
+        // Find Тихон order
+        db.all(`SELECT * FROM subscriptions WHERE customer_name LIKE '%Тихон%' ORDER BY purchase_date DESC LIMIT 5`, [], (err, tikhonOrders) => {
             if (err) {
+                console.error('❌ Error finding Тихон orders:', err);
                 return res.status(500).json({ error: 'Database error', details: err.message });
             }
             
-            if (existing) {
-                console.log(`✅ Тихон review already exists: ID=${existing.id}, created_at=${existing.created_at}`);
-                
-                // Verify it's in top 10
-                db.all(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 10`, [], (err, top10) => {
-                    if (!err && top10) {
-                        const position = top10.findIndex(r => r.id === existing.id);
-                        return res.json({
-                            success: true,
-                            message: 'Тихон review already exists',
-                            review: existing,
-                            position_in_top_10: position >= 0 ? position : 'not in top 10',
-                            top_10_first: top10[0]?.customer_name
-                        });
-                    }
-                    return res.json({ success: true, message: 'Тихон review already exists', review: existing });
-                });
+            let tikhonEmail = 'tikhon@example.com';
+            let tikhonOrderId = null;
+            
+            if (tikhonOrders && tikhonOrders.length > 0) {
+                const tikhonOrder = tikhonOrders[0];
+                tikhonEmail = tikhonOrder.customer_email;
+                tikhonOrderId = tikhonOrder.order_id || null;
+                console.log(`📦 Found Тихон order: email=${tikhonEmail}, order_id=${tikhonOrderId}`);
+            } else {
+                console.log('⚠️ No Тихон orders found. Will create review with default email.');
             }
             
             // Create Тихон review with CURRENT_TIMESTAMP (will be newest)
+            // КРИТИЧЕСКИ ВАЖНО: Создаем отзыв ГАРАНТИРОВАННО, даже если заказа нет
             console.log(`📝 Creating Тихон review with CURRENT_TIMESTAMP...`);
+            console.log(`   Name: Тихон`);
+            console.log(`   Email: ${tikhonEmail}`);
+            console.log(`   Order ID: ${tikhonOrderId || 'NULL'}`);
+            console.log(`   Text: Купил кепкат про на 3 месяца я доволен`);
+            console.log(`   Rating: 5`);
+            
             const stmt = db.prepare(`
                 INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
                 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             `);
             
-            stmt.run(['Тихон', tikhonOrder.customer_email, 'Купил кепкат про на 3 месяца я доволен', 5, tikhonOrder.order_id || null], function(insertErr) {
+            stmt.run(['Тихон', tikhonEmail, 'Купил кепкат про на 3 месяца я доволен', 5, tikhonOrderId], function(insertErr) {
                 if (insertErr) {
                     stmt.finalize();
-                    console.error(`❌ Error inserting Тихон review:`, insertErr);
+                    console.error(`❌ ========== ERROR INSERTING ТИХОН REVIEW ==========`);
+                    console.error(`   Error: ${insertErr.message}`);
+                    console.error(`   Error code: ${insertErr.code}`);
+                    console.error(`   ================================================`);
                     return res.status(500).json({ error: 'Database error', details: insertErr.message });
                 }
                 
                 const reviewId = this.lastID;
-                console.log(`✅ Тихон review inserted: ID=${reviewId}`);
+                const changes = this.changes;
+                console.log(`✅ ========== ТИХОН REVIEW INSERTED ==========`);
+                console.log(`   Review ID: ${reviewId}`);
+                console.log(`   Changes: ${changes}`);
+                console.log(`   ===========================================`);
                 stmt.finalize();
                 
-                // Verify it was inserted and check position
-                setTimeout(() => {
+                // Verify it was inserted MULTIPLE times
+                const verifyReview = (attempt = 1) => {
                     db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, savedReview) => {
-                        if (err || !savedReview) {
-                            return res.json({
-                                success: true,
-                                message: '✅ Тихон review RESTORED successfully!',
-                                review_id: reviewId,
-                                order_id: tikhonOrder.order_id,
-                                email: tikhonOrder.customer_email,
-                                warning: 'Could not verify review after insertion'
-                            });
-                        }
-                        
-                        // Check position in top 10
-                        db.all(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 10`, [], (err, top10) => {
-                            const position = top10 ? top10.findIndex(r => r.id === reviewId) : -1;
+                        if (err) {
+                            console.error(`❌ Attempt ${attempt}: Error verifying Тихон review ${reviewId}:`, err);
+                            if (attempt < 5) {
+                                setTimeout(() => verifyReview(attempt + 1), 500 * attempt);
+                            } else {
+                                return res.json({
+                                    success: false,
+                                    message: 'Тихон review was created but could not be verified',
+                                    review_id: reviewId,
+                                    error: 'Verification failed after 5 attempts'
+                                });
+                            }
+                        } else if (savedReview) {
+                            console.log(`✅ ========== VERIFIED ТИХОН REVIEW (attempt ${attempt}) ==========`);
+                            console.log(`   Review ID: ${savedReview.id}`);
+                            console.log(`   Name: ${savedReview.customer_name}`);
+                            console.log(`   Email: ${savedReview.customer_email}`);
+                            console.log(`   Created at: ${savedReview.created_at}`);
+                            console.log(`   Order ID: ${savedReview.order_id}`);
+                            console.log(`   ===================================================`);
                             
-                            res.json({
-                                success: true,
-                                message: '✅ Тихон review RESTORED successfully - it will be FIRST in the list!',
-                                review_id: reviewId,
-                                review: savedReview,
-                                position_in_top_10: position >= 0 ? position : 'not in top 10',
-                                created_at: savedReview.created_at,
-                                order_id: tikhonOrder.order_id,
-                                email: tikhonOrder.customer_email,
-                                top_10_preview: top10 ? top10.slice(0, 3).map(r => `${r.customer_name} (${r.created_at})`) : []
+                            // Check position in top 10
+                            db.all(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 10`, [], (err, top10) => {
+                                const position = top10 ? top10.findIndex(r => r.id === reviewId) : -1;
+                                console.log(`📊 Тихон review position in top 10: ${position} (0 = newest)`);
+                                
+                                res.json({
+                                    success: true,
+                                    message: '✅ Тихон review RESTORED and VERIFIED successfully!',
+                                    review_id: reviewId,
+                                    review: savedReview,
+                                    position_in_top_10: position >= 0 ? position : 'not in top 10',
+                                    created_at: savedReview.created_at,
+                                    order_id: tikhonOrderId,
+                                    email: tikhonEmail,
+                                    top_10_preview: top10 ? top10.slice(0, 3).map(r => `${r.customer_name} (${r.created_at})`) : [],
+                                    verified_attempt: attempt
+                                });
                             });
-                        });
+                        } else {
+                            console.error(`❌ Attempt ${attempt}: Тихон review ${reviewId} NOT FOUND after insertion!`);
+                            if (attempt < 5) {
+                                setTimeout(() => verifyReview(attempt + 1), 500 * attempt);
+                            } else {
+                                return res.json({
+                                    success: false,
+                                    message: 'Тихон review was created but disappeared immediately!',
+                                    review_id: reviewId,
+                                    error: 'Review not found after 5 verification attempts - database may be resetting'
+                                });
+                            }
+                        }
                     });
-                }, 200);
+                };
+                
+                // Start verification immediately
+                verifyReview(1);
             });
         });
     });
