@@ -229,30 +229,45 @@ app.post('/api/subscription', (req, res) => {
     stmt.run([name, normalizedEmail, item.title, item.id, item.months || 1, purchaseDate.toISOString(), order_id || null], function(err) {
         if (err) {
             console.error('❌ Error inserting subscription:', err);
+            stmt.finalize();
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
         const subscriptionId = this.lastID;
         console.log(`✅ Subscription saved: ID=${subscriptionId}, email=${normalizedEmail}, order_id=${order_id}`);
         
-        // Verify the subscription was saved
-        db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (err, savedSubscription) => {
-            if (err) {
-                console.error('❌ Error verifying subscription:', err);
-            } else if (savedSubscription) {
-                console.log(`✅ Verified: Subscription ${subscriptionId} exists in database with email: ${savedSubscription.customer_email}`);
-            } else {
-                console.error(`❌ CRITICAL: Subscription ${subscriptionId} was NOT found in database after insertion!`);
-            }
-        });
+        // Finalize statement FIRST before async operations
+        stmt.finalize();
+        
+        // Verify the subscription was saved (async check)
+        setTimeout(() => {
+            db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (err, savedSubscription) => {
+                if (err) {
+                    console.error('❌ Error verifying subscription:', err);
+                } else if (savedSubscription) {
+                    console.log(`✅ Verified: Subscription ${subscriptionId} exists in database:`);
+                    console.log(`   Email: ${savedSubscription.customer_email}`);
+                    console.log(`   Name: ${savedSubscription.customer_name}`);
+                    console.log(`   Order ID: ${savedSubscription.order_id}`);
+                    
+                    // Also verify email can be found by LOWER() query
+                    db.get(`SELECT COUNT(*) as count FROM subscriptions WHERE LOWER(customer_email) = LOWER(?)`, [normalizedEmail], (err, emailCheck) => {
+                        if (!err && emailCheck) {
+                            console.log(`✅ Email ${normalizedEmail} can be found in ${emailCheck.count} subscription(s) using LOWER() query`);
+                        }
+                    });
+                } else {
+                    console.error(`❌ CRITICAL: Subscription ${subscriptionId} was NOT found in database after insertion!`);
+                }
+            });
+        }, 100);
         
         // Generate reminders based on subscription type
         generateReminders(subscriptionId, item.id, item.months || 1, purchaseDate);
         
+        // Send response AFTER finalize
         res.json({ success: true, subscription_id: subscriptionId });
     });
-    
-    stmt.finalize();
 });
 
 // Test endpoint - simulates Andrey's subscription scenario
@@ -374,35 +389,44 @@ app.post('/api/review/verify', (req, res) => {
     console.log('   Email (normalized):', normalizedEmail);
     
     // First check if email exists in subscriptions at all (protection against spam)
-    // Use LOWER() for case-insensitive comparison
+    // Use EXACT match first, then LOWER() for case-insensitive comparison
+    // This ensures we find the email even if there are whitespace or case differences
     db.get(`
         SELECT COUNT(*) as count 
         FROM subscriptions 
-        WHERE LOWER(customer_email) = LOWER(?)
-    `, [normalizedEmail], (err, emailCheck) => {
+        WHERE customer_email = ? OR LOWER(TRIM(customer_email)) = LOWER(TRIM(?))
+    `, [normalizedEmail, normalizedEmail], (err, emailCheck) => {
         if (err) {
             console.error('❌ Error checking email:', err);
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
-        console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found`);
+        console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found for "${normalizedEmail}"`);
         
         // Also check all emails in database for debugging
-        db.all(`SELECT DISTINCT customer_email FROM subscriptions LIMIT 10`, [], (err, allEmails) => {
+        db.all(`SELECT DISTINCT customer_email FROM subscriptions ORDER BY purchase_date DESC LIMIT 20`, [], (err, allEmails) => {
             if (!err && allEmails) {
-                console.log('📋 Sample emails in database:', allEmails.map(e => e.customer_email).slice(0, 5));
+                console.log(`📋 Found ${allEmails.length} unique emails in database (showing last 20):`);
+                allEmails.forEach((e, i) => {
+                    const normalized = e.customer_email.toLowerCase().trim();
+                    const matches = normalized === normalizedEmail;
+                    console.log(`   ${i+1}. ${e.customer_email} ${matches ? '✅ MATCH!' : ''}`);
+                });
+                
                 // Check if normalized email matches any email in database
                 const matches = allEmails.filter(e => e.customer_email.toLowerCase().trim() === normalizedEmail);
                 if (matches.length > 0) {
-                    console.log(`✅ Found matching email in database: ${matches[0].customer_email}`);
+                    console.log(`✅ Found ${matches.length} matching email(s) in database:`, matches.map(m => m.customer_email));
                 } else {
                     console.log(`❌ No matching email found. Looking for: "${normalizedEmail}"`);
+                    console.log(`   Available emails:`, allEmails.map(e => e.customer_email));
                 }
             }
         });
         
         if (!emailCheck || emailCheck.count === 0) {
-            console.error(`❌ Email ${normalizedEmail} NOT FOUND in subscriptions table!`);
+            console.error(`❌ Email "${normalizedEmail}" NOT FOUND in subscriptions table!`);
+            console.error(`   This means the order was NOT saved to the database, or email was saved differently.`);
             return res.json({ 
                 success: false, 
                 error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
@@ -410,7 +434,7 @@ app.post('/api/review/verify', (req, res) => {
             });
         }
         
-        console.log(`✅ Email ${normalizedEmail} found in ${emailCheck.count} subscription(s)`);
+        console.log(`✅ Email "${normalizedEmail}" found in ${emailCheck.count} subscription(s) - review is allowed!`);
         
         // Check all orders (with or without order_id), get newest first
         // Use LOWER() for case-insensitive comparison
