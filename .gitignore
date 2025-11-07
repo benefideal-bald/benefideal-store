@@ -1,5 +1,5 @@
 node_modules/
-subscriptions.db
-.env
+# subscriptions.db - НЕ игнорируем, чтобы база сохранялась на Render!
+# .env
 *.log
 .DS_Store

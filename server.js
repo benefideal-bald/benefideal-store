@@ -18,10 +18,11 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Initialize SQLite database FIRST
-// КРИТИЧЕСКИ ВАЖНО: На Render файловая система PERSISTENT только в /tmp или в корне проекта
-// НО при каждом деплое файлы в корне проекта МОГУТ перезаписываться!
-// Используем /tmp для базы данных, чтобы она НЕ удалялась при деплое
-const dbPath = process.env.DATABASE_PATH || (process.env.RENDER ? path.join('/tmp', 'subscriptions.db') : path.join(__dirname, 'subscriptions.db'));
+// КРИТИЧЕСКИ ВАЖНО: На Render файловая система PERSISTENT в корне проекта
+// НО файлы могут удаляться при деплое, если они в .gitignore
+// Используем путь в корне проекта, но НЕ в .gitignore, чтобы файл сохранялся
+// Если DATABASE_PATH не указан, используем корень проекта (persistent на Render)
+const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'subscriptions.db');
 const fs = require('fs');
 
 console.log('📂 Database initialization:');
