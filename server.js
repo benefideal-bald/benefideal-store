@@ -770,6 +770,50 @@ app.get('/api/debug/ilya', (req, res) => {
     });
 });
 
+// Debug endpoint to check all emails in subscriptions
+app.get('/api/debug/emails', (req, res) => {
+    const searchEmail = req.query.email ? req.query.email.toLowerCase().trim() : null;
+    
+    let query = `SELECT DISTINCT customer_email, customer_name, COUNT(*) as order_count FROM subscriptions GROUP BY customer_email`;
+    let params = [];
+    
+    if (searchEmail) {
+        query = `SELECT DISTINCT customer_email, customer_name, COUNT(*) as order_count FROM subscriptions WHERE LOWER(customer_email) = LOWER(?) GROUP BY customer_email`;
+        params = [searchEmail];
+    }
+    
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ 
+            count: rows.length,
+            emails: rows,
+            searchEmail: searchEmail,
+            message: searchEmail 
+                ? (rows.length > 0 ? `Found ${rows.length} subscription(s) for ${searchEmail}` : `No subscriptions found for ${searchEmail}`)
+                : `Found ${rows.length} unique email(s) in subscriptions`
+        });
+    });
+});
+
+// Debug endpoint to check specific email
+app.get('/api/debug/email/:email', (req, res) => {
+    const email = req.params.email.toLowerCase().trim();
+    
+    db.all(`SELECT * FROM subscriptions WHERE LOWER(customer_email) = LOWER(?) ORDER BY purchase_date DESC`, [email], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ 
+            email: email,
+            count: rows.length,
+            subscriptions: rows,
+            message: rows.length > 0 ? `Found ${rows.length} subscription(s) for ${email}` : `No subscriptions found for ${email}`
+        });
+    });
+});
+
 // Generate reminders for a subscription
 function generateReminders(subscriptionId, productId, months, purchaseDate) {
     console.log(`Generating reminders for subscription ${subscriptionId}, product ${productId}, ${months} months`);

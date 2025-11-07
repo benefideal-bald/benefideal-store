@@ -139,7 +139,7 @@
                 Администратор получил уведомление и уже обрабатывает ваш заказ.
             </p>
             <p style="color: var(--gray-600); font-size: 1rem; line-height: 1.7; margin-bottom: var(--space-6);">
-                Данные будут отправлены на указанную вами электронную почту в ближайшее время.
+                Данные будут отправлены на указанную вами электронную почту от минуты до 2 часов после оплаты.
             </p>
             <p style="color: var(--gray-600); font-size: 0.95rem; line-height: 1.6; margin-bottom: var(--space-8); padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg);">
                 <i class="fas fa-star" style="color: var(--primary); margin-right: var(--space-2);"></i>
@@ -235,6 +235,9 @@
             const name = localStorage.getItem('benefideal_checkout_name') || 'Не указано';
             const email = localStorage.getItem('benefideal_checkout_email') || 'Не указано';
             
+            // Generate unique order_id for this purchase
+            const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
             // Get uploaded receipt
             const receiptFile = document.getElementById('receiptUpload').files[0];
             
@@ -245,18 +248,34 @@
                 ? 'http://localhost:3000/api/subscription'
                 : `${window.location.origin}/api/subscription`;
             
+            // Normalize email to lowercase before sending
+            const normalizedEmail = email.toLowerCase().trim();
+            console.log('📦 Sending subscription to backend:');
+            console.log('   Name:', name);
+            console.log('   Email (original):', email);
+            console.log('   Email (normalized):', normalizedEmail);
+            console.log('   Order ID:', orderId);
+            console.log('   Cart items:', cart.length);
+            
             for (const item of cart) {
                 if (item.id === 1 || item.id === 3 || item.id === 7) {
                     try {
-                        await fetch(apiUrl, {
+                        const response = await fetch(apiUrl, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ item, name, email })
+                            body: JSON.stringify({ item, name, email: normalizedEmail, order_id: orderId })
                         });
+                        
+                        const result = await response.json();
+                        if (response.ok) {
+                            console.log(`✅ Subscription saved for ${item.title}:`, result);
+                        } else {
+                            console.error(`❌ Error saving subscription for ${item.title}:`, result);
+                        }
                     } catch (error) {
-                        console.error('Error sending subscription to backend:', error);
+                        console.error('❌ Error sending subscription to backend:', error);
                     }
                 }
             }
