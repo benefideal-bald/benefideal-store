@@ -547,45 +547,23 @@ app.get('/api/reviews', (req, res) => {
         
         console.log(`Found ${rows.length} reviews in database`);
         
-        // Sort in JavaScript - NEWEST FIRST (DESC) - это КРИТИЧЕСКИ ВАЖНО!
+        // Sort in JavaScript - NEWEST FIRST (DESC) - ПРОСТАЯ И НАДЕЖНАЯ СОРТИРОВКА
+        // Helper function to get timestamp from date string
+        const getTimestamp = (dateStr) => {
+            if (!dateStr) return 0;
+            try {
+                return new Date(dateStr).getTime();
+            } catch (e) {
+                return 0;
+            }
+        };
+        
+        // Sort: DESC = newest first (larger timestamp = newer = comes first)
         rows.sort((a, b) => {
-            const normalizeDate = (dateStr) => {
-                if (!dateStr) return 0;
-                
-                try {
-                    // Try direct parsing
-                    let date = new Date(dateStr);
-                    if (!isNaN(date.getTime())) {
-                        return date.getTime();
-                    }
-                    
-                    // Try with normalized format
-                    let normalized = dateStr.toString().replace('T', ' ').replace('Z', '');
-                    const dotIndex = normalized.indexOf('.');
-                    if (dotIndex > 0) {
-                        normalized = normalized.substring(0, dotIndex);
-                    }
-                    
-                    date = new Date(normalized);
-                    if (!isNaN(date.getTime())) {
-                        return date.getTime();
-                    }
-                    
-                    return 0;
-                } catch (e) {
-                    console.error('Error parsing date:', dateStr, e);
-                    return 0;
-                }
-            };
-            
-            const timeA = normalizeDate(a.created_at);
-            const timeB = normalizeDate(b.created_at);
-            
-            // DESC = newest first (larger timestamp = newer = first)
-            // timeB - timeA means: if B is newer (larger), result is positive, so B comes first
-            const result = timeB - timeA;
-            
-            return result;
+            const timeA = getTimestamp(a.created_at);
+            const timeB = getTimestamp(b.created_at);
+            // timeB - timeA: если B новее (больше timestamp), результат положительный, B идет первым
+            return timeB - timeA;
         });
         
         // Apply limit and offset after sorting
