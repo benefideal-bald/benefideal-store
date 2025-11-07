@@ -768,11 +768,16 @@ app.get('/api/reviews', (req, res) => {
         }
         
         // Apply limit and offset after sorting
+        // КРИТИЧЕСКИ ВАЖНО: Если limit НЕ указан, возвращаем ВСЕ отзывы (для страницы reviews.html)!
+        // Если limit указан, возвращаем только указанное количество (для главной страницы)
         let paginatedRows = rows;
-        if (limit) {
+        if (limit && limit > 0) {
             const start = offset || 0;
             const end = start + limit;
             paginatedRows = rows.slice(start, end);
+            console.log(`   Applied limit: showing ${paginatedRows.length} reviews (${start} to ${end-1}) out of ${rows.length} total`);
+        } else {
+            console.log(`   No limit specified: returning ALL ${rows.length} reviews`);
         }
         
         // Log first and last review for debugging - ВАЖНО: первый должен быть НОВЕЙШИМ!
