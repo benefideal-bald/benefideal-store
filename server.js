@@ -1122,95 +1122,71 @@ app.get('/api/debug/ilya', (req, res) => {
     });
 });
 
-// Force restore Илья review endpoint (GET request for easy access)
-// Ищет РЕАЛЬНЫЙ отзыв клиента Ильи по email viliyili27@gmail.com и восстанавливает правильное имя
+// Debug endpoint to find Илья reviews - НЕ МЕНЯЕТ ИМЕНА, только ищет и показывает
 app.get('/api/debug/restore-ilya', (req, res) => {
-    console.log('🔍 Searching for REAL Илья review and restoring correct name...');
+    console.log('🔍 Searching for Илья reviews (NOT changing names)...');
     const ilyaEmail = 'viliyili27@gmail.com';
     
-    // First, check ALL reviews for this email (might have different name!)
-    db.all(`SELECT * FROM reviews WHERE LOWER(customer_email) = LOWER(?) ORDER BY created_at DESC`, [ilyaEmail], (err, reviewsForEmail) => {
+    // Check reviews with name "Илья"
+    db.all(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC`, [], (err, ilyaReviews) => {
         if (err) {
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
-        console.log(`📧 Found ${reviewsForEmail ? reviewsForEmail.length : 0} review(s) for email ${ilyaEmail}`);
-        
-        if (reviewsForEmail && reviewsForEmail.length > 0) {
-            // Check if any already has name "Илья"
-            const ilyaNamedReviews = reviewsForEmail.filter(r => r.customer_name === 'Илья');
-            
-            if (ilyaNamedReviews.length > 0) {
-                console.log(`✅ Found ${ilyaNamedReviews.length} review(s) with name "Илья"`);
-                return res.json({
-                    success: true,
-                    message: `Found ${ilyaNamedReviews.length} Илья review(s) - they already exist!`,
-                    reviews: ilyaNamedReviews,
-                    all_reviews_for_email: reviewsForEmail,
-                    count: ilyaNamedReviews.length
-                });
+        // Also check reviews for this email
+        db.all(`SELECT * FROM reviews WHERE LOWER(customer_email) = LOWER(?) ORDER BY created_at DESC`, [ilyaEmail], (errEmail, reviewsForEmail) => {
+            if (errEmail) {
+                return res.status(500).json({ error: 'Database error', details: errEmail.message });
             }
             
-            // Found reviews but with different name(s) - fix ALL of them!
-            console.log(`⚠️ Found ${reviewsForEmail.length} review(s) but with different name(s):`, reviewsForEmail.map(r => r.customer_name));
-            console.log(`🔧 Fixing ALL reviews to have name "Илья"...`);
-            
-            // Update ALL reviews for this email to have name "Илья"
-            const reviewIds = reviewsForEmail.map(r => r.id);
-            const placeholders = reviewIds.map(() => '?').join(',');
-            
-            db.run(`UPDATE reviews SET customer_name = 'Илья' WHERE id IN (${placeholders})`, reviewIds, function(updateErr) {
-                if (updateErr) {
-                    console.error('❌ Error updating review names:', updateErr);
-                    return res.status(500).json({ error: 'Database error', details: updateErr.message });
+            // Check orders
+            db.all(`SELECT * FROM subscriptions WHERE LOWER(customer_email) = LOWER(?) ORDER BY purchase_date DESC LIMIT 5`, [ilyaEmail], (errOrders, orders) => {
+                if (errOrders) {
+                    return res.status(500).json({ error: 'Database error', details: errOrders.message });
                 }
                 
-                console.log(`✅ Updated ${this.changes} review(s) to have name "Илья"`);
-                
-                // Get updated reviews
-                db.all(`SELECT * FROM reviews WHERE LOWER(customer_email) = LOWER(?) ORDER BY created_at DESC`, [ilyaEmail], (err, updatedReviews) => {
-                    if (err) {
+                // Check position in all reviews (sorted DESC)
+                db.all(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 20`, [], (errAll, allReviews) => {
+                    if (errAll) {
                         return res.json({
-                            success: true,
-                            message: `Updated ${this.changes} review(s) to have name "Илья"`,
-                            review_ids: reviewIds,
-                            old_names: reviewsForEmail.map(r => r.customer_name)
+                            ilya_reviews_count: ilyaReviews ? ilyaReviews.length : 0,
+                            ilya_reviews: ilyaReviews || [],
+                            email_reviews_count: reviewsForEmail ? reviewsForEmail.length : 0,
+                            email_reviews: reviewsForEmail || [],
+                            orders_count: orders ? orders.length : 0,
+                            orders: orders || []
+                        });
+                    }
+                    
+                    // Find Илья reviews in top 20
+                    const ilyaPositions = [];
+                    if (ilyaReviews && ilyaReviews.length > 0) {
+                        ilyaReviews.forEach(ilyaReview => {
+                            const position = allReviews.findIndex(r => r.id === ilyaReview.id);
+                            if (position >= 0) {
+                                ilyaPositions.push({ review_id: ilyaReview.id, position: position, name: ilyaReview.customer_name, created_at: ilyaReview.created_at });
+                            } else {
+                                ilyaPositions.push({ review_id: ilyaReview.id, position: -1, name: ilyaReview.customer_name, created_at: ilyaReview.created_at, note: 'Not in top 20' });
+                            }
                         });
                     }
                     
                     res.json({
-                        success: true,
-                        message: `✅ FIXED ${updatedReviews.length} REAL Илья review(s)! All reviews for ${ilyaEmail} now have name "Илья"`,
-                        reviews: updatedReviews,
-                        review_ids: reviewIds,
-                        old_names: reviewsForEmail.map(r => r.customer_name),
-                        fixed: true
+                        ilya_reviews_count: ilyaReviews ? ilyaReviews.length : 0,
+                        ilya_reviews: ilyaReviews || [],
+                        email_reviews_count: reviewsForEmail ? reviewsForEmail.length : 0,
+                        email_reviews: reviewsForEmail || [],
+                        orders_count: orders ? orders.length : 0,
+                        orders: orders || [],
+                        positions_in_top_20: ilyaPositions,
+                        top_5_reviews: allReviews.slice(0, 5).map(r => ({ id: r.id, name: r.customer_name, created_at: r.created_at })),
+                        message: ilyaReviews && ilyaReviews.length > 0
+                            ? `Found ${ilyaReviews.length} Илья review(s) in database`
+                            : `No Илья reviews found. Found ${reviewsForEmail ? reviewsForEmail.length : 0} review(s) for email ${ilyaEmail}`
                     });
                 });
             });
-        } else {
-            // No reviews found for this email - check if order exists
-            db.all(`SELECT * FROM subscriptions WHERE LOWER(customer_email) = LOWER(?) ORDER BY purchase_date DESC LIMIT 5`, [ilyaEmail], (err, orders) => {
-                if (err) {
-                    return res.status(500).json({ error: 'Database error', details: err.message });
-                }
-                
-                if (orders && orders.length > 0) {
-                    return res.json({
-                        success: false,
-                        message: `Found ${orders.length} order(s) for ${ilyaEmail} but NO reviews. Reviews were not saved or were lost.`,
-                        orders: orders,
-                        suggestion: 'Client needs to leave a new review through the review form'
-                    });
-                } else {
-                    return res.json({
-                        success: false,
-                        message: `No orders and no reviews found for ${ilyaEmail}`,
-                        suggestion: 'Check if order was saved correctly when payment was confirmed'
-                    });
-                }
-            });
-        }
+        });
     });
 });
 
