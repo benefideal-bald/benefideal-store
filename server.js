@@ -995,9 +995,9 @@ app.get('/api/reviews', (req, res) => {
     });
 });
 
-// Debug endpoint to check all Илья reviews
+// Debug endpoint to check all Илья reviews and recent client reviews
 app.get('/api/debug/ilya', (req, res) => {
-    // First check reviews
+    // First check reviews with name "Илья"
     db.all(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC`, [], (err, rows) => {
         if (err) {
             return res.status(500).json({ error: err.message });
@@ -1009,7 +1009,6 @@ app.get('/api/debug/ilya', (req, res) => {
             OR customer_name LIKE 'Илья %'
             OR customer_name LIKE '% Илья'
             OR customer_name LIKE '%Илья%'
-            OR LOWER(customer_email) LIKE '%ilya%'
             ORDER BY purchase_date DESC LIMIT 5`, [], (errOrders, ilyaOrders) => {
             if (errOrders) {
                 return res.json({ 
@@ -1020,25 +1019,66 @@ app.get('/api/debug/ilya', (req, res) => {
                 });
             }
             
-            res.json({ 
-                count: rows.length,
-                reviews: rows,
-                orders_count: ilyaOrders ? ilyaOrders.length : 0,
-                orders: ilyaOrders || [],
-                message: rows.length > 0 
-                    ? `Found ${rows.length} Илья review(s)` 
-                    : `No Илья reviews found. Found ${ilyaOrders ? ilyaOrders.length : 0} order(s) for Илья. Use POST /api/debug/restore-ilya to restore the review.`
+            // Check for recent client reviews (created today or yesterday) that might be Илья
+            // Look for reviews created in the last 2 days that are NOT static
+            const twoDaysAgo = new Date();
+            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+            
+            db.all(`SELECT * FROM reviews 
+                WHERE order_id NOT LIKE 'STATIC_%' 
+                AND order_id NOT LIKE 'RESTORED_%'
+                AND order_id NOT LIKE 'AUTO_RESTORED_%'
+                AND order_id NOT LIKE 'FORCE_RESTORED_%'
+                AND datetime(created_at) >= datetime(?)
+                ORDER BY created_at DESC LIMIT 20`, [twoDaysAgo.toISOString()], (errRecent, recentReviews) => {
+                if (errRecent) {
+                    return res.json({ 
+                        count: rows.length,
+                        reviews: rows,
+                        orders_count: ilyaOrders ? ilyaOrders.length : 0,
+                        orders: ilyaOrders || [],
+                        message: rows.length > 0 
+                            ? `Found ${rows.length} Илья review(s)` 
+                            : `No Илья reviews found. Found ${ilyaOrders ? ilyaOrders.length : 0} order(s) for Илья.`,
+                        recent_reviews_error: errRecent.message
+                    });
+                }
+                
+                // Check if any recent review matches Илья's email or order_id
+                let ilyaReviewInRecent = null;
+                if (ilyaOrders && ilyaOrders.length > 0 && recentReviews && recentReviews.length > 0) {
+                    const ilyaOrder = ilyaOrders[0];
+                    ilyaReviewInRecent = recentReviews.find(r => 
+                        r.customer_email.toLowerCase() === ilyaOrder.customer_email.toLowerCase() ||
+                        r.order_id === ilyaOrder.order_id
+                    );
+                }
+                
+                res.json({ 
+                    count: rows.length,
+                    reviews: rows,
+                    orders_count: ilyaOrders ? ilyaOrders.length : 0,
+                    orders: ilyaOrders || [],
+                    recent_reviews_count: recentReviews ? recentReviews.length : 0,
+                    recent_reviews: recentReviews || [],
+                    ilya_review_in_recent: ilyaReviewInRecent,
+                    message: rows.length > 0 
+                        ? `Found ${rows.length} Илья review(s)` 
+                        : (ilyaReviewInRecent 
+                            ? `Found Илья review in recent reviews but with different name: "${ilyaReviewInRecent.customer_name}". This might be the lost review!`
+                            : `No Илья reviews found. Found ${ilyaOrders ? ilyaOrders.length : 0} order(s) for Илья. Check recent_reviews for potential match.`)
+                });
             });
         });
     });
 });
 
 // Force restore Илья review endpoint (GET request for easy access)
-// НЕ создает новый отзыв, а ищет РЕАЛЬНЫЙ отзыв клиента Ильи
+// Ищет РЕАЛЬНЫЙ отзыв клиента Ильи по email или order_id и восстанавливает правильное имя
 app.get('/api/debug/restore-ilya', (req, res) => {
-    console.log('🔍 Searching for REAL Илья review (not creating fake one)...');
+    console.log('🔍 Searching for REAL Илья review and restoring correct name...');
     
-    // First, check if Илья review already exists in database
+    // First, check if Илья review already exists with correct name
     db.all(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC`, [], (err, existingReviews) => {
         if (err) {
             return res.status(500).json({ error: 'Database error', details: err.message });
@@ -1054,71 +1094,84 @@ app.get('/api/debug/restore-ilya', (req, res) => {
             });
         }
         
-        // Илья review doesn't exist - check if there are any recent client reviews that might be Илья
-        // Check for reviews created today or recently that are NOT static reviews
-        console.log('⚠️ No Илья reviews found. Checking for recent client reviews...');
-        
-        db.all(`SELECT * FROM reviews 
-            WHERE order_id NOT LIKE 'STATIC_%' 
-            AND order_id NOT LIKE 'RESTORED_%'
-            AND order_id NOT LIKE 'AUTO_RESTORED_%'
-            AND order_id NOT LIKE 'FORCE_RESTORED_%'
-            ORDER BY created_at DESC LIMIT 10`, [], (err, recentReviews) => {
+        // Илья review doesn't exist - check for Илья orders
+        db.all(`SELECT * FROM subscriptions WHERE 
+            customer_name = 'Илья' 
+            OR customer_name LIKE 'Илья %'
+            OR customer_name LIKE '% Илья'
+            OR customer_name LIKE '%Илья%'
+            ORDER BY purchase_date DESC LIMIT 5`, [], (err, ilyaOrders) => {
             if (err) {
                 return res.status(500).json({ error: 'Database error', details: err.message });
             }
             
-            console.log(`📋 Found ${recentReviews ? recentReviews.length : 0} recent client reviews`);
+            console.log(`📦 Found ${ilyaOrders ? ilyaOrders.length : 0} order(s) for Илья`);
             
-            // Check for Илья orders - if there's an order but no review, the review was lost
-            db.all(`SELECT * FROM subscriptions WHERE 
-                customer_name = 'Илья' 
-                OR customer_name LIKE 'Илья %'
-                OR customer_name LIKE '% Илья'
-                OR customer_name LIKE '%Илья%'
-                ORDER BY purchase_date DESC LIMIT 5`, [], (err, ilyaOrders) => {
+            if (!ilyaOrders || ilyaOrders.length === 0) {
+                return res.json({
+                    success: false,
+                    message: 'No Илья orders found in database. Cannot restore review.',
+                    suggestion: 'Check if Илья order was saved correctly when payment was confirmed'
+                });
+            }
+            
+            const latestOrder = ilyaOrders[0];
+            console.log(`   Latest order: email=${latestOrder.customer_email}, order_id=${latestOrder.order_id}, date=${latestOrder.purchase_date}`);
+            
+            // Check if there's a review for this order_id or email (might have different name)
+            db.all(`SELECT * FROM reviews WHERE 
+                (order_id = ? OR LOWER(customer_email) = LOWER(?))
+                AND order_id NOT LIKE 'STATIC_%'
+                ORDER BY created_at DESC LIMIT 5`, [latestOrder.order_id || '', latestOrder.customer_email], (err, reviewsForOrder) => {
                 if (err) {
                     return res.status(500).json({ error: 'Database error', details: err.message });
                 }
                 
-                console.log(`📦 Found ${ilyaOrders ? ilyaOrders.length : 0} order(s) for Илья`);
-                
-                if (ilyaOrders && ilyaOrders.length > 0) {
-                    const latestOrder = ilyaOrders[0];
-                    console.log(`   Latest order: email=${latestOrder.customer_email}, order_id=${latestOrder.order_id}, date=${latestOrder.purchase_date}`);
+                if (reviewsForOrder && reviewsForOrder.length > 0) {
+                    // Found review(s) for Илья's order/email but with different name!
+                    console.log(`✅ Found ${reviewsForOrder.length} review(s) for Илья order/email but with different name(s):`, reviewsForOrder.map(r => r.customer_name));
                     
-                    // Check if there's a review for this order_id
-                    db.get(`SELECT * FROM reviews WHERE order_id = ?`, [latestOrder.order_id || ''], (err, reviewForOrder) => {
-                        if (err) {
-                            return res.status(500).json({ error: 'Database error', details: err.message });
+                    // Update the newest review to have correct name "Илья"
+                    const reviewToFix = reviewsForOrder[0];
+                    console.log(`🔧 Fixing review ID ${reviewToFix.id}: changing name from "${reviewToFix.customer_name}" to "Илья"`);
+                    
+                    db.run(`UPDATE reviews SET customer_name = 'Илья' WHERE id = ?`, [reviewToFix.id], function(updateErr) {
+                        if (updateErr) {
+                            console.error('❌ Error updating review name:', updateErr);
+                            return res.status(500).json({ error: 'Database error', details: updateErr.message });
                         }
                         
-                        if (reviewForOrder) {
-                            return res.json({
+                        console.log(`✅ Review ID ${reviewToFix.id} name updated to "Илья"`);
+                        
+                        // Get updated review
+                        db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewToFix.id], (err, updatedReview) => {
+                            if (err) {
+                                return res.json({
+                                    success: true,
+                                    message: `Review name updated to "Илья" (ID: ${reviewToFix.id})`,
+                                    review_id: reviewToFix.id,
+                                    old_name: reviewToFix.customer_name,
+                                    note: 'Could not fetch updated review'
+                                });
+                            }
+                            
+                            res.json({
                                 success: true,
-                                message: 'Found review for Илья order, but customer_name is different',
-                                order: latestOrder,
-                                review: reviewForOrder,
-                                note: 'Review exists but customer_name might be different'
+                                message: `✅ REAL Илья review FOUND and RESTORED! Name was "${reviewToFix.customer_name}", now fixed to "Илья"`,
+                                review: updatedReview,
+                                review_id: reviewToFix.id,
+                                old_name: reviewToFix.customer_name,
+                                fixed: true
                             });
-                        }
-                        
-                        // Order exists but no review - the review was lost
-                        // We CANNOT restore it because we don't know the review text and rating
-                        return res.json({
-                            success: false,
-                            message: 'Илья order exists but review was lost. Cannot restore without review text and rating.',
-                            order: latestOrder,
-                            recent_reviews: recentReviews,
-                            suggestion: 'Client needs to leave a new review through the review form'
                         });
                     });
                 } else {
+                    // No review found for Илья order/email - review was lost
                     return res.json({
                         success: false,
-                        message: 'No Илья orders found in database. Cannot restore review.',
-                        recent_reviews: recentReviews,
-                        suggestion: 'Check if Илья order was saved correctly when payment was confirmed'
+                        message: 'Илья order exists but review was lost. Cannot restore without review text and rating.',
+                        order: latestOrder,
+                        suggestion: 'Client needs to leave a new review through the review form, or provide review text and rating to restore manually'
                     });
                 }
             });
