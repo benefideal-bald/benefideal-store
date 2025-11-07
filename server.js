@@ -160,14 +160,16 @@ db.serialize(() => {
                 { name: 'Ольга', email: 'static_review_16@benefideal.com', text: 'Отличные цены и быстрое обслуживание! Получила доступ к Adobe почти сразу после оплаты. Очень рекомендую этот магазин.', rating: 5, order_id: 'STATIC_REVIEW_16', daysAgo: null }
             ];
             
-            // КРИТИЧЕСКИ ВАЖНО: Используем INSERT OR IGNORE, чтобы НЕ перезаписывать существующие отзывы
-            // Проверяем каждый статический отзыв отдельно, вставляем только если его нет
-            const stmt = db.prepare(`
-                INSERT OR IGNORE INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            `);
-            
-            console.log(`   ✅ Using INSERT OR IGNORE - existing reviews (including client reviews) will NOT be affected!`);
+        // КРИТИЧЕСКИ ВАЖНО: Используем INSERT OR IGNORE, чтобы НЕ перезаписывать существующие отзывы
+        // Проверяем каждый статический отзыв отдельно, вставляем только если его нет
+        // НИКОГДА не удаляем существующие отзывы!
+        const stmt = db.prepare(`
+            INSERT OR IGNORE INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        
+        console.log(`   ✅ Using INSERT OR IGNORE - existing reviews (including client reviews) will NOT be affected!`);
+        console.log(`   ✅ CLIENT REVIEWS ARE SAFE - они НИКОГДА не будут удалены или перезаписаны!`);
             
             staticReviews.forEach((review) => {
                 // Максим и Тимур - новейшие (сегодня и вчера), остальные - рандомно за последние 60 дней
