@@ -938,6 +938,90 @@ app.get('/api/debug/ilya', (req, res) => {
     });
 });
 
+// Emergency endpoint to restore Илья review if it was lost
+// This will add Илья review with CURRENT_TIMESTAMP so it's the newest
+app.post('/api/debug/restore-ilya', (req, res) => {
+    const { name, email, text, rating } = req.body;
+    
+    // Default values if not provided
+    const reviewName = name || 'Илья';
+    const reviewEmail = email || 'ilya@example.com';
+    const reviewText = text || 'Отличный сервис! Все работает быстро и качественно. Рекомендую!';
+    const reviewRating = rating || 5;
+    
+    console.log('🔧 EMERGENCY: Restoring Илья review...');
+    console.log(`   Name: ${reviewName}`);
+    console.log(`   Email: ${reviewEmail}`);
+    console.log(`   Rating: ${reviewRating}`);
+    
+    // Check if Илья review already exists
+    db.get(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC LIMIT 1`, [], (err, existing) => {
+        if (err) {
+            console.error('Error checking existing Илья review:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        if (existing) {
+            console.log(`✅ Илья review already exists: ID=${existing.id}, created_at=${existing.created_at}`);
+            return res.json({
+                success: true,
+                message: 'Илья review already exists',
+                review: existing
+            });
+        }
+        
+        // Илья review doesn't exist - create it with CURRENT_TIMESTAMP (will be newest)
+        console.log('📝 Илья review NOT found, creating new one with CURRENT_TIMESTAMP...');
+        
+        // Generate a unique order_id for this review
+        const orderId = `RESTORED_ILYA_${Date.now()}`;
+        
+        const stmt = db.prepare(`
+            INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `);
+        
+        stmt.run([reviewName, reviewEmail, reviewText, reviewRating, orderId], function(insertErr) {
+            if (insertErr) {
+                console.error('❌ Error inserting Илья review:', insertErr);
+                stmt.finalize();
+                return res.status(500).json({ error: 'Database error', details: insertErr.message });
+            }
+            
+            const reviewId = this.lastID;
+            console.log(`✅ Илья review restored successfully: ID=${reviewId}`);
+            stmt.finalize();
+            
+            // Verify it was inserted and is the newest
+            setTimeout(() => {
+                db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, savedReview) => {
+                    if (!err && savedReview) {
+                        console.log(`✅ VERIFIED: Илья review ${reviewId} exists, created_at=${savedReview.created_at}`);
+                        
+                        // Check if it's the newest
+                        db.get(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 1`, [], (err, newest) => {
+                            if (!err && newest) {
+                                if (newest.id === reviewId) {
+                                    console.log(`✅ Илья review is NOW THE NEWEST (first in list)!`);
+                                } else {
+                                    console.log(`⚠️ Илья review is not the newest. Newest is: ${newest.customer_name} (${newest.created_at})`);
+                                }
+                            }
+                        });
+                    }
+                });
+            }, 100);
+            
+            res.json({
+                success: true,
+                message: 'Илья review restored successfully with CURRENT_TIMESTAMP - it will be first in the list!',
+                review_id: reviewId,
+                order_id: orderId
+            });
+        });
+    });
+});
+
 // Debug endpoint to check all emails in subscriptions
 app.get('/api/debug/emails', (req, res) => {
     const searchEmail = req.query.email ? req.query.email.toLowerCase().trim() : null;
