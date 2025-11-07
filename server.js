@@ -470,26 +470,51 @@ db.serialize(() => {
                                        
                                        // КРИТИЧЕСКИ ВАЖНО: Если заказа нет, создаем отзыв Тихона с дефолтными данными
                                        // Это гарантирует, что отзыв всегда будет присутствовать
+                                       // Используем INSERT вместо INSERT OR IGNORE, чтобы ВСЕГДА создавать отзыв
                                        console.log(`   🔧 Creating Тихон review with default data (no order found)...`);
-                                       const defaultStmt = db.prepare(`
-                                           INSERT OR IGNORE INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
-                                           VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                                       `);
                                        
-                                       defaultStmt.run([
-                                           'Тихон',
-                                           'tikhon@example.com',
-                                           'Купил кепкат про на 3 месяца я доволен',
-                                           5,
-                                           `AUTO_RESTORED_TIKHON_DEFAULT_${Date.now()}`
-                                       ], function(insertErr) {
-                                           if (insertErr) {
-                                               console.error(`   ❌ Error creating default Тихон review:`, insertErr);
-                                               defaultStmt.finalize();
-                                           } else {
-                                               const reviewId = this.lastID;
-                                               if (reviewId > 0) {
+                                       // Сначала проверяем, есть ли уже отзыв с дефолтным order_id
+                                       const defaultOrderId = 'AUTO_RESTORED_TIKHON_DEFAULT';
+                                       db.get(`SELECT * FROM reviews WHERE order_id = ? AND customer_name = 'Тихон'`, [defaultOrderId], (err, existingDefault) => {
+                                           if (err) {
+                                               console.error(`   ❌ Error checking existing default Тихон review:`, err);
+                                               return;
+                                           }
+                                           
+                                           if (existingDefault) {
+                                               console.log(`   ✅ Default Тихон review already exists: ID=${existingDefault.id}`);
+                                               // Обновляем created_at на CURRENT_TIMESTAMP, чтобы он был самым новым
+                                               db.run(`UPDATE reviews SET created_at = CURRENT_TIMESTAMP WHERE id = ?`, [existingDefault.id], (updateErr) => {
+                                                   if (updateErr) {
+                                                       console.error(`   ❌ Error updating Тихон review timestamp:`, updateErr);
+                                                   } else {
+                                                       console.log(`   ✅ Тихон review timestamp updated to CURRENT_TIMESTAMP - will be FIRST!`);
+                                                       db.run('PRAGMA wal_checkpoint(FULL);');
+                                                   }
+                                               });
+                                               return;
+                                           }
+                                           
+                                           // Создаем новый отзыв
+                                           const defaultStmt = db.prepare(`
+                                               INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                                               VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                                           `);
+                                           
+                                           defaultStmt.run([
+                                               'Тихон',
+                                               'tikhon@example.com',
+                                               'Купил кепкат про на 3 месяца я доволен',
+                                               5,
+                                               defaultOrderId
+                                           ], function(insertErr) {
+                                               if (insertErr) {
+                                                   console.error(`   ❌ Error creating default Тихон review:`, insertErr);
+                                                   defaultStmt.finalize();
+                                               } else {
+                                                   const reviewId = this.lastID;
                                                    console.log(`   ✅ Тихон review created with default data: ID=${reviewId}`);
+                                                   console.log(`   ✅ Created with CURRENT_TIMESTAMP - will be FIRST in the list!`);
                                                    
                                                    // КРИТИЧЕСКИ ВАЖНО: Принудительно синхронизируем данные с диском
                                                    db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
@@ -499,11 +524,9 @@ db.serialize(() => {
                                                            console.log('✅ WAL checkpoint completed - Тихон review is safely saved to disk');
                                                        }
                                                    });
-                                               } else {
-                                                   console.log(`   ℹ️ Тихон review already exists (INSERT OR IGNORE skipped)`);
+                                                   defaultStmt.finalize();
                                                }
-                                               defaultStmt.finalize();
-                                           }
+                                           });
                                        });
                                    }
                                });
