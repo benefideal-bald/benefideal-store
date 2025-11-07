@@ -1025,69 +1025,101 @@ app.post('/api/debug/restore-ilya', (req, res) => {
     console.log(`   Email: ${reviewEmail}`);
     console.log(`   Rating: ${reviewRating}`);
     
-    // Check if Илья review already exists
-    db.get(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC LIMIT 1`, [], (err, existing) => {
+    // First, check if Илья has any orders in subscriptions
+    db.all(`SELECT * FROM subscriptions WHERE 
+        customer_name = 'Илья' 
+        OR customer_name LIKE 'Илья %'
+        OR customer_name LIKE '% Илья'
+        OR customer_name LIKE '%Илья%'
+        OR LOWER(customer_email) LIKE '%ilya%'
+        ORDER BY purchase_date DESC LIMIT 5`, [], (err, ilyaOrders) => {
         if (err) {
-            console.error('Error checking existing Илья review:', err);
+            console.error('Error checking Илья orders:', err);
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
-        if (existing) {
-            console.log(`✅ Илья review already exists: ID=${existing.id}, created_at=${existing.created_at}`);
-            return res.json({
-                success: true,
-                message: 'Илья review already exists',
-                review: existing
-            });
-        }
+        console.log(`📦 Found ${ilyaOrders ? ilyaOrders.length : 0} order(s) for Илья`);
         
-        // Илья review doesn't exist - create it with CURRENT_TIMESTAMP (will be newest)
-        console.log('📝 Илья review NOT found, creating new one with CURRENT_TIMESTAMP...');
-        
-        // Generate a unique order_id for this review
-        const orderId = `RESTORED_ILYA_${Date.now()}`;
-        
-        const stmt = db.prepare(`
-            INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
-            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        `);
-        
-        stmt.run([reviewName, reviewEmail, reviewText, reviewRating, orderId], function(insertErr) {
-            if (insertErr) {
-                console.error('❌ Error inserting Илья review:', insertErr);
-                stmt.finalize();
-                return res.status(500).json({ error: 'Database error', details: insertErr.message });
+        // Check if Илья review already exists
+        db.get(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC LIMIT 1`, [], (err, existing) => {
+            if (err) {
+                console.error('Error checking existing Илья review:', err);
+                return res.status(500).json({ error: 'Database error', details: err.message });
             }
             
-            const reviewId = this.lastID;
-            console.log(`✅ Илья review restored successfully: ID=${reviewId}`);
-            stmt.finalize();
-            
-            // Verify it was inserted and is the newest
-            setTimeout(() => {
-                db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, savedReview) => {
-                    if (!err && savedReview) {
-                        console.log(`✅ VERIFIED: Илья review ${reviewId} exists, created_at=${savedReview.created_at}`);
-                        
-                        // Check if it's the newest
-                        db.get(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 1`, [], (err, newest) => {
-                            if (!err && newest) {
-                                if (newest.id === reviewId) {
-                                    console.log(`✅ Илья review is NOW THE NEWEST (first in list)!`);
-                                } else {
-                                    console.log(`⚠️ Илья review is not the newest. Newest is: ${newest.customer_name} (${newest.created_at})`);
-                                }
-                            }
-                        });
-                    }
+            if (existing) {
+                console.log(`✅ Илья review already exists: ID=${existing.id}, created_at=${existing.created_at}`);
+                return res.json({
+                    success: true,
+                    message: 'Илья review already exists',
+                    review: existing,
+                    orders_found: ilyaOrders ? ilyaOrders.length : 0
                 });
-            }, 100);
+            }
             
-            res.json({
-                success: true,
-                message: 'Илья review restored successfully with CURRENT_TIMESTAMP - it will be first in the list!',
-                review_id: reviewId,
-                order_id: orderId
+            // Илья review doesn't exist - create it with CURRENT_TIMESTAMP (will be newest)
+            console.log('📝 Илья review NOT found, creating new one with CURRENT_TIMESTAMP...');
+            
+            // Use order_id from latest order if available, otherwise generate unique one
+            let orderId;
+            let useEmail = reviewEmail;
+            
+            if (ilyaOrders && ilyaOrders.length > 0) {
+                const latestOrder = ilyaOrders[0];
+                orderId = latestOrder.order_id || `RESTORED_ILYA_${Date.now()}`;
+                useEmail = latestOrder.customer_email; // Use email from order
+                console.log(`   Using order_id from latest order: ${orderId}`);
+                console.log(`   Using email from order: ${useEmail}`);
+            } else {
+                orderId = `RESTORED_ILYA_${Date.now()}`;
+                console.log(`   No orders found, using generated order_id: ${orderId}`);
+            }
+            
+            const stmt = db.prepare(`
+                INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `);
+            
+            stmt.run([reviewName, useEmail, reviewText, reviewRating, orderId], function(insertErr) {
+                if (insertErr) {
+                    console.error('❌ Error inserting Илья review:', insertErr);
+                    stmt.finalize();
+                    return res.status(500).json({ error: 'Database error', details: insertErr.message });
+                }
+                
+                const reviewId = this.lastID;
+                console.log(`✅ Илья review restored successfully: ID=${reviewId}`);
+                console.log(`   Email: ${useEmail}, Order ID: ${orderId}`);
+                stmt.finalize();
+                
+                // Verify it was inserted and is the newest
+                setTimeout(() => {
+                    db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, savedReview) => {
+                        if (!err && savedReview) {
+                            console.log(`✅ VERIFIED: Илья review ${reviewId} exists, created_at=${savedReview.created_at}`);
+                            
+                            // Check if it's the newest
+                            db.get(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 1`, [], (err, newest) => {
+                                if (!err && newest) {
+                                    if (newest.id === reviewId) {
+                                        console.log(`✅ Илья review is NOW THE NEWEST (first in list)!`);
+                                    } else {
+                                        console.log(`⚠️ Илья review is not the newest. Newest is: ${newest.customer_name} (${newest.created_at})`);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }, 100);
+                
+                res.json({
+                    success: true,
+                    message: 'Илья review restored successfully with CURRENT_TIMESTAMP - it will be first in the list!',
+                    review_id: reviewId,
+                    order_id: orderId,
+                    email: useEmail,
+                    orders_found: ilyaOrders ? ilyaOrders.length : 0
+                });
             });
         });
     });
@@ -1096,14 +1128,27 @@ app.post('/api/debug/restore-ilya', (req, res) => {
 // Debug endpoint to check all emails in subscriptions
 app.get('/api/debug/emails', (req, res) => {
     const searchEmail = req.query.email ? req.query.email.toLowerCase().trim() : null;
+    const searchName = req.query.name ? req.query.name.trim() : null;
     
-    let query = `SELECT DISTINCT customer_email, customer_name, COUNT(*) as order_count FROM subscriptions GROUP BY customer_email`;
+    let query = `SELECT DISTINCT customer_email, customer_name, COUNT(*) as order_count FROM subscriptions`;
     let params = [];
+    let conditions = [];
     
     if (searchEmail) {
-        query = `SELECT DISTINCT customer_email, customer_name, COUNT(*) as order_count FROM subscriptions WHERE LOWER(customer_email) = LOWER(?) GROUP BY customer_email`;
-        params = [searchEmail];
+        conditions.push(`LOWER(customer_email) = LOWER(?)`);
+        params.push(searchEmail);
     }
+    
+    if (searchName) {
+        conditions.push(`(customer_name LIKE ? OR customer_name = ?)`);
+        params.push(`%${searchName}%`, searchName);
+    }
+    
+    if (conditions.length > 0) {
+        query += ` WHERE ${conditions.join(' AND ')}`;
+    }
+    
+    query += ` GROUP BY customer_email, customer_name`;
     
     db.all(query, params, (err, rows) => {
         if (err) {
@@ -1113,8 +1158,9 @@ app.get('/api/debug/emails', (req, res) => {
             count: rows.length,
             emails: rows,
             searchEmail: searchEmail,
-            message: searchEmail 
-                ? (rows.length > 0 ? `Found ${rows.length} subscription(s) for ${searchEmail}` : `No subscriptions found for ${searchEmail}`)
+            searchName: searchName,
+            message: searchEmail || searchName
+                ? (rows.length > 0 ? `Found ${rows.length} subscription(s)` : `No subscriptions found`)
                 : `Found ${rows.length} unique email(s) in subscriptions`
         });
     });
