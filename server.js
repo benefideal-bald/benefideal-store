@@ -1190,6 +1190,56 @@ app.get('/api/debug/restore-ilya', (req, res) => {
     });
 });
 
+// Simple endpoint to add test Илья review - использует реальный order_id из базы
+app.get('/api/debug/add-ilya-review', (req, res) => {
+    const ilyaEmail = 'viliyili27@gmail.com';
+    
+    // Find latest order for this email
+    db.get(`SELECT * FROM subscriptions WHERE LOWER(customer_email) = LOWER(?) ORDER BY purchase_date DESC LIMIT 1`, [ilyaEmail], (err, order) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        if (!order) {
+            return res.json({ success: false, message: 'No order found for ' + ilyaEmail });
+        }
+        
+        // Check if review already exists for this order
+        db.get(`SELECT * FROM reviews WHERE order_id = ? AND LOWER(customer_email) = LOWER(?)`, [order.order_id || '', ilyaEmail], (err, existing) => {
+            if (err) {
+                return res.status(500).json({ error: 'Database error', details: err.message });
+            }
+            
+            if (existing) {
+                return res.json({ success: true, message: 'Review already exists', review: existing });
+            }
+            
+            // Create review with CURRENT_TIMESTAMP (will be newest)
+            const stmt = db.prepare(`
+                INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `);
+            
+            stmt.run(['Илья', ilyaEmail, 'Отличный сервис! CapCut Pro работает идеально. Рекомендую!', 5, order.order_id || null], function(insertErr) {
+                if (insertErr) {
+                    stmt.finalize();
+                    return res.status(500).json({ error: 'Database error', details: insertErr.message });
+                }
+                
+                const reviewId = this.lastID;
+                stmt.finalize();
+                
+                res.json({
+                    success: true,
+                    message: 'Илья review added successfully - it will be FIRST in the list!',
+                    review_id: reviewId,
+                    order_id: order.order_id
+                });
+            });
+        });
+    });
+});
+
 // Emergency endpoint to restore Илья review if it was lost
 // ТОЛЬКО если указаны реальные данные отзыва (text, rating) - создает отзыв с этими данными
 app.post('/api/debug/restore-ilya', (req, res) => {
