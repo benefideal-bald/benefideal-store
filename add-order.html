@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить заказ вручную - Benefideal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .info {
+            background: #e7f3ff;
+            color: #004085;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Добавить заказ вручную</h1>
+        
+        <div class="info">
+            Используйте эту форму только если заказ не был автоматически сохранен в базу данных после оплаты.
+        </div>
+        
+        <form id="addOrderForm">
+            <div class="form-group">
+                <label for="name">Имя клиента *</label>
+                <input type="text" id="name" name="name" required placeholder="Иван">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email клиента *</label>
+                <input type="email" id="email" name="email" required placeholder="ivan@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="product_name">Название товара *</label>
+                <input type="text" id="product_name" name="product_name" required placeholder="CapCut Pro">
+            </div>
+            
+            <div class="form-group">
+                <label for="product_id">ID товара *</label>
+                <select id="product_id" name="product_id" required>
+                    <option value="">Выберите товар</option>
+                    <option value="1">1 - ChatGPT Plus</option>
+                    <option value="3">3 - Adobe Creative Cloud</option>
+                    <option value="7">7 - CapCut Pro</option>
+                    <option value="2">2 - Другой товар</option>
+                    <option value="4">4 - Другой товар</option>
+                    <option value="5">5 - Другой товар</option>
+                    <option value="6">6 - Другой товар</option>
+                    <option value="8">8 - Другой товар</option>
+                    <option value="9">9 - Другой товар</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="months">Срок подписки (месяцев) *</label>
+                <input type="number" id="months" name="months" required min="1" value="1">
+            </div>
+            
+            <div class="form-group">
+                <label for="order_id">Order ID (опционально)</label>
+                <input type="text" id="order_id" name="order_id" placeholder="ORDER_1234567890_abc">
+            </div>
+            
+            <button type="submit" id="submitBtn">Добавить заказ</button>
+        </form>
+        
+        <div id="result" class="result"></div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('addOrderForm');
+        const result = document.getElementById('result');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // Determine API URL
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const apiUrl = isLocalhost
+            ? 'http://localhost:3000/api/debug/add-subscription'
+            : `${window.location.origin}/api/debug/add-subscription`;
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Отправка...';
+            result.className = 'result';
+            result.textContent = '';
+            
+            const formData = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim().toLowerCase(),
+                product_name: document.getElementById('product_name').value.trim(),
+                product_id: parseInt(document.getElementById('product_id').value),
+                months: parseInt(document.getElementById('months').value) || 1,
+                order_id: document.getElementById('order_id').value.trim() || null
+            };
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.className = 'result success';
+                    result.textContent = `✅ ${data.message || 'Заказ успешно добавлен! Теперь клиент может оставить отзыв.'}`;
+                    form.reset();
+                } else {
+                    result.className = 'result error';
+                    result.textContent = `❌ Ошибка: ${data.error || 'Неизвестная ошибка'}`;
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = `❌ Ошибка соединения: ${error.message}`;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Добавить заказ';
+            }
+        });
+    </script>
+</body>
+</html>
+
