@@ -366,18 +366,18 @@ body {
 
 .hero {
     position: relative;
-    min-height: 90vh;
+    min-height: 95vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: var(--space-24) 0 var(--space-40);
     margin-top: 80px;
-    margin-bottom: -2rem;
-    padding-bottom: calc(var(--space-40) + 2rem);
+    margin-bottom: -4rem;
+    padding-bottom: calc(var(--space-40) + 6rem);
     background: var(--gradient-hero);
     background-size: 200% 200%;
     animation: gradient-shift 15s ease infinite;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .hero::before {
