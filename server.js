@@ -252,42 +252,72 @@ db.serialize(() => {
                         console.log(`⚠️ Илья reviews NOT found in database`);
                         console.log(`   🔍 Checking if Илья has an order in subscriptions...`);
                         
-                        // Проверяем, есть ли заказ Ильи (по любому email, который может быть связан с Ильей)
-                        // Ищем по имени "Илья" или по email, который может быть связан с Ильей
-                        db.all(`SELECT * FROM subscriptions WHERE customer_name LIKE '%Илья%' OR customer_name = 'Илья' ORDER BY purchase_date DESC LIMIT 1`, [], (err, ilyaOrders) => {
+                        // Проверяем, есть ли заказ Ильи (по имени "Илья" в любом формате)
+                        // Ищем по имени "Илья" (точное совпадение или содержит "Илья")
+                        // Также проверяем различные варианты написания имени
+                        db.all(`SELECT * FROM subscriptions WHERE 
+                            customer_name = 'Илья' 
+                            OR customer_name LIKE 'Илья %'
+                            OR customer_name LIKE '% Илья'
+                            OR customer_name LIKE '%Илья%'
+                            ORDER BY purchase_date DESC LIMIT 5`, [], (err, ilyaOrders) => {
                             if (!err && ilyaOrders && ilyaOrders.length > 0) {
                                 console.log(`   ✅ Found ${ilyaOrders.length} order(s) for Илья`);
+                                
+                                // Берем самый новый заказ Ильи
                                 const ilyaOrder = ilyaOrders[0];
-                                console.log(`   📦 Order details: email=${ilyaOrder.customer_email}, product=${ilyaOrder.product_name}, order_id=${ilyaOrder.order_id}`);
+                                console.log(`   📦 Latest order details:`);
+                                console.log(`      Name: ${ilyaOrder.customer_name}`);
+                                console.log(`      Email: ${ilyaOrder.customer_email}`);
+                                console.log(`      Product: ${ilyaOrder.product_name}`);
+                                console.log(`      Order ID: ${ilyaOrder.order_id}`);
                                 
-                                // Автоматически создаем отзыв Ильи с CURRENT_TIMESTAMP (будет самым новым!)
-                                console.log(`   🔧 AUTO-RESTORING Илья review with CURRENT_TIMESTAMP...`);
-                                
-                                const restoreOrderId = ilyaOrder.order_id || `AUTO_RESTORED_ILYA_${Date.now()}`;
-                                const stmt = db.prepare(`
-                                    INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
-                                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                                `);
-                                
-                                stmt.run([
-                                    'Илья',
-                                    ilyaOrder.customer_email,
-                                    'Отличный сервис! Все работает быстро и качественно. Рекомендую!',
-                                    5,
-                                    restoreOrderId
-                                ], function(insertErr) {
-                                    if (insertErr) {
-                                        console.error(`   ❌ Error auto-restoring Илья review:`, insertErr);
-                                        stmt.finalize();
-                                    } else {
-                                        const reviewId = this.lastID;
-                                        console.log(`   ✅ Илья review AUTO-RESTORED successfully: ID=${reviewId}`);
-                                        console.log(`   ✅ Created with CURRENT_TIMESTAMP - will be FIRST in the list!`);
-                                        stmt.finalize();
+                                // Проверяем, есть ли уже отзыв для этого order_id
+                                db.get(`SELECT * FROM reviews WHERE order_id = ? AND customer_name = 'Илья'`, [ilyaOrder.order_id || ''], (err, existingReview) => {
+                                    if (err) {
+                                        console.error(`   ❌ Error checking existing review:`, err);
+                                        return;
                                     }
+                                    
+                                    if (existingReview) {
+                                        console.log(`   ✅ Review already exists for this order: ID=${existingReview.id}`);
+                                        return;
+                                    }
+                                    
+                                    // Автоматически создаем отзыв Ильи с CURRENT_TIMESTAMP (будет самым новым!)
+                                    console.log(`   🔧 AUTO-RESTORING Илья review with CURRENT_TIMESTAMP...`);
+                                    
+                                    const restoreOrderId = ilyaOrder.order_id || `AUTO_RESTORED_ILYA_${Date.now()}`;
+                                    const stmt = db.prepare(`
+                                        INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                                        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                                    `);
+                                    
+                                    stmt.run([
+                                        'Илья',
+                                        ilyaOrder.customer_email,
+                                        'Отличный сервис! Все работает быстро и качественно. Рекомендую!',
+                                        5,
+                                        restoreOrderId
+                                    ], function(insertErr) {
+                                        if (insertErr) {
+                                            console.error(`   ❌ Error auto-restoring Илья review:`, insertErr);
+                                            if (insertErr.message.includes('UNIQUE')) {
+                                                console.log(`   ℹ️ Review already exists for this order_id, skipping`);
+                                            }
+                                            stmt.finalize();
+                                        } else {
+                                            const reviewId = this.lastID;
+                                            console.log(`   ✅ Илья review AUTO-RESTORED successfully: ID=${reviewId}`);
+                                            console.log(`   ✅ Created with CURRENT_TIMESTAMP - will be FIRST in the list!`);
+                                            console.log(`   ✅ Email: ${ilyaOrder.customer_email}, Order ID: ${restoreOrderId}`);
+                                            stmt.finalize();
+                                        }
+                                    });
                                 });
                             } else {
                                 console.log(`   ⚠️ No orders found for Илья - cannot auto-restore review`);
+                                console.log(`   💡 Use /api/debug/restore-ilya endpoint or restore-ilya.html page to manually restore the review`);
                             }
                         });
                     }
