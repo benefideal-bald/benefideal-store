@@ -1249,7 +1249,19 @@ app.get('/api/debug/check-all-reviews', (req, res) => {
         
         // Find Илья reviews
         const ilyaReviews = allReviews.filter(r => r.customer_name === 'Илья');
+        // Find Тихон reviews
+        const tikhonReviews = allReviews.filter(r => r.customer_name === 'Тихон');
+        
         const ilyaPositions = ilyaReviews.map(r => ({
+            id: r.id,
+            name: r.customer_name,
+            email: r.customer_email,
+            position: allReviews.indexOf(r),
+            created_at: r.created_at,
+            order_id: r.order_id
+        }));
+        
+        const tikhonPositions = tikhonReviews.map(r => ({
             id: r.id,
             name: r.customer_name,
             email: r.customer_email,
@@ -1271,11 +1283,53 @@ app.get('/api/debug/check-all-reviews', (req, res) => {
             total_reviews: allReviews.length,
             ilya_reviews_count: ilyaReviews.length,
             ilya_reviews: ilyaPositions,
+            tikhon_reviews_count: tikhonReviews.length,
+            tikhon_reviews: tikhonPositions,
             top_10_reviews: top10,
             ilya_in_top_10: top10.some(r => r.name === 'Илья'),
+            tikhon_in_top_10: top10.some(r => r.name === 'Тихон'),
             message: ilyaReviews.length > 0
                 ? `Found ${ilyaReviews.length} Илья review(s). ${ilyaPositions[0]?.position === 0 ? 'First one is at position 0 (newest)!' : `First one is at position ${ilyaPositions[0]?.position}`}`
-                : 'No Илья reviews found in database'
+                : 'No Илья reviews found in database',
+            tikhon_message: tikhonReviews.length > 0
+                ? `Found ${tikhonReviews.length} Тихон review(s). ${tikhonPositions[0]?.position === 0 ? 'First one is at position 0 (newest)!' : `First one is at position ${tikhonPositions[0]?.position}`}`
+                : 'No Тихон reviews found in database'
+        });
+    });
+});
+
+// Find and restore Тихон review
+app.get('/api/debug/find-tikhon', (req, res) => {
+    // Search by name "Тихон"
+    db.all(`SELECT * FROM reviews WHERE customer_name = 'Тихон' ORDER BY created_at DESC`, [], (err, tikhonReviews) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        // Also search by email patterns (common emails with Тихон)
+        db.all(`SELECT * FROM subscriptions WHERE customer_name LIKE '%Тихон%' ORDER BY purchase_date DESC LIMIT 5`, [], (err, tikhonOrders) => {
+            if (err) {
+                return res.status(500).json({ error: 'Database error', details: err.message });
+            }
+            
+            // Search for reviews with "кепкат" or "CapCut" in text (Тихон's review mentioned CapCut)
+            db.all(`SELECT * FROM reviews WHERE review_text LIKE '%кепкат%' OR review_text LIKE '%CapCut%' ORDER BY created_at DESC`, [], (err, capcutReviews) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Database error', details: err.message });
+                }
+                
+                res.json({
+                    tikhon_reviews_count: tikhonReviews ? tikhonReviews.length : 0,
+                    tikhon_reviews: tikhonReviews || [],
+                    tikhon_orders_count: tikhonOrders ? tikhonOrders.length : 0,
+                    tikhon_orders: tikhonOrders || [],
+                    capcut_reviews_count: capcutReviews ? capcutReviews.length : 0,
+                    capcut_reviews: capcutReviews || [],
+                    message: tikhonReviews && tikhonReviews.length > 0
+                        ? `Found ${tikhonReviews.length} Тихон review(s) in database`
+                        : 'No Тихон reviews found. Searching by order name and review text...'
+                });
+            });
         });
     });
 });
