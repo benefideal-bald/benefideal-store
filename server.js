@@ -533,25 +533,37 @@ app.get('/api/reviews', (req, res) => {
     
     // First, update static reviews Максим and Тимур to be older if they exist and are too new
     // This ensures new client reviews always appear first
+    // Максим should be yesterday at 15:42, Тимур should be 2 days ago at 13:57
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(15, 42, 0, 0);
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    twoDaysAgo.setHours(13, 57, 0, 0);
+    
     db.run(`
         UPDATE reviews 
-        SET created_at = datetime('now', '-1 day', '15:42:00')
+        SET created_at = ?
         WHERE customer_name = 'Максим' AND order_id = 'STATIC_REVIEW_MAXIM'
         AND datetime(created_at) > datetime('now', '-12 hours')
-    `, (err) => {
+    `, [yesterday.toISOString()], (err) => {
         if (err) {
             console.error('Error updating Максим date:', err);
+        } else {
+            console.log('Updated Максим date to yesterday if needed');
         }
     });
     
     db.run(`
         UPDATE reviews 
-        SET created_at = datetime('now', '-2 days', '13:57:00')
+        SET created_at = ?
         WHERE customer_name = 'Тимур' AND order_id = 'STATIC_REVIEW_TIMUR'
         AND datetime(created_at) > datetime('now', '-24 hours')
-    `, (err) => {
+    `, [twoDaysAgo.toISOString()], (err) => {
         if (err) {
             console.error('Error updating Тимур date:', err);
+        } else {
+            console.log('Updated Тимур date to 2 days ago if needed');
         }
     });
     
