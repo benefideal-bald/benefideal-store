@@ -30,6 +30,11 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
+// Health check endpoint for Render (prevents timeout, but won't prevent sleep on free plan)
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // API routes must come BEFORE static files
 // This ensures /api/* requests are handled by Express, not static files
 
