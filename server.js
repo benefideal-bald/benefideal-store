@@ -1240,6 +1240,46 @@ app.get('/api/debug/add-ilya-review', (req, res) => {
     });
 });
 
+// Check ALL reviews in database and show Илья position
+app.get('/api/debug/check-all-reviews', (req, res) => {
+    db.all(`SELECT * FROM reviews ORDER BY created_at DESC`, [], (err, allReviews) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        // Find Илья reviews
+        const ilyaReviews = allReviews.filter(r => r.customer_name === 'Илья');
+        const ilyaPositions = ilyaReviews.map(r => ({
+            id: r.id,
+            name: r.customer_name,
+            email: r.customer_email,
+            position: allReviews.indexOf(r),
+            created_at: r.created_at,
+            order_id: r.order_id
+        }));
+        
+        // Top 10 reviews
+        const top10 = allReviews.slice(0, 10).map((r, idx) => ({
+            position: idx,
+            id: r.id,
+            name: r.customer_name,
+            email: r.customer_email,
+            created_at: r.created_at
+        }));
+        
+        res.json({
+            total_reviews: allReviews.length,
+            ilya_reviews_count: ilyaReviews.length,
+            ilya_reviews: ilyaPositions,
+            top_10_reviews: top10,
+            ilya_in_top_10: top10.some(r => r.name === 'Илья'),
+            message: ilyaReviews.length > 0
+                ? `Found ${ilyaReviews.length} Илья review(s). ${ilyaPositions[0]?.position === 0 ? 'First one is at position 0 (newest)!' : `First one is at position ${ilyaPositions[0]?.position}`}`
+                : 'No Илья reviews found in database'
+        });
+    });
+});
+
 // Emergency endpoint to restore Илья review if it was lost
 // ТОЛЬКО если указаны реальные данные отзыва (text, rating) - создает отзыв с этими данными
 app.post('/api/debug/restore-ilya', (req, res) => {
