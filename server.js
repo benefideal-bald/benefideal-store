@@ -18,21 +18,34 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Initialize SQLite database FIRST
-// On Render, use persistent disk storage for database
-// Render provides persistent disk at /opt/render/project/src (or similar)
-// Use environment variable or fallback to project root
-const dbPath = process.env.DATABASE_PATH || (process.env.RENDER ? path.join('/opt/render/project/src', 'subscriptions.db') : path.join(__dirname, 'subscriptions.db'));
+// IMPORTANT: On Render Free plan, the filesystem is PERSISTENT, but database path matters
+// Use __dirname (project root) - this is persistent on Render
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'subscriptions.db');
+const fs = require('fs');
+
+console.log('📂 Database initialization:');
+console.log('   Current directory (__dirname):', __dirname);
+console.log('   Database path:', dbPath);
+console.log('   RENDER environment:', process.env.RENDER || 'not set');
+console.log('   Database file exists:', fs.existsSync(dbPath));
+
 const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
         console.error('❌ Error opening database:', err);
         console.error('Database path:', dbPath);
         console.error('Current directory:', __dirname);
-        // Try fallback path
-        const fallbackPath = path.join(__dirname, 'subscriptions.db');
-        console.log('Trying fallback path:', fallbackPath);
     } else {
         console.log('✅ Database opened successfully at:', dbPath);
-        console.log('Database file exists:', require('fs').existsSync(dbPath));
+        console.log('✅ Database file exists:', fs.existsSync(dbPath));
+        
+        // Verify we can write to the database
+        db.run('PRAGMA journal_mode=WAL;', (err) => {
+            if (err) {
+                console.error('❌ Error setting WAL mode:', err);
+            } else {
+                console.log('✅ WAL mode enabled for better concurrency');
+            }
+        });
     }
 });
 
