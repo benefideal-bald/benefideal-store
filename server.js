@@ -541,16 +541,16 @@ app.get('/api/reviews', (req, res) => {
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
     twoDaysAgo.setHours(13, 57, 0, 0);
     
+    // Always update Максим and Тимур dates to ensure they're not newer than client reviews
     db.run(`
         UPDATE reviews 
         SET created_at = ?
         WHERE customer_name = 'Максим' AND order_id = 'STATIC_REVIEW_MAXIM'
-        AND datetime(created_at) > datetime('now', '-12 hours')
     `, [yesterday.toISOString()], (err) => {
         if (err) {
             console.error('Error updating Максим date:', err);
         } else {
-            console.log('Updated Максим date to yesterday if needed');
+            console.log('Updated Максим date to yesterday');
         }
     });
     
@@ -558,12 +558,11 @@ app.get('/api/reviews', (req, res) => {
         UPDATE reviews 
         SET created_at = ?
         WHERE customer_name = 'Тимур' AND order_id = 'STATIC_REVIEW_TIMUR'
-        AND datetime(created_at) > datetime('now', '-24 hours')
     `, [twoDaysAgo.toISOString()], (err) => {
         if (err) {
             console.error('Error updating Тимур date:', err);
         } else {
-            console.log('Updated Тимур date to 2 days ago if needed');
+            console.log('Updated Тимур date to 2 days ago');
         }
     });
     
