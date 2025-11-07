@@ -531,6 +531,30 @@ app.get('/api/reviews', (req, res) => {
     // Validate sort order
     const validSort = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
     
+    // First, update static reviews Максим and Тимур to be older if they exist and are too new
+    // This ensures new client reviews always appear first
+    db.run(`
+        UPDATE reviews 
+        SET created_at = datetime('now', '-1 day', '15:42:00')
+        WHERE customer_name = 'Максим' AND order_id = 'STATIC_REVIEW_MAXIM'
+        AND datetime(created_at) > datetime('now', '-12 hours')
+    `, (err) => {
+        if (err) {
+            console.error('Error updating Максим date:', err);
+        }
+    });
+    
+    db.run(`
+        UPDATE reviews 
+        SET created_at = datetime('now', '-2 days', '13:57:00')
+        WHERE customer_name = 'Тимур' AND order_id = 'STATIC_REVIEW_TIMUR'
+        AND datetime(created_at) > datetime('now', '-24 hours')
+    `, (err) => {
+        if (err) {
+            console.error('Error updating Тимур date:', err);
+        }
+    });
+    
     // Don't sort in SQL - we'll sort in JavaScript to handle mixed date formats
     // Don't apply LIMIT in SQL - apply it after sorting in JavaScript
     let query = `SELECT * FROM reviews`;
