@@ -22,8 +22,18 @@ app.use(bodyParser.json());
 // НО файлы могут удаляться при деплое, если они в .gitignore
 // Используем путь в корне проекта, но НЕ в .gitignore, чтобы файл сохранялся
 // Если DATABASE_PATH не указан, используем корень проекта (persistent на Render)
+// ВАЖНО: База данных НЕ должна удаляться при деплое - это критически важно для сохранения отзывов!
 const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'subscriptions.db');
 const fs = require('fs');
+
+// КРИТИЧЕСКИ ВАЖНО: Проверяем, существует ли база данных и её размер
+// Если база существует, но пустая - это проблема!
+if (fs.existsSync(dbPath)) {
+    const stats = fs.statSync(dbPath);
+    if (stats.size < 1000) {
+        console.warn('⚠️ WARNING: Database file exists but is very small (' + stats.size + ' bytes) - might be empty or corrupted!');
+    }
+}
 
 console.log('📂 Database initialization:');
 console.log('   Current directory (__dirname):', __dirname);
@@ -135,14 +145,38 @@ db.serialize(() => {
         } else {
             console.log('✅ Reviews table created/verified');
             // КРИТИЧЕСКИ ВАЖНО: Проверяем количество отзывов при каждом запуске
-            // Если количество резко упало - это проблема!
+            // Если количество резко упало - это КРИТИЧЕСКАЯ проблема!
             db.get(`SELECT COUNT(*) as count FROM reviews`, [], (err, countRow) => {
                 if (!err && countRow) {
                     console.log(`📊 Current reviews count: ${countRow.count}`);
                     if (countRow.count === 0) {
-                        console.warn('⚠️ WARNING: Reviews table is EMPTY! This might indicate database was reset or reviews were deleted.');
+                        console.error('🚨🚨🚨 КРИТИЧЕСКАЯ ПРОБЛЕМА: Reviews table is EMPTY!');
+                        console.error('🚨 Это может означать, что база данных была пересоздана или отзывы были удалены!');
+                        console.error('🚨 Проверьте, не удаляется ли файл базы данных при деплое!');
+                        console.error('🚨 Проверьте логи Render на наличие ошибок базы данных!');
                     } else {
                         console.log(`✅ Reviews table has ${countRow.count} reviews - all safe!`);
+                        
+                        // Проверяем конкретные отзывы (Тихон, Илья)
+                        db.get(`SELECT COUNT(*) as count FROM reviews WHERE customer_name = 'Тихон'`, [], (err, tikhonCount) => {
+                            if (!err && tikhonCount) {
+                                if (tikhonCount.count === 0) {
+                                    console.warn('⚠️ WARNING: Тихон review is MISSING! Will be auto-restored.');
+                                } else {
+                                    console.log(`✅ Тихон reviews: ${tikhonCount.count}`);
+                                }
+                            }
+                        });
+                        
+                        db.get(`SELECT COUNT(*) as count FROM reviews WHERE customer_name = 'Илья'`, [], (err, ilyaCount) => {
+                            if (!err && ilyaCount) {
+                                if (ilyaCount.count === 0) {
+                                    console.warn('⚠️ WARNING: Илья review is MISSING! Will be auto-restored.');
+                                } else {
+                                    console.log(`✅ Илья reviews: ${ilyaCount.count}`);
+                                }
+                            }
+                        });
                     }
                 }
             });
