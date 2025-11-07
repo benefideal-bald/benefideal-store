@@ -311,8 +311,10 @@
                     
                     console.log('Loading', reviewsToAdd.length, 'reviews. First (newest):', reviewsToAdd[0]?.customer_name, 'Last:', reviewsToAdd[reviewsToAdd.length - 1]?.customer_name);
                     
-                    // КРИТИЧЕСКИ ВАЖНО: Проверяем, есть ли Илья в первых 10 отзывах
+                    // КРИТИЧЕСКИ ВАЖНО: Проверяем, есть ли Илья и Тихон в первых 10 отзывах
                     const ilyaInFirst10 = reviewsToAdd.find(r => r.customer_name === 'Илья');
+                    const tikhonInFirst10 = reviewsToAdd.find(r => r.customer_name === 'Тихон');
+                    
                     if (ilyaInFirst10) {
                         const ilyaPosition = reviewsToAdd.indexOf(ilyaInFirst10);
                         console.log(`✅ Илья review WILL BE DISPLAYED in carousel at position ${ilyaPosition}!`);
@@ -326,6 +328,22 @@
                             console.error(`❌ First 10 reviews:`, reviewsToAdd.map(r => `${r.customer_name} (${r.created_at})`));
                         } else {
                             console.error(`❌ Илья review NOT FOUND in API response at all!`);
+                        }
+                    }
+                    
+                    if (tikhonInFirst10) {
+                        const tikhonPosition = reviewsToAdd.indexOf(tikhonInFirst10);
+                        console.log(`✅ Тихон review WILL BE DISPLAYED in carousel at position ${tikhonPosition}!`);
+                    } else {
+                        // Проверяем, есть ли Тихон вообще в ответе API
+                        const tikhonInAll = data.reviews.find(r => r.customer_name === 'Тихон');
+                        if (tikhonInAll) {
+                            const tikhonPositionInAll = data.reviews.indexOf(tikhonInAll);
+                            console.error(`❌ Тихон review is at position ${tikhonPositionInAll} in API response, but NOT in first 10!`);
+                            console.error(`❌ This means Тихон review is OLDER than expected or sorting is wrong!`);
+                            console.error(`❌ First 10 reviews:`, reviewsToAdd.map(r => `${r.customer_name} (${r.created_at})`));
+                        } else {
+                            console.error(`❌ Тихон review NOT FOUND in API response at all!`);
                             console.error(`❌ Total reviews in API: ${data.reviews.length}`);
                             console.error(`❌ All review names:`, data.reviews.map(r => r.customer_name));
                         }

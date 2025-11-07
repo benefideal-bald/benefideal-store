@@ -1016,6 +1016,15 @@ app.get('/api/reviews', (req, res) => {
             });
         }
         
+        // Log all reviews with Тихон name after sorting
+        const tikhonReviewsAfter = rows.filter(r => r.customer_name === 'Тихон');
+        if (tikhonReviewsAfter.length > 0) {
+            tikhonReviewsAfter.forEach((review, index) => {
+                const position = rows.indexOf(review);
+                console.log(`✅ Тихон review AFTER sorting: position=${position}, id=${review.id}, date=${review.created_at}, email=${review.customer_email}`);
+            });
+        }
+        
         // Apply limit and offset after sorting
         // КРИТИЧЕСКИ ВАЖНО: Если limit НЕ указан, возвращаем ВСЕ отзывы (для страницы reviews.html)!
         // Если limit указан, возвращаем только указанное количество (для главной страницы)
@@ -1040,6 +1049,22 @@ app.get('/api/reviews', (req, res) => {
                 console.log(`   THIRD: ${paginatedRows[2].customer_name} - ${paginatedRows[2].created_at}`);
             }
             console.log(`   LAST (oldest in this page): ${paginatedRows[paginatedRows.length-1].customer_name} - ${paginatedRows[paginatedRows.length-1].created_at}`);
+            
+            // КРИТИЧЕСКИ ВАЖНО: Проверяем, есть ли Тихон в результатах
+            const tikhonInPaginated = paginatedRows.find(r => r.customer_name === 'Тихон');
+            if (tikhonInPaginated) {
+                const tikhonIndexInPaginated = paginatedRows.indexOf(tikhonInPaginated);
+                console.log(`✅ Тихон found in PAGINATED results at index ${tikhonIndexInPaginated} - WILL BE DISPLAYED!`);
+            } else {
+                const tikhonInAll = rows.find(r => r.customer_name === 'Тихон');
+                if (tikhonInAll) {
+                    const tikhonIndexInAll = rows.indexOf(tikhonInAll);
+                    console.error(`❌ Тихон is in database but NOT in paginated results!`);
+                    console.error(`❌ Тихон position in all reviews: ${tikhonIndexInAll}, limit: ${limit || 'none'}, offset: ${offset}`);
+                } else {
+                    console.log(`⚠️ Тихон NOT FOUND in database at all!`);
+                }
+            }
             
             // КРИТИЧЕСКИ ВАЖНО: Проверяем, есть ли Илья в результатах (и в полном списке, и в пагинированном)
             const ilyaInAll = rows.find(r => r.customer_name === 'Илья');
