@@ -98,6 +98,8 @@ db.serialize(() => {
     `);
     
     // Insert static reviews if they don't exist
+    // КРИТИЧЕСКИ ВАЖНО: Статические отзывы вставляются ТОЛЬКО если таблица пустая (первый запуск)
+    // Это НЕ должно удалять или перезаписывать существующие клиентские отзывы!
     db.get(`SELECT COUNT(*) as count FROM reviews`, (err, row) => {
         if (err) {
             console.error('Error checking reviews:', err);
@@ -107,15 +109,16 @@ db.serialize(() => {
         // Only insert static reviews if table is empty (first run)
         // This should NOT affect existing client reviews
         if (row && row.count === 0) {
-            console.log('📝 Table is empty, inserting static reviews...');
+            console.log('📝 Table is empty, inserting static reviews (FIRST RUN ONLY)...');
+            console.log('   ⚠️ This will ONLY happen if the database is completely empty!');
+            console.log('   ⚠️ Existing client reviews will NOT be affected!');
+            
             const staticReviews = [
-                // Максим и Тимур - статические отзывы (вчера и позавчера) - НЕ новейшие!
-                // Новые клиентские отзывы ВСЕГДА будут первыми, так как они создаются с текущей датой/временем
-                // Максим и Тимур - НОВЕЙШИЕ отзывы, они ДОЛЖНЫ быть ПЕРВЫМИ!
-                // Максим - сегодня (самый новый)
-                // Тимур - вчера (второй новейший)
-                { name: 'Максим', email: 'static_review_maxim@benefideal.com', text: 'Приобрел кепкат про на месяц, все работает как следует', rating: 4, order_id: 'STATIC_REVIEW_MAXIM', daysAgo: 0 }, // Сегодня - самый новый!
-                { name: 'Тимур', email: 'static_review_timur@benefideal.com', text: 'Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡', rating: 5, order_id: 'STATIC_REVIEW_TIMUR', daysAgo: 1 }, // Вчера - второй новейший!
+                // КРИТИЧЕСКИ ВАЖНО: Статические отзывы должны быть СТАРЫМИ, чтобы НЕ перекрывать новые клиентские отзывы!
+                // Максим и Тимур - статические отзывы, но они будут СТАРШЕ новых клиентских отзывов
+                // Новые клиентские отзывы ВСЕГДА будут первыми, так как они создаются с CURRENT_TIMESTAMP
+                { name: 'Максим', email: 'static_review_maxim@benefideal.com', text: 'Приобрел кепкат про на месяц, все работает как следует', rating: 4, order_id: 'STATIC_REVIEW_MAXIM', daysAgo: 2 }, // 2 дня назад (не самый новый!)
+                { name: 'Тимур', email: 'static_review_timur@benefideal.com', text: 'Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡', rating: 5, order_id: 'STATIC_REVIEW_TIMUR', daysAgo: 3 }, // 3 дня назад (не самый новый!)
                 // Остальные статические отзывы (старше)
                 { name: 'София', email: 'static_review_1@benefideal.com', text: 'Заказала CapCut Pro для создания контента в TikTok. Активация прошла за минуты, все функции работают, включая премиум эффекты. Огромная экономия!', rating: 5, order_id: 'STATIC_REVIEW_1', daysAgo: null },
                 { name: 'Павел', email: 'static_review_2@benefideal.com', text: 'Прекрасный сервис! ChatGPT Plus работает идеально, быстрые ответы, доступ к GPT-4. Пользуюсь уже месяц, всё стабильно. Обязательно продлю подписку!', rating: 5, order_id: 'STATIC_REVIEW_2', daysAgo: null },
@@ -153,15 +156,16 @@ db.serialize(() => {
                 
                 const createdAt = new Date();
                 createdAt.setDate(createdAt.getDate() - daysAgo);
-                // Устанавливаем время для Максима и Тимура - они должны быть НОВЕЙШИМИ!
+                // КРИТИЧЕСКИ ВАЖНО: Статические отзывы должны быть в ПРОШЛОМ, чтобы НЕ перекрывать новые клиентские отзывы!
+                // Новые клиентские отзывы создаются с CURRENT_TIMESTAMP, поэтому они ВСЕГДА будут новее статических
                 if (review.name === 'Максим') {
-                    // Максим - сегодня, текущее время (самый новый)
-                    createdAt.setHours(new Date().getHours(), new Date().getMinutes(), 0, 0);
+                    // Максим - 2 дня назад, не самый новый (клиентские отзывы будут новее!)
+                    createdAt.setHours(12, 0, 0, 0);
                 } else if (review.name === 'Тимур') {
-                    // Тимур - вчера, но ближе к концу дня (второй новейший)
-                    createdAt.setHours(23, 59, 0, 0);
+                    // Тимур - 3 дня назад, не самый новый (клиентские отзывы будут новее!)
+                    createdAt.setHours(10, 0, 0, 0);
                 }
-                // Все остальные статические отзывы - рандомное время в прошлом
+                // Все остальные статические отзывы - рандомное время в прошлом (3-60 дней назад)
                 
                 stmt.run([review.name, review.email, review.text, review.rating, review.order_id, createdAt.toISOString()], (err) => {
                     if (err) {
@@ -189,10 +193,22 @@ db.serialize(() => {
             });
         } else {
             console.log(`✅ Reviews table already has ${row.count} reviews, skipping static review insertion`);
+            console.log(`   ✅ Existing client reviews are SAFE - they will NOT be deleted or overwritten!`);
+            
             // Check if Илья review exists
             db.get(`SELECT COUNT(*) as count FROM reviews WHERE customer_name = 'Илья'`, [], (err, ilyaRow) => {
                 if (!err && ilyaRow) {
-                    console.log(`📊 Илья reviews in database: ${ilyaRow.count}`);
+                    if (ilyaRow.count > 0) {
+                        console.log(`✅ Илья reviews in database: ${ilyaRow.count}`);
+                        // Get the newest Илья review
+                        db.get(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC LIMIT 1`, [], (err, newestIlya) => {
+                            if (!err && newestIlya) {
+                                console.log(`   ✅ Newest Илья review: ID=${newestIlya.id}, created_at=${newestIlya.created_at}`);
+                            }
+                        });
+                    } else {
+                        console.log(`⚠️ Илья reviews NOT found in database (count: ${ilyaRow.count})`);
+                    }
                 }
             });
         }
