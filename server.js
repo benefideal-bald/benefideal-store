@@ -638,6 +638,20 @@ app.get('/api/reviews', (req, res) => {
     });
 });
 
+// Debug endpoint to check all Илья reviews
+app.get('/api/debug/ilya', (req, res) => {
+    db.all(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC`, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ 
+            count: rows.length,
+            reviews: rows,
+            message: rows.length > 0 ? `Found ${rows.length} Илья review(s)` : 'No Илья reviews found'
+        });
+    });
+});
+
 // Generate reminders for a subscription
 function generateReminders(subscriptionId, productId, months, purchaseDate) {
     console.log(`Generating reminders for subscription ${subscriptionId}, product ${productId}, ${months} months`);
