@@ -997,14 +997,102 @@ app.get('/api/reviews', (req, res) => {
 
 // Debug endpoint to check all Илья reviews
 app.get('/api/debug/ilya', (req, res) => {
+    // First check reviews
     db.all(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC`, [], (err, rows) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
-        res.json({ 
-            count: rows.length,
-            reviews: rows,
-            message: rows.length > 0 ? `Found ${rows.length} Илья review(s)` : 'No Илья reviews found'
+        
+        // Also check if Илья has orders
+        db.all(`SELECT * FROM subscriptions WHERE 
+            customer_name = 'Илья' 
+            OR customer_name LIKE 'Илья %'
+            OR customer_name LIKE '% Илья'
+            OR customer_name LIKE '%Илья%'
+            OR LOWER(customer_email) LIKE '%ilya%'
+            ORDER BY purchase_date DESC LIMIT 5`, [], (errOrders, ilyaOrders) => {
+            if (errOrders) {
+                return res.json({ 
+                    count: rows.length,
+                    reviews: rows,
+                    message: rows.length > 0 ? `Found ${rows.length} Илья review(s)` : 'No Илья reviews found',
+                    orders_error: errOrders.message
+                });
+            }
+            
+            res.json({ 
+                count: rows.length,
+                reviews: rows,
+                orders_count: ilyaOrders ? ilyaOrders.length : 0,
+                orders: ilyaOrders || [],
+                message: rows.length > 0 
+                    ? `Found ${rows.length} Илья review(s)` 
+                    : `No Илья reviews found. Found ${ilyaOrders ? ilyaOrders.length : 0} order(s) for Илья. Use POST /api/debug/restore-ilya to restore the review.`
+            });
+        });
+    });
+});
+
+// Force restore Илья review endpoint (GET request for easy access)
+app.get('/api/debug/restore-ilya', (req, res) => {
+    // Check if Илья review already exists
+    db.get(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC LIMIT 1`, [], (err, existing) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        if (existing) {
+            return res.json({
+                success: true,
+                message: 'Илья review already exists',
+                review: existing
+            });
+        }
+        
+        // Check for Илья orders
+        db.all(`SELECT * FROM subscriptions WHERE 
+            customer_name = 'Илья' 
+            OR customer_name LIKE 'Илья %'
+            OR customer_name LIKE '% Илья'
+            OR customer_name LIKE '%Илья%'
+            OR LOWER(customer_email) LIKE '%ilya%'
+            ORDER BY purchase_date DESC LIMIT 1`, [], (err, ilyaOrders) => {
+            if (err) {
+                return res.status(500).json({ error: 'Database error', details: err.message });
+            }
+            
+            let orderId = `FORCE_RESTORED_ILYA_${Date.now()}`;
+            let useEmail = 'ilya@example.com';
+            
+            if (ilyaOrders && ilyaOrders.length > 0) {
+                const latestOrder = ilyaOrders[0];
+                orderId = latestOrder.order_id || orderId;
+                useEmail = latestOrder.customer_email;
+            }
+            
+            // Create review with CURRENT_TIMESTAMP
+            const stmt = db.prepare(`
+                INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `);
+            
+            stmt.run(['Илья', useEmail, 'Отличный сервис! Все работает быстро и качественно. Рекомендую!', 5, orderId], function(insertErr) {
+                if (insertErr) {
+                    stmt.finalize();
+                    return res.status(500).json({ error: 'Database error', details: insertErr.message });
+                }
+                
+                const reviewId = this.lastID;
+                stmt.finalize();
+                
+                res.json({
+                    success: true,
+                    message: 'Илья review FORCE RESTORED with CURRENT_TIMESTAMP - it will be first in the list!',
+                    review_id: reviewId,
+                    order_id: orderId,
+                    email: useEmail
+                });
+            });
         });
     });
 });
