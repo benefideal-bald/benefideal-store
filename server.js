@@ -95,7 +95,25 @@ db.serialize(() => {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(customer_email, order_id)
         )
-    `);
+    `, (err) => {
+        if (err) {
+            console.error('❌ Error creating reviews table:', err);
+        } else {
+            console.log('✅ Reviews table created/verified');
+            // КРИТИЧЕСКИ ВАЖНО: Проверяем количество отзывов при каждом запуске
+            // Если количество резко упало - это проблема!
+            db.get(`SELECT COUNT(*) as count FROM reviews`, [], (err, countRow) => {
+                if (!err && countRow) {
+                    console.log(`📊 Current reviews count: ${countRow.count}`);
+                    if (countRow.count === 0) {
+                        console.warn('⚠️ WARNING: Reviews table is EMPTY! This might indicate database was reset or reviews were deleted.');
+                    } else {
+                        console.log(`✅ Reviews table has ${countRow.count} reviews - all safe!`);
+                    }
+                }
+            });
+        }
+    });
     
     // Insert static reviews if they don't exist
     // КРИТИЧЕСКИ ВАЖНО: Статические отзывы вставляются ТОЛЬКО если таблица пустая (первый запуск)
@@ -1328,6 +1346,55 @@ app.get('/api/debug/find-tikhon', (req, res) => {
                     message: tikhonReviews && tikhonReviews.length > 0
                         ? `Found ${tikhonReviews.length} Тихон review(s) in database`
                         : 'No Тихон reviews found. Searching by order name and review text...'
+                });
+            });
+        });
+    });
+});
+
+// Restore Тихон review if it was lost - uses order from database
+app.get('/api/debug/restore-tikhon', (req, res) => {
+    // Find Тихон order
+    db.get(`SELECT * FROM subscriptions WHERE customer_name LIKE '%Тихон%' ORDER BY purchase_date DESC LIMIT 1`, [], (err, tikhonOrder) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        if (!tikhonOrder) {
+            return res.json({ success: false, message: 'No Тихон order found in database' });
+        }
+        
+        // Check if review already exists
+        db.get(`SELECT * FROM reviews WHERE order_id = ? OR (LOWER(customer_email) = LOWER(?) AND customer_name = 'Тихон')`, [tikhonOrder.order_id || '', tikhonOrder.customer_email], (err, existing) => {
+            if (err) {
+                return res.status(500).json({ error: 'Database error', details: err.message });
+            }
+            
+            if (existing) {
+                return res.json({ success: true, message: 'Тихон review already exists', review: existing });
+            }
+            
+            // Create Тихон review with CURRENT_TIMESTAMP (will be newest)
+            const stmt = db.prepare(`
+                INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `);
+            
+            stmt.run(['Тихон', tikhonOrder.customer_email, 'Купил кепкат про на 3 месяца я доволен', 5, tikhonOrder.order_id || null], function(insertErr) {
+                if (insertErr) {
+                    stmt.finalize();
+                    return res.status(500).json({ error: 'Database error', details: insertErr.message });
+                }
+                
+                const reviewId = this.lastID;
+                stmt.finalize();
+                
+                res.json({
+                    success: true,
+                    message: '✅ Тихон review RESTORED successfully - it will be FIRST in the list!',
+                    review_id: reviewId,
+                    order_id: tikhonOrder.order_id,
+                    email: tikhonOrder.customer_email
                 });
             });
         });
