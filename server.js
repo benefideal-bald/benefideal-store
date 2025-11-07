@@ -230,6 +230,27 @@ db.serialize(() => {
                     }
                 });
             }, 1000); // Даем 1 секунду на все асинхронные операции
+        } else {
+            console.log(`✅ Reviews table already has ${row.count} reviews, skipping static review insertion`);
+            console.log(`   ✅ Existing client reviews are SAFE - they will NOT be deleted or overwritten!`);
+            
+            // Check if Илья review exists
+            db.get(`SELECT COUNT(*) as count FROM reviews WHERE customer_name = 'Илья'`, [], (err, ilyaRow) => {
+                if (!err && ilyaRow) {
+                    if (ilyaRow.count > 0) {
+                        console.log(`✅ Илья reviews in database: ${ilyaRow.count}`);
+                        // Get the newest Илья review
+                        db.get(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC LIMIT 1`, [], (err, newestIlya) => {
+                            if (!err && newestIlya) {
+                                console.log(`   ✅ Newest Илья review: ID=${newestIlya.id}, created_at=${newestIlya.created_at}`);
+                            }
+                        });
+                    } else {
+                        console.log(`⚠️ Илья reviews NOT found in database`);
+                    }
+                }
+            });
+        }
     });
 });
 
