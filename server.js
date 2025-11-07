@@ -829,7 +829,13 @@ app.get('/api/debug/emails', (req, res) => {
 app.get('/api/debug/email/:email', (req, res) => {
     const email = req.params.email.toLowerCase().trim();
     
-    db.all(`SELECT * FROM subscriptions WHERE LOWER(customer_email) = LOWER(?) ORDER BY purchase_date DESC`, [email], (err, rows) => {
+    db.all(`
+        SELECT * FROM subscriptions 
+        WHERE customer_email = ? 
+           OR LOWER(customer_email) = LOWER(?)
+           OR LOWER(TRIM(customer_email)) = LOWER(TRIM(?))
+        ORDER BY purchase_date DESC
+    `, [email, email, email], (err, rows) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -838,6 +844,53 @@ app.get('/api/debug/email/:email', (req, res) => {
             count: rows.length,
             subscriptions: rows,
             message: rows.length > 0 ? `Found ${rows.length} subscription(s) for ${email}` : `No subscriptions found for ${email}`
+        });
+    });
+});
+
+// Emergency endpoint to manually add subscription if email was not saved
+// Use this if email is not found after purchase
+app.post('/api/debug/add-subscription', (req, res) => {
+    const { name, email, product_name, product_id, months, order_id } = req.body;
+    
+    if (!name || !email || !product_name || !product_id) {
+        return res.status(400).json({ error: 'Missing required fields: name, email, product_name, product_id' });
+    }
+    
+    const normalizedEmail = email.toLowerCase().trim();
+    const purchaseDate = new Date();
+    
+    console.log('🔧 EMERGENCY: Manual subscription addition:');
+    console.log('   Name:', name);
+    console.log('   Email:', normalizedEmail);
+    console.log('   Product:', product_name);
+    console.log('   Product ID:', product_id);
+    console.log('   Months:', months || 1);
+    console.log('   Order ID:', order_id || 'NULL');
+    
+    const stmt = db.prepare(`
+        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run([name, normalizedEmail, product_name, product_id, months || 1, purchaseDate.toISOString(), order_id || null], function(err) {
+        if (err) {
+            console.error('❌ Error manually adding subscription:', err);
+            stmt.finalize();
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        const subscriptionId = this.lastID;
+        console.log(`✅ Manual subscription added successfully: ID=${subscriptionId}`);
+        stmt.finalize();
+        
+        // Generate reminders
+        generateReminders(subscriptionId, product_id, months || 1, purchaseDate);
+        
+        res.json({ 
+            success: true, 
+            subscription_id: subscriptionId,
+            message: `Subscription manually added for ${normalizedEmail}. You can now leave a review.`
         });
     });
 });
