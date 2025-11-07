@@ -387,6 +387,7 @@ body {
     animation: gradient-shift 15s ease infinite;
     overflow: hidden;
     box-sizing: border-box;
+    scroll-margin-top: 0;
 }
 
 .hero::before {
