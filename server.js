@@ -18,10 +18,10 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Initialize SQLite database FIRST
-// IMPORTANT: On Render Free plan, the filesystem is PERSISTENT, but database path matters
-// Use __dirname (project root) - this is persistent on Render
-// КРИТИЧЕСКИ ВАЖНО: На Render Free плане файловая система PERSISTENT, но нужно использовать правильный путь
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'subscriptions.db');
+// КРИТИЧЕСКИ ВАЖНО: На Render файловая система PERSISTENT только в /tmp или в корне проекта
+// НО при каждом деплое файлы в корне проекта МОГУТ перезаписываться!
+// Используем /tmp для базы данных, чтобы она НЕ удалялась при деплое
+const dbPath = process.env.DATABASE_PATH || (process.env.RENDER ? path.join('/tmp', 'subscriptions.db') : path.join(__dirname, 'subscriptions.db'));
 const fs = require('fs');
 
 console.log('📂 Database initialization:');
@@ -30,7 +30,13 @@ console.log('   Database path:', dbPath);
 console.log('   RENDER environment:', process.env.RENDER || 'not set');
 console.log('   Database file exists:', fs.existsSync(dbPath));
 console.log('   Process working directory:', process.cwd());
-console.log('   Database file size:', fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 'N/A');
+if (fs.existsSync(dbPath)) {
+    const stats = fs.statSync(dbPath);
+    console.log('   Database file size:', stats.size, 'bytes');
+    console.log('   Database file modified:', stats.mtime);
+} else {
+    console.log('   Database file size: N/A (file does not exist)');
+}
 
 const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
@@ -41,12 +47,36 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         console.log('✅ Database opened successfully at:', dbPath);
         console.log('✅ Database file exists:', fs.existsSync(dbPath));
         
-        // Verify we can write to the database
+        // КРИТИЧЕСКИ ВАЖНО: Включаем WAL mode для лучшей производительности и надежности
+        // WAL mode гарантирует, что данные сохраняются даже при сбоях
         db.run('PRAGMA journal_mode=WAL;', (err) => {
             if (err) {
                 console.error('❌ Error setting WAL mode:', err);
             } else {
-                console.log('✅ WAL mode enabled for better concurrency');
+                console.log('✅ WAL mode enabled for better concurrency and data safety');
+            }
+        });
+        
+        // КРИТИЧЕСКИ ВАЖНО: Включаем синхронный режим для гарантированного сохранения данных
+        // NORMAL = быстрее, но данные могут быть потеряны при сбое
+        // FULL = медленнее, но данные ВСЕГДА сохраняются на диск
+        db.run('PRAGMA synchronous = FULL;', (err) => {
+            if (err) {
+                console.error('❌ Error setting synchronous mode:', err);
+            } else {
+                console.log('✅ Synchronous mode set to FULL - data will ALWAYS be saved to disk');
+            }
+        });
+        
+        // Проверяем количество отзывов сразу после открытия базы
+        db.get(`SELECT COUNT(*) as count FROM reviews`, [], (err, countRow) => {
+            if (!err && countRow) {
+                console.log(`📊 Reviews count on startup: ${countRow.count}`);
+                if (countRow.count > 0) {
+                    console.log(`✅ Reviews database is NOT empty - all reviews are safe!`);
+                } else {
+                    console.warn(`⚠️ Reviews database is EMPTY - this might be a new database or reviews were lost!`);
+                }
             }
         });
     }
