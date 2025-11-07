@@ -111,8 +111,10 @@ db.serialize(() => {
             const staticReviews = [
                 // Максим и Тимур - статические отзывы (вчера и позавчера) - НЕ новейшие!
                 // Новые клиентские отзывы ВСЕГДА будут первыми, так как они создаются с текущей датой/временем
-                { name: 'Максим', email: 'static_review_maxim@benefideal.com', text: 'Приобрел кепкат про на месяц, все работает как следует', rating: 4, order_id: 'STATIC_REVIEW_MAXIM', daysAgo: 2 }, // 2 дня назад
-                { name: 'Тимур', email: 'static_review_timur@benefideal.com', text: 'Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡', rating: 5, order_id: 'STATIC_REVIEW_TIMUR', daysAgo: 3 }, // 3 дня назад
+                // Максим и Тимур - статические отзывы (старые, чтобы новые клиентские были первыми)
+                // ВАЖНО: эти отзывы должны быть СТАРЫМИ, чтобы новые клиентские отзывы были первыми!
+                { name: 'Максим', email: 'static_review_maxim@benefideal.com', text: 'Приобрел кепкат про на месяц, все работает как следует', rating: 4, order_id: 'STATIC_REVIEW_MAXIM', daysAgo: 30 }, // 30 дней назад
+                { name: 'Тимур', email: 'static_review_timur@benefideal.com', text: 'Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡', rating: 5, order_id: 'STATIC_REVIEW_TIMUR', daysAgo: 31 }, // 31 день назад
                 // Остальные статические отзывы (старше)
                 { name: 'София', email: 'static_review_1@benefideal.com', text: 'Заказала CapCut Pro для создания контента в TikTok. Активация прошла за минуты, все функции работают, включая премиум эффекты. Огромная экономия!', rating: 5, order_id: 'STATIC_REVIEW_1', daysAgo: null },
                 { name: 'Павел', email: 'static_review_2@benefideal.com', text: 'Прекрасный сервис! ChatGPT Plus работает идеально, быстрые ответы, доступ к GPT-4. Пользуюсь уже месяц, всё стабильно. Обязательно продлю подписку!', rating: 5, order_id: 'STATIC_REVIEW_2', daysAgo: null },
@@ -150,12 +152,13 @@ db.serialize(() => {
                 
                 const createdAt = new Date();
                 createdAt.setDate(createdAt.getDate() - daysAgo);
-                // Устанавливаем время для Максима - вчера 15:42, для Тимура - позавчера 13:57
+                // Устанавливаем время для Максима и Тимура - они должны быть СТАРЫМИ
                 if (review.name === 'Максим') {
                     createdAt.setHours(15, 42, 0, 0);
                 } else if (review.name === 'Тимур') {
                     createdAt.setHours(13, 57, 0, 0);
                 }
+                // Все остальные статические отзывы - рандомное время в прошлом
                 
                 stmt.run([review.name, review.email, review.text, review.rating, review.order_id, createdAt.toISOString()], (err) => {
                     if (err) {
@@ -543,10 +546,13 @@ app.post('/api/review', (req, res) => {
                 // Explicitly set created_at to current timestamp to ensure newest reviews are first
                 console.log(`📝 Inserting review: name=${name}, email=${normalizedEmail}, rating=${rating}, order_id=${newestOrderId}`);
                 
+                // Use CURRENT_TIMESTAMP to ensure exact current time
                 const stmt = db.prepare(`
                     INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
-                    VALUES (?, ?, ?, ?, ?, datetime('now'))
+                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 `);
+                
+                console.log(`📝 About to insert review for ${name} with order_id=${newestOrderId}`);
                 
                 stmt.run([name, normalizedEmail, text, rating, newestOrderId], function(err) {
                     if (err) {
@@ -559,27 +565,36 @@ app.post('/api/review', (req, res) => {
                             });
                         }
                         console.error(`❌ Error inserting review for ${name}:`, err);
+                        console.error(`❌ Error details:`, err.message, err.stack);
                         return res.status(500).json({ error: 'Database error', details: err.message });
                     }
                     
                     const reviewId = this.lastID;
                     console.log(`✅ Review inserted successfully: ID=${reviewId}, name=${name}, email=${normalizedEmail}, order_id=${newestOrderId}`);
+                    console.log(`✅ Last insert rowid: ${reviewId}`);
                     
-                    // Finalize statement BEFORE async operations
+                    // Finalize statement AFTER getting the ID
                     stmt.finalize();
                     
-                    // Verify the review was inserted (async, after finalize)
-                    db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, insertedReview) => {
-                        if (err) {
-                            console.error('Error verifying inserted review:', err);
-                        } else if (insertedReview) {
-                            console.log(`✅ Verified: Review ${reviewId} exists in database:`, insertedReview.customer_name, insertedReview.created_at);
-                        } else {
-                            console.error(`❌ ERROR: Review ${reviewId} was NOT found in database after insertion!`);
-                        }
-                    });
+                    // Immediately verify the review was inserted
+                    setTimeout(() => {
+                        db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, insertedReview) => {
+                            if (err) {
+                                console.error('❌ Error verifying inserted review:', err);
+                            } else if (insertedReview) {
+                                console.log(`✅ Verified: Review ${reviewId} exists in database:`);
+                                console.log(`   Name: ${insertedReview.customer_name}`);
+                                console.log(`   Email: ${insertedReview.customer_email}`);
+                                console.log(`   Created: ${insertedReview.created_at}`);
+                                console.log(`   Order ID: ${insertedReview.order_id}`);
+                            } else {
+                                console.error(`❌ CRITICAL ERROR: Review ${reviewId} was NOT found in database after insertion!`);
+                                console.error(`   This means the review was NOT saved!`);
+                            }
+                        });
+                    }, 100);
                     
-                    // Send response AFTER finalize
+                    // Send response
                     res.json({ 
                         success: true, 
                         message: 'Отзыв успешно отправлен',
