@@ -290,14 +290,44 @@
             }
             
             // Wait for all subscriptions to be saved
+            // КРИТИЧЕСКИ ВАЖНО: Ждем сохранения ВСЕХ заказов перед продолжением
             const saveResults = await Promise.all(savePromises);
             const allSaved = saveResults.every(r => r.success);
             
             if (!allSaved) {
-                console.error('❌ NOT ALL subscriptions were saved!', saveResults);
-                // Still continue with payment, but log the error
+                console.error('❌ CRITICAL: NOT ALL subscriptions were saved!', saveResults);
+                // Попробуем еще раз для неудачных заказов (retry logic)
+                const failedItems = saveResults.filter(r => !r.success).map((r, idx) => {
+                    const item = cart[idx];
+                    return { item, error: r.error };
+                });
+                
+                console.log('🔄 Retrying failed subscriptions...', failedItems);
+                
+                // Retry failed subscriptions one more time
+                for (const { item } of failedItems) {
+                    try {
+                        console.log(`🔄 Retrying: ${item.title}`);
+                        const retryResponse = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ item, name, email: email, order_id: orderId })
+                        });
+                        
+                        const retryResult = await retryResponse.json();
+                        if (retryResponse.ok) {
+                            console.log(`✅ Retry successful for ${item.title}:`, retryResult);
+                        } else {
+                            console.error(`❌ Retry FAILED for ${item.title}:`, retryResult);
+                        }
+                    } catch (retryError) {
+                        console.error(`❌ Retry error for ${item.title}:`, retryError);
+                    }
+                }
             } else {
-                console.log('✅ ALL subscriptions saved successfully!');
+                console.log('✅ ALL subscriptions saved successfully on first try!');
             }
             
             // Send each item as separate message to Telegram
