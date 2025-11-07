@@ -549,13 +549,13 @@ app.post('/api/review', (req, res) => {
                 // Explicitly set created_at to current timestamp to ensure newest reviews are first
                 console.log(`📝 Inserting review: name=${name}, email=${normalizedEmail}, rating=${rating}, order_id=${newestOrderId}`);
                 
-                // Use CURRENT_TIMESTAMP to ensure exact current time
+                // КРИТИЧЕСКИ ВАЖНО: Используем CURRENT_TIMESTAMP чтобы новый отзыв был САМЫМ НОВЫМ и ПЕРВЫМ в списке!
                 const stmt = db.prepare(`
                     INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
                     VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 `);
                 
-                console.log(`📝 About to insert review for ${name} with order_id=${newestOrderId}`);
+                console.log(`📝 Inserting NEW review for ${name} - it will be FIRST in the list (newest first)`);
                 
                 stmt.run([name, normalizedEmail, text, rating, newestOrderId], function(err) {
                     if (err) {
@@ -644,8 +644,8 @@ app.get('/api/reviews', (req, res) => {
             console.log(`⚠️ NO Илья reviews found in database! Total reviews: ${rows.length}`);
         }
         
-        // Sort in JavaScript - NEWEST FIRST (DESC) - ПРОСТАЯ И НАДЕЖНАЯ СОРТИРОВКА
-        // Helper function to get timestamp from date string
+        // КРИТИЧЕСКИ ВАЖНО: Каждый новый отзыв ВСЕГДА должен быть ПЕРВЫМ (сверху)!
+        // Сортировка: DESC = новейшие первыми (больший timestamp = новее = идет первым)
         const getTimestamp = (dateStr) => {
             if (!dateStr) return 0;
             try {
@@ -655,7 +655,8 @@ app.get('/api/reviews', (req, res) => {
             }
         };
         
-        // Sort: DESC = newest first (larger timestamp = newer = comes first)
+        // Сортируем от НОВЕЙШЕГО к СТАРОМУ (DESC)
+        // Новые отзывы ВСЕГДА будут первыми, так как они создаются с CURRENT_TIMESTAMP
         rows.sort((a, b) => {
             const timeA = getTimestamp(a.created_at);
             const timeB = getTimestamp(b.created_at);
