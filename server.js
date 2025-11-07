@@ -369,7 +369,9 @@ app.post('/api/review/verify', (req, res) => {
     // Normalize email to lowercase for case-insensitive comparison
     const normalizedEmail = email.toLowerCase().trim();
     
-    console.log('Review verify request for email:', normalizedEmail);
+    console.log('🔍 Verifying email for review:');
+    console.log('   Email (original):', email);
+    console.log('   Email (normalized):', normalizedEmail);
     
     // First check if email exists in subscriptions at all (protection against spam)
     // Use LOWER() for case-insensitive comparison
@@ -379,17 +381,36 @@ app.post('/api/review/verify', (req, res) => {
         WHERE LOWER(customer_email) = LOWER(?)
     `, [normalizedEmail], (err, emailCheck) => {
         if (err) {
-            console.error('Error checking email:', err);
-            return res.status(500).json({ error: 'Database error' });
+            console.error('❌ Error checking email:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
+        console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found`);
+        
+        // Also check all emails in database for debugging
+        db.all(`SELECT DISTINCT customer_email FROM subscriptions LIMIT 10`, [], (err, allEmails) => {
+            if (!err && allEmails) {
+                console.log('📋 Sample emails in database:', allEmails.map(e => e.customer_email).slice(0, 5));
+                // Check if normalized email matches any email in database
+                const matches = allEmails.filter(e => e.customer_email.toLowerCase().trim() === normalizedEmail);
+                if (matches.length > 0) {
+                    console.log(`✅ Found matching email in database: ${matches[0].customer_email}`);
+                } else {
+                    console.log(`❌ No matching email found. Looking for: "${normalizedEmail}"`);
+                }
+            }
+        });
+        
         if (!emailCheck || emailCheck.count === 0) {
+            console.error(`❌ Email ${normalizedEmail} NOT FOUND in subscriptions table!`);
             return res.json({ 
                 success: false, 
                 error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
                 can_review: false 
             });
         }
+        
+        console.log(`✅ Email ${normalizedEmail} found in ${emailCheck.count} subscription(s)`);
         
         // Check all orders (with or without order_id), get newest first
         // Use LOWER() for case-insensitive comparison
