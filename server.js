@@ -740,6 +740,29 @@ cron.schedule('* * * * *', async () => {
     });
 });
 
+// Auto-ping to prevent sleep on Render free plan (runs every 10 minutes)
+// This keeps the server active by making HTTP requests to itself
+cron.schedule('*/10 * * * *', async () => {
+    try {
+        // Determine server URL
+        const serverUrl = process.env.RENDER_EXTERNAL_URL || 
+                         process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` :
+                         'http://localhost:3000';
+        
+        // Ping health endpoint to keep server awake
+        const response = await axios.get(`${serverUrl}/health`, {
+            timeout: 5000,
+            validateStatus: (status) => status < 500 // Accept any status < 500
+        });
+        
+        console.log(`✅ Auto-ping successful at ${new Date().toISOString()} - Server is awake`);
+    } catch (error) {
+        // Silently ignore errors (server might be starting up or sleeping)
+        // This is expected behavior on free plan
+        console.log(`⚠️ Auto-ping failed (this is normal if server is sleeping): ${error.message}`);
+    }
+});
+
 // Test endpoint to verify server is running
 app.get('/api/test', (req, res) => {
     res.json({ 
