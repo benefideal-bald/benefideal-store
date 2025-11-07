@@ -894,13 +894,24 @@ app.get('/api/reviews', (req, res) => {
             }
             console.log(`   LAST (oldest in this page): ${paginatedRows[paginatedRows.length-1].customer_name} - ${paginatedRows[paginatedRows.length-1].created_at}`);
             
-            // Check if Илья is in the results
-            const ilyaReview = rows.find(r => r.customer_name === 'Илья');
-            if (ilyaReview) {
-                const ilyaIndex = rows.indexOf(ilyaReview);
-                console.log(`   ✅ Илья found at index ${ilyaIndex} with date: ${ilyaReview.created_at}`);
+            // КРИТИЧЕСКИ ВАЖНО: Проверяем, есть ли Илья в результатах (и в полном списке, и в пагинированном)
+            const ilyaInAll = rows.find(r => r.customer_name === 'Илья');
+            const ilyaInPaginated = paginatedRows.find(r => r.customer_name === 'Илья');
+            
+            if (ilyaInAll) {
+                const ilyaIndexInAll = rows.indexOf(ilyaInAll);
+                console.log(`   ✅ Илья found in ALL reviews at index ${ilyaIndexInAll} with date: ${ilyaInAll.created_at}`);
+                
+                if (ilyaInPaginated) {
+                    const ilyaIndexInPaginated = paginatedRows.indexOf(ilyaInPaginated);
+                    console.log(`   ✅ Илья found in PAGINATED results at index ${ilyaIndexInPaginated} - WILL BE DISPLAYED!`);
+                } else {
+                    console.error(`   ❌ Илья is in database but NOT in paginated results!`);
+                    console.error(`   ❌ This means Илья review exists but won't be shown to users!`);
+                    console.error(`   ❌ Илья position in all reviews: ${ilyaIndexInAll}, limit: ${limit || 'none'}, offset: ${offset}`);
+                }
             } else {
-                console.log(`   ⚠️ Илья NOT FOUND in database!`);
+                console.log(`   ⚠️ Илья NOT FOUND in database at all!`);
             }
         }
         
