@@ -404,7 +404,11 @@ app.post('/api/review', (req, res) => {
     // Normalize email to lowercase for case-insensitive comparison
     const normalizedEmail = email.toLowerCase().trim();
     
-    console.log('Review submit request for email:', normalizedEmail);
+    console.log('📨 Review submit request received:');
+    console.log('   Name:', name);
+    console.log('   Email:', normalizedEmail);
+    console.log('   Rating:', rating);
+    console.log('   Text length:', text ? text.length : 0);
     
     // First verify email exists in subscriptions at all (protection against spam)
     // Use LOWER() for case-insensitive comparison
@@ -414,11 +418,14 @@ app.post('/api/review', (req, res) => {
         WHERE LOWER(customer_email) = LOWER(?)
     `, [normalizedEmail], (err, emailCheck) => {
         if (err) {
-            console.error('Error checking email:', err);
-            return res.status(500).json({ error: 'Database error' });
+            console.error('❌ Error checking email:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
+        console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found for ${normalizedEmail}`);
+        
         if (!emailCheck || emailCheck.count === 0) {
+            console.error(`❌ Email ${normalizedEmail} not found in subscriptions`);
             return res.status(400).json({ 
                 success: false,
                 error: 'Email не найден в системе. Проверьте правильность введенного адреса.' 
@@ -499,6 +506,7 @@ app.post('/api/review', (req, res) => {
                 
                 stmt.run([name, normalizedEmail, text, rating, newestOrderId], function(err) {
                     if (err) {
+                        stmt.finalize();
                         if (err.message.includes('UNIQUE constraint')) {
                             console.error(`❌ UNIQUE constraint error for ${name} (${normalizedEmail}):`, err.message);
                             return res.status(400).json({ 
@@ -507,30 +515,33 @@ app.post('/api/review', (req, res) => {
                             });
                         }
                         console.error(`❌ Error inserting review for ${name}:`, err);
-                        return res.status(500).json({ error: 'Database error' });
+                        return res.status(500).json({ error: 'Database error', details: err.message });
                     }
                     
-                    console.log(`✅ Review inserted successfully: ID=${this.lastID}, name=${name}, email=${normalizedEmail}, order_id=${newestOrderId}`);
+                    const reviewId = this.lastID;
+                    console.log(`✅ Review inserted successfully: ID=${reviewId}, name=${name}, email=${normalizedEmail}, order_id=${newestOrderId}`);
                     
-                    // Verify the review was inserted
-                    db.get(`SELECT * FROM reviews WHERE id = ?`, [this.lastID], (err, insertedReview) => {
+                    // Finalize statement BEFORE async operations
+                    stmt.finalize();
+                    
+                    // Verify the review was inserted (async, after finalize)
+                    db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, insertedReview) => {
                         if (err) {
                             console.error('Error verifying inserted review:', err);
                         } else if (insertedReview) {
-                            console.log(`✅ Verified: Review ${this.lastID} exists in database:`, insertedReview.customer_name, insertedReview.created_at);
+                            console.log(`✅ Verified: Review ${reviewId} exists in database:`, insertedReview.customer_name, insertedReview.created_at);
                         } else {
-                            console.error(`❌ ERROR: Review ${this.lastID} was NOT found in database after insertion!`);
+                            console.error(`❌ ERROR: Review ${reviewId} was NOT found in database after insertion!`);
                         }
                     });
                     
+                    // Send response AFTER finalize
                     res.json({ 
                         success: true, 
                         message: 'Отзыв успешно отправлен',
-                        review_id: this.lastID 
+                        review_id: reviewId 
                     });
                 });
-                
-                stmt.finalize();
             });
         });
     });
