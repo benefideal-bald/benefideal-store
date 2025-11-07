@@ -233,7 +233,15 @@
             // Get cart and customer data
             const cart = JSON.parse(localStorage.getItem('benefideal_cart') || '[]');
             const name = localStorage.getItem('benefideal_checkout_name') || 'Не указано';
-            const email = localStorage.getItem('benefideal_checkout_email') || 'Не указано';
+            let email = localStorage.getItem('benefideal_checkout_email') || 'Не указано';
+            
+            // КРИТИЧЕСКИ ВАЖНО: Нормализуем email в lowercase и убираем пробелы
+            email = email.toLowerCase().trim();
+            
+            console.log('📋 Payment confirmation:');
+            console.log('   Name from localStorage:', name);
+            console.log('   Email from localStorage (normalized):', email);
+            console.log('   Cart items:', cart.length);
             
             // Generate unique order_id for this purchase
             const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -248,14 +256,11 @@
                 ? 'http://localhost:3000/api/subscription'
                 : `${window.location.origin}/api/subscription`;
             
-            // Normalize email to lowercase before sending
-            const normalizedEmail = email.toLowerCase().trim();
             console.log('📦 Sending subscription to backend:');
             console.log('   Name:', name);
-            console.log('   Email (original):', email);
-            console.log('   Email (normalized):', normalizedEmail);
+            console.log('   Email (normalized):', email);
             console.log('   Order ID:', orderId);
-            console.log('   Cart items:', cart.length);
+            console.log('   API URL:', apiUrl);
             
             for (const item of cart) {
                 if (item.id === 1 || item.id === 3 || item.id === 7) {
@@ -265,7 +270,7 @@
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ item, name, email: normalizedEmail, order_id: orderId })
+                            body: JSON.stringify({ item, name, email: email, order_id: orderId })
                         });
                         
                         const result = await response.json();
