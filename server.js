@@ -183,18 +183,21 @@ db.serialize(() => {
         }
     });
     
-    // Insert static reviews if they don't exist
-    // КРИТИЧЕСКИ ВАЖНО: Статические отзывы вставляются ТОЛЬКО если таблица пустая (первый запуск)
-    // Это НЕ должно удалять или перезаписывать существующие клиентские отзывы!
+    // КРИТИЧЕСКИ ВАЖНО: Проверяем и восстанавливаем ВСЕ отзывы при каждом запуске
+    // Это гарантирует, что отзывы НИКОГДА не пропадут
     db.get(`SELECT COUNT(*) as count FROM reviews`, (err, row) => {
         if (err) {
-            console.error('Error checking reviews:', err);
+            console.error('❌ Error checking reviews:', err);
             return;
         }
+        
+        console.log(`📊 Reviews check on startup: ${row.count} reviews found`);
         
         // Only insert static reviews if table is empty (first run)
         // This should NOT affect existing client reviews
         if (row && row.count === 0) {
+            console.error('🚨🚨🚨 КРИТИЧЕСКАЯ ПРОБЛЕМА: Reviews table is EMPTY on startup!');
+            console.error('🚨 Это означает, что база данных была пересоздана или отзывы были потеряны!');
             console.log('📝 Table is empty, inserting static reviews (FIRST RUN ONLY)...');
             console.log('   ⚠️ This will ONLY happen if the database is completely empty!');
             console.log('   ⚠️ Existing client reviews will NOT be affected!');
