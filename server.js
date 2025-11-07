@@ -389,13 +389,17 @@ app.post('/api/review/verify', (req, res) => {
     console.log('   Email (normalized):', normalizedEmail);
     
     // First check if email exists in subscriptions at all (protection against spam)
-    // Use EXACT match first, then LOWER() for case-insensitive comparison
-    // This ensures we find the email even if there are whitespace or case differences
+    // Try multiple query strategies to find the email
+    // 1. Exact match (normalized)
+    // 2. LOWER() comparison
+    // 3. TRIM() + LOWER() comparison
     db.get(`
         SELECT COUNT(*) as count 
         FROM subscriptions 
-        WHERE customer_email = ? OR LOWER(TRIM(customer_email)) = LOWER(TRIM(?))
-    `, [normalizedEmail, normalizedEmail], (err, emailCheck) => {
+        WHERE customer_email = ? 
+           OR LOWER(customer_email) = LOWER(?)
+           OR LOWER(TRIM(customer_email)) = LOWER(TRIM(?))
+    `, [normalizedEmail, normalizedEmail, normalizedEmail], (err, emailCheck) => {
         if (err) {
             console.error('❌ Error checking email:', err);
             return res.status(500).json({ error: 'Database error', details: err.message });
