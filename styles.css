@@ -96,6 +96,13 @@
 /* Base Styles */
 html {
     scroll-behavior: smooth;
+    scroll-padding-top: 80px;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 body {
