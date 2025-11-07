@@ -673,6 +673,37 @@ app.post('/api/review', (req, res) => {
                     // Finalize statement AFTER getting the ID
                     stmt.finalize();
                     
+                    // КРИТИЧЕСКИ ВАЖНО: Сразу проверяем, что отзыв действительно сохранен!
+                    setTimeout(() => {
+                        db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, savedReview) => {
+                            if (err) {
+                                console.error(`❌ Error verifying saved review ${reviewId}:`, err);
+                            } else if (savedReview) {
+                                console.log(`✅ VERIFIED: Review ${reviewId} exists in database:`);
+                                console.log(`   Name: ${savedReview.customer_name}`);
+                                console.log(`   Email: ${savedReview.customer_email}`);
+                                console.log(`   Created at: ${savedReview.created_at}`);
+                                console.log(`   Order ID: ${savedReview.order_id}`);
+                                
+                                // Также проверяем позицию этого отзыва в списке (должен быть первым)
+                                db.all(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 5`, [], (err, topReviews) => {
+                                    if (!err && topReviews) {
+                                        const position = topReviews.findIndex(r => r.id === reviewId);
+                                        if (position === 0) {
+                                            console.log(`✅ Review ${reviewId} is FIRST (newest) in the list!`);
+                                        } else {
+                                            console.log(`⚠️ Review ${reviewId} is at position ${position} (expected 0 for newest)`);
+                                            console.log(`   Top 5 reviews:`, topReviews.map(r => `${r.customer_name} (${r.created_at})`));
+                                        }
+                                    }
+                                });
+                            } else {
+                                console.error(`❌ CRITICAL ERROR: Review ${reviewId} was NOT found in database after insertion!`);
+                                console.error(`   This means the review was NOT saved!`);
+                            }
+                        });
+                    }, 100);
+                    
                     // Immediately verify the review was inserted
                     setTimeout(() => {
                         db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, insertedReview) => {
