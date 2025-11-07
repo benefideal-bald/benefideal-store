@@ -488,9 +488,10 @@ app.post('/api/review', (req, res) => {
                 
                 // Insert review with order_id (or NULL if no order_id)
                 // Use normalized email for consistency
+                // Explicitly set created_at to current timestamp to ensure newest reviews are first
                 const stmt = db.prepare(`
-                    INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                    VALUES (?, ?, ?, ?, ?, datetime('now'))
                 `);
                 
                 stmt.run([name, normalizedEmail, text, rating, newestOrderId], function(err) {
