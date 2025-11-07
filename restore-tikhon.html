@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Восстановление отзыва Тихона</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background: #7c3aed;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #6d28d9;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+        pre {
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Восстановление отзыва Тихона</h1>
+        <p>Эта страница автоматически восстановит отзыв Тихона, если он отсутствует в базе данных.</p>
+        
+        <button id="restoreBtn" onclick="restoreReview()">Восстановить отзыв Тихона</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        // Автоматически восстанавливаем отзыв при загрузке страницы
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Страница загружена, автоматически восстанавливаем отзыв Тихона...');
+            restoreReview();
+        });
+
+        async function restoreReview() {
+            const btn = document.getElementById('restoreBtn');
+            const result = document.getElementById('result');
+            
+            btn.disabled = true;
+            btn.textContent = 'Восстановление...';
+            result.style.display = 'none';
+            
+            try {
+                let apiUrl;
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+                    apiUrl = 'http://localhost:3000/api/debug/restore-tikhon';
+                } else {
+                    apiUrl = `${window.location.origin}/api/debug/restore-tikhon`;
+                }
+                
+                console.log('Вызываем:', apiUrl);
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                console.log('Ответ:', data);
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h3>✅ Успех!</h3>
+                        <p><strong>${data.message}</strong></p>
+                        ${data.review ? `
+                            <p><strong>Детали отзыва:</strong></p>
+                            <ul>
+                                <li>ID: ${data.review.id}</li>
+                                <li>Имя: ${data.review.customer_name}</li>
+                                <li>Email: ${data.review.customer_email}</li>
+                                <li>Создан: ${data.review.created_at}</li>
+                                <li>Позиция в топ-10: ${data.position_in_top_10}</li>
+                            </ul>
+                        ` : ''}
+                        ${data.position_in_top_10 !== undefined ? `
+                            <p><strong>Позиция в топ-10:</strong> ${data.position_in_top_10}</p>
+                        ` : ''}
+                        ${data.top_10_preview && data.top_10_preview.length > 0 ? `
+                            <p><strong>Топ-3 отзыва:</strong></p>
+                            <pre>${data.top_10_preview.join('\n')}</pre>
+                        ` : ''}
+                    `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `
+                        <h3>❌ Ошибка</h3>
+                        <p>${data.message || data.error || 'Неизвестная ошибка'}</p>
+                        ${data.error ? `<pre>${JSON.stringify(data, null, 2)}</pre>` : ''}
+                    `;
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                result.className = 'result error';
+                result.innerHTML = `
+                    <h3>❌ Ошибка</h3>
+                    <p>Не удалось восстановить отзыв:</p>
+                    <pre>${error.message}</pre>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Восстановить отзыв Тихона';
+                result.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
+
