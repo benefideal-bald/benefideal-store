@@ -1123,108 +1123,94 @@ app.get('/api/debug/ilya', (req, res) => {
 });
 
 // Force restore Илья review endpoint (GET request for easy access)
-// Ищет РЕАЛЬНЫЙ отзыв клиента Ильи по email или order_id и восстанавливает правильное имя
+// Ищет РЕАЛЬНЫЙ отзыв клиента Ильи по email viliyili27@gmail.com и восстанавливает правильное имя
 app.get('/api/debug/restore-ilya', (req, res) => {
     console.log('🔍 Searching for REAL Илья review and restoring correct name...');
+    const ilyaEmail = 'viliyili27@gmail.com';
     
-    // First, check if Илья review already exists with correct name
-    db.all(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC`, [], (err, existingReviews) => {
+    // First, check ALL reviews for this email (might have different name!)
+    db.all(`SELECT * FROM reviews WHERE LOWER(customer_email) = LOWER(?) ORDER BY created_at DESC`, [ilyaEmail], (err, reviewsForEmail) => {
         if (err) {
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
-        if (existingReviews && existingReviews.length > 0) {
-            console.log(`✅ Found ${existingReviews.length} REAL Илья review(s) in database`);
-            return res.json({
-                success: true,
-                message: `Found ${existingReviews.length} REAL Илья review(s) - they already exist in database!`,
-                reviews: existingReviews,
-                count: existingReviews.length
-            });
-        }
+        console.log(`📧 Found ${reviewsForEmail ? reviewsForEmail.length : 0} review(s) for email ${ilyaEmail}`);
         
-        // Илья review doesn't exist - check for Илья orders
-        db.all(`SELECT * FROM subscriptions WHERE 
-            customer_name = 'Илья' 
-            OR customer_name LIKE 'Илья %'
-            OR customer_name LIKE '% Илья'
-            OR customer_name LIKE '%Илья%'
-            ORDER BY purchase_date DESC LIMIT 5`, [], (err, ilyaOrders) => {
-            if (err) {
-                return res.status(500).json({ error: 'Database error', details: err.message });
-            }
+        if (reviewsForEmail && reviewsForEmail.length > 0) {
+            // Check if any already has name "Илья"
+            const ilyaNamedReviews = reviewsForEmail.filter(r => r.customer_name === 'Илья');
             
-            console.log(`📦 Found ${ilyaOrders ? ilyaOrders.length : 0} order(s) for Илья`);
-            
-            if (!ilyaOrders || ilyaOrders.length === 0) {
+            if (ilyaNamedReviews.length > 0) {
+                console.log(`✅ Found ${ilyaNamedReviews.length} review(s) with name "Илья"`);
                 return res.json({
-                    success: false,
-                    message: 'No Илья orders found in database. Cannot restore review.',
-                    suggestion: 'Check if Илья order was saved correctly when payment was confirmed'
+                    success: true,
+                    message: `Found ${ilyaNamedReviews.length} Илья review(s) - they already exist!`,
+                    reviews: ilyaNamedReviews,
+                    all_reviews_for_email: reviewsForEmail,
+                    count: ilyaNamedReviews.length
                 });
             }
             
-            const latestOrder = ilyaOrders[0];
-            console.log(`   Latest order: email=${latestOrder.customer_email}, order_id=${latestOrder.order_id}, date=${latestOrder.purchase_date}`);
+            // Found reviews but with different name(s) - fix ALL of them!
+            console.log(`⚠️ Found ${reviewsForEmail.length} review(s) but with different name(s):`, reviewsForEmail.map(r => r.customer_name));
+            console.log(`🔧 Fixing ALL reviews to have name "Илья"...`);
             
-            // Check if there's a review for this order_id or email (might have different name)
-            db.all(`SELECT * FROM reviews WHERE 
-                (order_id = ? OR LOWER(customer_email) = LOWER(?))
-                AND order_id NOT LIKE 'STATIC_%'
-                ORDER BY created_at DESC LIMIT 5`, [latestOrder.order_id || '', latestOrder.customer_email], (err, reviewsForOrder) => {
+            // Update ALL reviews for this email to have name "Илья"
+            const reviewIds = reviewsForEmail.map(r => r.id);
+            const placeholders = reviewIds.map(() => '?').join(',');
+            
+            db.run(`UPDATE reviews SET customer_name = 'Илья' WHERE id IN (${placeholders})`, reviewIds, function(updateErr) {
+                if (updateErr) {
+                    console.error('❌ Error updating review names:', updateErr);
+                    return res.status(500).json({ error: 'Database error', details: updateErr.message });
+                }
+                
+                console.log(`✅ Updated ${this.changes} review(s) to have name "Илья"`);
+                
+                // Get updated reviews
+                db.all(`SELECT * FROM reviews WHERE LOWER(customer_email) = LOWER(?) ORDER BY created_at DESC`, [ilyaEmail], (err, updatedReviews) => {
+                    if (err) {
+                        return res.json({
+                            success: true,
+                            message: `Updated ${this.changes} review(s) to have name "Илья"`,
+                            review_ids: reviewIds,
+                            old_names: reviewsForEmail.map(r => r.customer_name)
+                        });
+                    }
+                    
+                    res.json({
+                        success: true,
+                        message: `✅ FIXED ${updatedReviews.length} REAL Илья review(s)! All reviews for ${ilyaEmail} now have name "Илья"`,
+                        reviews: updatedReviews,
+                        review_ids: reviewIds,
+                        old_names: reviewsForEmail.map(r => r.customer_name),
+                        fixed: true
+                    });
+                });
+            });
+        } else {
+            // No reviews found for this email - check if order exists
+            db.all(`SELECT * FROM subscriptions WHERE LOWER(customer_email) = LOWER(?) ORDER BY purchase_date DESC LIMIT 5`, [ilyaEmail], (err, orders) => {
                 if (err) {
                     return res.status(500).json({ error: 'Database error', details: err.message });
                 }
                 
-                if (reviewsForOrder && reviewsForOrder.length > 0) {
-                    // Found review(s) for Илья's order/email but with different name!
-                    console.log(`✅ Found ${reviewsForOrder.length} review(s) for Илья order/email but with different name(s):`, reviewsForOrder.map(r => r.customer_name));
-                    
-                    // Update the newest review to have correct name "Илья"
-                    const reviewToFix = reviewsForOrder[0];
-                    console.log(`🔧 Fixing review ID ${reviewToFix.id}: changing name from "${reviewToFix.customer_name}" to "Илья"`);
-                    
-                    db.run(`UPDATE reviews SET customer_name = 'Илья' WHERE id = ?`, [reviewToFix.id], function(updateErr) {
-                        if (updateErr) {
-                            console.error('❌ Error updating review name:', updateErr);
-                            return res.status(500).json({ error: 'Database error', details: updateErr.message });
-                        }
-                        
-                        console.log(`✅ Review ID ${reviewToFix.id} name updated to "Илья"`);
-                        
-                        // Get updated review
-                        db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewToFix.id], (err, updatedReview) => {
-                            if (err) {
-                                return res.json({
-                                    success: true,
-                                    message: `Review name updated to "Илья" (ID: ${reviewToFix.id})`,
-                                    review_id: reviewToFix.id,
-                                    old_name: reviewToFix.customer_name,
-                                    note: 'Could not fetch updated review'
-                                });
-                            }
-                            
-                            res.json({
-                                success: true,
-                                message: `✅ REAL Илья review FOUND and RESTORED! Name was "${reviewToFix.customer_name}", now fixed to "Илья"`,
-                                review: updatedReview,
-                                review_id: reviewToFix.id,
-                                old_name: reviewToFix.customer_name,
-                                fixed: true
-                            });
-                        });
-                    });
-                } else {
-                    // No review found for Илья order/email - review was lost
+                if (orders && orders.length > 0) {
                     return res.json({
                         success: false,
-                        message: 'Илья order exists but review was lost. Cannot restore without review text and rating.',
-                        order: latestOrder,
-                        suggestion: 'Client needs to leave a new review through the review form, or provide review text and rating to restore manually'
+                        message: `Found ${orders.length} order(s) for ${ilyaEmail} but NO reviews. Reviews were not saved or were lost.`,
+                        orders: orders,
+                        suggestion: 'Client needs to leave a new review through the review form'
+                    });
+                } else {
+                    return res.json({
+                        success: false,
+                        message: `No orders and no reviews found for ${ilyaEmail}`,
+                        suggestion: 'Check if order was saved correctly when payment was confirmed'
                     });
                 }
             });
-        });
+        }
     });
 });
 
@@ -1360,15 +1346,46 @@ app.get('/api/debug/emails', (req, res) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
-        res.json({ 
-            count: rows.length,
-            emails: rows,
-            searchEmail: searchEmail,
-            searchName: searchName,
-            message: searchEmail || searchName
-                ? (rows.length > 0 ? `Found ${rows.length} subscription(s)` : `No subscriptions found`)
-                : `Found ${rows.length} unique email(s) in subscriptions`
-        });
+        
+        // Also check reviews for this email
+        if (searchEmail) {
+            db.all(`SELECT * FROM reviews WHERE LOWER(customer_email) = LOWER(?) ORDER BY created_at DESC`, [searchEmail], (errReviews, reviews) => {
+                if (errReviews) {
+                    return res.json({ 
+                        count: rows.length,
+                        emails: rows,
+                        searchEmail: searchEmail,
+                        searchName: searchName,
+                        reviews_error: errReviews.message,
+                        message: searchEmail || searchName
+                            ? (rows.length > 0 ? `Found ${rows.length} subscription(s)` : `No subscriptions found`)
+                            : `Found ${rows.length} unique email(s) in subscriptions`
+                    });
+                }
+                
+                res.json({ 
+                    count: rows.length,
+                    emails: rows,
+                    reviews_count: reviews ? reviews.length : 0,
+                    reviews: reviews || [],
+                    searchEmail: searchEmail,
+                    searchName: searchName,
+                    message: searchEmail || searchName
+                        ? (rows.length > 0 ? `Found ${rows.length} subscription(s)` : `No subscriptions found`)
+                        : `Found ${rows.length} unique email(s) in subscriptions`
+                });
+            });
+        } else {
+            res.json({ 
+                count: rows.length,
+                emails: rows,
+                searchEmail: searchEmail,
+                searchName: searchName,
+                message: searchEmail || searchName
+                    ? (rows.length > 0 ? `Found ${rows.length} subscription(s)` : `No subscriptions found`)
+                    : `Found ${rows.length} unique email(s) in subscriptions`
+            });
+        }
     });
 });
 
