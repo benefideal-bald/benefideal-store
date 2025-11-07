@@ -200,11 +200,18 @@ db.serialize(() => {
 });
 
 // API endpoint to receive subscription purchases
+// КРИТИЧЕСКИ ВАЖНО: Этот endpoint должен ВСЕГДА сохранять заказы в базу данных!
 app.post('/api/subscription', (req, res) => {
     const { item, name, email, order_id } = req.body;
     
+    console.log('🔔 /api/subscription endpoint called');
+    console.log('   Request body:', JSON.stringify(req.body, null, 2));
+    
     if (!item || !name || !email) {
         console.error('❌ Missing required fields:', { item: !!item, name: !!name, email: !!email });
+        console.error('   Item:', item);
+        console.error('   Name:', name);
+        console.error('   Email:', email);
         return res.status(400).json({ error: 'Missing required fields' });
     }
     
@@ -215,58 +222,73 @@ app.post('/api/subscription', (req, res) => {
     console.log('   Name:', name);
     console.log('   Email (original):', email);
     console.log('   Email (normalized):', normalizedEmail);
+    console.log('   Product ID:', item.id);
     console.log('   Product:', item.title);
+    console.log('   Months:', item.months || 1);
     console.log('   Order ID:', order_id);
     
     const purchaseDate = new Date();
     
-    // Insert subscription into database
+    // Insert subscription into database - ВСЕГДА, для ВСЕХ товаров!
     const stmt = db.prepare(`
         INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     
+    console.log('💾 About to INSERT into database...');
     stmt.run([name, normalizedEmail, item.title, item.id, item.months || 1, purchaseDate.toISOString(), order_id || null], function(err) {
         if (err) {
-            console.error('❌ Error inserting subscription:', err);
+            console.error('❌ CRITICAL ERROR inserting subscription:', err);
+            console.error('   Error message:', err.message);
+            console.error('   Error code:', err.code);
             stmt.finalize();
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
         const subscriptionId = this.lastID;
-        console.log(`✅ Subscription saved: ID=${subscriptionId}, email=${normalizedEmail}, order_id=${order_id}`);
+        console.log(`✅ Subscription saved successfully: ID=${subscriptionId}`);
+        console.log(`   Email: ${normalizedEmail}`);
+        console.log(`   Product: ${item.title} (ID: ${item.id})`);
+        console.log(`   Order ID: ${order_id || 'NULL'}`);
         
         // Finalize statement FIRST before async operations
         stmt.finalize();
         
-        // Verify the subscription was saved (async check)
-        setTimeout(() => {
-            db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (err, savedSubscription) => {
-                if (err) {
-                    console.error('❌ Error verifying subscription:', err);
-                } else if (savedSubscription) {
-                    console.log(`✅ Verified: Subscription ${subscriptionId} exists in database:`);
-                    console.log(`   Email: ${savedSubscription.customer_email}`);
-                    console.log(`   Name: ${savedSubscription.customer_name}`);
-                    console.log(`   Order ID: ${savedSubscription.order_id}`);
-                    
-                    // Also verify email can be found by LOWER() query
-                    db.get(`SELECT COUNT(*) as count FROM subscriptions WHERE LOWER(customer_email) = LOWER(?)`, [normalizedEmail], (err, emailCheck) => {
-                        if (!err && emailCheck) {
-                            console.log(`✅ Email ${normalizedEmail} can be found in ${emailCheck.count} subscription(s) using LOWER() query`);
-                        }
-                    });
-                } else {
-                    console.error(`❌ CRITICAL: Subscription ${subscriptionId} was NOT found in database after insertion!`);
-                }
-            });
-        }, 100);
+        // IMMEDIATELY verify the subscription was saved (synchronous check)
+        db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (err, savedSubscription) => {
+            if (err) {
+                console.error('❌ Error verifying subscription:', err);
+            } else if (savedSubscription) {
+                console.log(`✅ VERIFIED: Subscription ${subscriptionId} exists in database:`);
+                console.log(`   Email in DB: ${savedSubscription.customer_email}`);
+                console.log(`   Name in DB: ${savedSubscription.customer_name}`);
+                console.log(`   Order ID in DB: ${savedSubscription.order_id}`);
+                
+                // Also verify email can be found by LOWER() query
+                db.get(`SELECT COUNT(*) as count FROM subscriptions WHERE LOWER(customer_email) = LOWER(?)`, [normalizedEmail], (err, emailCheck) => {
+                    if (!err && emailCheck) {
+                        console.log(`✅ Email ${normalizedEmail} can be found in ${emailCheck.count} subscription(s) using LOWER() query`);
+                    } else {
+                        console.error(`❌ ERROR: Email ${normalizedEmail} CANNOT be found using LOWER() query!`);
+                    }
+                });
+            } else {
+                console.error(`❌ CRITICAL ERROR: Subscription ${subscriptionId} was NOT found in database after insertion!`);
+                console.error(`   This means the subscription was NOT saved!`);
+            }
+        });
         
-        // Generate reminders based on subscription type
-        generateReminders(subscriptionId, item.id, item.months || 1, purchaseDate);
+        // Generate reminders based on subscription type (only for ChatGPT, CapCut, Adobe)
+        if (item.id === 1 || item.id === 3 || item.id === 7) {
+            generateReminders(subscriptionId, item.id, item.months || 1, purchaseDate);
+        }
         
-        // Send response AFTER finalize
-        res.json({ success: true, subscription_id: subscriptionId });
+        // Send response
+        res.json({ 
+            success: true, 
+            subscription_id: subscriptionId,
+            message: `Subscription saved for ${normalizedEmail}`
+        });
     });
 });
 

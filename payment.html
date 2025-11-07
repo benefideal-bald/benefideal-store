@@ -263,27 +263,41 @@
             console.log('   API URL:', apiUrl);
             
             // КРИТИЧЕСКИ ВАЖНО: Сохраняем ВСЕ заказы в базу данных, чтобы клиенты могли оставить отзыв!
-            // Раньше сохранялись только товары с ID 1, 3, 7, но теперь сохраняем ВСЕ
+            // Это нужно для того, чтобы все клиенты могли оставить отзыв после покупки
+            const savePromises = [];
             for (const item of cart) {
-                try {
-                    console.log(`💾 Saving subscription for product ID ${item.id}: ${item.title}`);
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ item, name, email: email, order_id: orderId })
-                    });
-                    
+                console.log(`💾 Saving subscription for product ID ${item.id}: ${item.title}`);
+                const savePromise = fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ item, name, email: email, order_id: orderId })
+                }).then(async (response) => {
                     const result = await response.json();
                     if (response.ok) {
                         console.log(`✅ Subscription saved for ${item.title}:`, result);
+                        return { success: true, item: item.title, result };
                     } else {
                         console.error(`❌ Error saving subscription for ${item.title}:`, result);
+                        return { success: false, item: item.title, error: result };
                     }
-                } catch (error) {
+                }).catch((error) => {
                     console.error(`❌ Error sending subscription to backend for ${item.title}:`, error);
-                }
+                    return { success: false, item: item.title, error: error.message };
+                });
+                savePromises.push(savePromise);
+            }
+            
+            // Wait for all subscriptions to be saved
+            const saveResults = await Promise.all(savePromises);
+            const allSaved = saveResults.every(r => r.success);
+            
+            if (!allSaved) {
+                console.error('❌ NOT ALL subscriptions were saved!', saveResults);
+                // Still continue with payment, but log the error
+            } else {
+                console.log('✅ ALL subscriptions saved successfully!');
             }
             
             // Send each item as separate message to Telegram
