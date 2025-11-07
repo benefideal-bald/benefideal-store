@@ -642,39 +642,53 @@ body {
 .benefits-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: var(--space-6);
-    max-width: 1500px;
+    gap: var(--space-4);
+    max-width: 1800px;
     margin: 0 auto;
     align-items: stretch;
 }
 
+/* Всегда показываем 5 карточек в одну линию на всех экранах */
+@media (max-width: 1600px) {
+    .benefits-grid {
+        gap: var(--space-3);
+    }
+}
+
 @media (max-width: 1400px) {
     .benefits-grid {
-        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-2);
+        max-width: 100%;
+        padding: 0 var(--space-4);
     }
 }
 
 @media (max-width: 1200px) {
     .benefits-grid {
-        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-2);
+        padding: 0 var(--space-3);
     }
 }
 
+/* На очень маленьких экранах все равно 5 карточек, но с минимальным gap */
 @media (max-width: 900px) {
     .benefits-grid {
-        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-1);
+        padding: 0 var(--space-2);
     }
 }
 
+/* Только на очень маленьких мобильных устройствах переходим на 1 колонку */
 @media (max-width: 600px) {
     .benefits-grid {
         grid-template-columns: 1fr;
+        gap: var(--space-4);
     }
 }
 
 .benefit-card {
     background: var(--white);
-    padding: var(--space-8);
+    padding: var(--space-6);
     border-radius: var(--radius-xl);
     text-align: center;
     transition: all var(--transition-base);
@@ -683,6 +697,7 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-width: 0; /* Позволяет карточкам сжиматься */
     height: 100%;
 }
 
