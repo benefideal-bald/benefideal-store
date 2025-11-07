@@ -35,6 +35,25 @@
                         <div class="label">Итого к оплате:</div>
                         <span id="checkoutTotal">0 ₽</span>
                     </div>
+                    
+                    <div class="form-group" style="margin-bottom: var(--space-6);">
+                        <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
+                               onmouseover="this.style.background='var(--gray-100)'" 
+                               onmouseout="this.style.background='var(--gray-50)'">
+                            <input type="radio" 
+                                   name="paymentMethod" 
+                                   id="paymentSBP" 
+                                   value="sbp" 
+                                   checked 
+                                   required
+                                   style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);">
+                            <span style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem;">
+                                <i class="fas fa-mobile-alt" style="margin-right: var(--space-2); color: var(--primary); font-size: 1rem;"></i>
+                                Оплата переводом по СБП
+                            </span>
+                        </label>
+                    </div>
+                    
                     <button type="submit" id="payButton" class="btn btn-primary">Перейти к оплате</button>
 
                     <div style="margin-top: var(--space-6);">
@@ -99,9 +118,10 @@
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const name = document.getElementById('fullName').value.trim();
-                const email = document.getElementById('email').value.trim();
+                const email = document.getElementById('email').value.trim().toLowerCase(); // Normalize email to lowercase
                 localStorage.setItem('benefideal_checkout_name', name);
                 localStorage.setItem('benefideal_checkout_email', email);
+                console.log('💾 Saved to localStorage:', { name, email });
                 // Redirect to payment page
                 window.location.href = 'payment.html';
             });
