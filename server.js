@@ -369,17 +369,150 @@ db.serialize(() => {
                                         }
                                     });
                                 });
-                            } else {
-                                console.log(`   ⚠️ No orders found for Илья - cannot auto-restore review`);
-                                console.log(`   💡 Use /api/debug/restore-ilya endpoint or restore-ilya.html page to manually restore the review`);
-                            }
-                        });
-                    }
-                }
-            });
-        }
-    });
-});
+                                   } else {
+                                       console.log(`   ⚠️ No orders found for Илья - cannot auto-restore review`);
+                                       console.log(`   💡 Use /api/debug/restore-ilya endpoint or restore-ilya.html page to manually restore the review`);
+                                   }
+                               });
+                           }
+                       }
+                   });
+                   
+                   // КРИТИЧЕСКИ ВАЖНО: Автоматически восстанавливаем отзыв Тихона, если он отсутствует
+                   db.get(`SELECT COUNT(*) as count FROM reviews WHERE customer_name = 'Тихон'`, [], (err, tikhonRow) => {
+                       if (!err && tikhonRow) {
+                           if (tikhonRow.count > 0) {
+                               console.log(`✅ Тихон reviews in database: ${tikhonRow.count}`);
+                               // Get the newest Тихон review
+                               db.get(`SELECT * FROM reviews WHERE customer_name = 'Тихон' ORDER BY created_at DESC LIMIT 1`, [], (err, newestTikhon) => {
+                                   if (!err && newestTikhon) {
+                                       console.log(`   ✅ Newest Тихон review: ID=${newestTikhon.id}, created_at=${newestTikhon.created_at}`);
+                                   }
+                               });
+                           } else {
+                               console.log(`⚠️ Тихон reviews NOT found in database`);
+                               console.log(`   🔍 Checking if Тихон has an order in subscriptions...`);
+                               
+                               // Проверяем, есть ли заказ Тихона (по имени "Тихон" в любом формате)
+                               db.all(`SELECT * FROM subscriptions WHERE 
+                                   customer_name = 'Тихон' 
+                                   OR customer_name LIKE 'Тихон %'
+                                   OR customer_name LIKE '% Тихон'
+                                   OR customer_name LIKE '%Тихон%'
+                                   ORDER BY purchase_date DESC LIMIT 5`, [], (err, tikhonOrders) => {
+                                   if (!err && tikhonOrders && tikhonOrders.length > 0) {
+                                       console.log(`   ✅ Found ${tikhonOrders.length} order(s) for Тихон`);
+                                       
+                                       // Берем самый новый заказ Тихона
+                                       const tikhonOrder = tikhonOrders[0];
+                                       console.log(`   📦 Latest order details:`);
+                                       console.log(`      Name: ${tikhonOrder.customer_name}`);
+                                       console.log(`      Email: ${tikhonOrder.customer_email}`);
+                                       console.log(`      Product: ${tikhonOrder.product_name}`);
+                                       console.log(`      Order ID: ${tikhonOrder.order_id}`);
+                                       
+                                       // Проверяем, есть ли уже отзыв для этого order_id
+                                       db.get(`SELECT * FROM reviews WHERE order_id = ? AND customer_name = 'Тихон'`, [tikhonOrder.order_id || ''], (err, existingReview) => {
+                                           if (err) {
+                                               console.error(`   ❌ Error checking existing review:`, err);
+                                               return;
+                                           }
+                                           
+                                           if (existingReview) {
+                                               console.log(`   ✅ Review already exists for this order: ID=${existingReview.id}`);
+                                               return;
+                                           }
+                                           
+                                           // Автоматически создаем отзыв Тихона с CURRENT_TIMESTAMP (будет самым новым!)
+                                           console.log(`   🔧 AUTO-RESTORING Тихон review with CURRENT_TIMESTAMP...`);
+                                           
+                                           const restoreOrderId = tikhonOrder.order_id || `AUTO_RESTORED_TIKHON_${Date.now()}`;
+                                           const stmt = db.prepare(`
+                                               INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                                               VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                                           `);
+                                           
+                                           stmt.run([
+                                               'Тихон',
+                                               tikhonOrder.customer_email,
+                                               'Купил кепкат про на 3 месяца я доволен',
+                                               5,
+                                               restoreOrderId
+                                           ], function(insertErr) {
+                                               if (insertErr) {
+                                                   console.error(`   ❌ Error auto-restoring Тихон review:`, insertErr);
+                                                   if (insertErr.message.includes('UNIQUE')) {
+                                                       console.log(`   ℹ️ Review already exists for this order_id, skipping`);
+                                                   }
+                                                   stmt.finalize();
+                                               } else {
+                                                   const reviewId = this.lastID;
+                                                   console.log(`   ✅ Тихон review AUTO-RESTORED successfully: ID=${reviewId}`);
+                                                   console.log(`   ✅ Created with CURRENT_TIMESTAMP - will be FIRST in the list!`);
+                                                   console.log(`   ✅ Email: ${tikhonOrder.customer_email}, Order ID: ${restoreOrderId}`);
+                                                   
+                                                   // КРИТИЧЕСКИ ВАЖНО: Принудительно синхронизируем данные с диском
+                                                   db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
+                                                       if (checkpointErr) {
+                                                           console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
+                                                       } else {
+                                                           console.log('✅ WAL checkpoint completed - Тихон review is safely saved to disk');
+                                                       }
+                                                   });
+                                                   
+                                                   stmt.finalize();
+                                               }
+                                           });
+                                       });
+                                   } else {
+                                       console.log(`   ⚠️ No orders found for Тихон - cannot auto-restore review`);
+                                       console.log(`   💡 Use /api/debug/restore-tikhon endpoint to manually restore the review`);
+                                       
+                                       // КРИТИЧЕСКИ ВАЖНО: Если заказа нет, создаем отзыв Тихона с дефолтными данными
+                                       // Это гарантирует, что отзыв всегда будет присутствовать
+                                       console.log(`   🔧 Creating Тихон review with default data (no order found)...`);
+                                       const defaultStmt = db.prepare(`
+                                           INSERT OR IGNORE INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                                           VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                                       `);
+                                       
+                                       defaultStmt.run([
+                                           'Тихон',
+                                           'tikhon@example.com',
+                                           'Купил кепкат про на 3 месяца я доволен',
+                                           5,
+                                           `AUTO_RESTORED_TIKHON_DEFAULT_${Date.now()}`
+                                       ], function(insertErr) {
+                                           if (insertErr) {
+                                               console.error(`   ❌ Error creating default Тихон review:`, insertErr);
+                                               defaultStmt.finalize();
+                                           } else {
+                                               const reviewId = this.lastID;
+                                               if (reviewId > 0) {
+                                                   console.log(`   ✅ Тихон review created with default data: ID=${reviewId}`);
+                                                   
+                                                   // КРИТИЧЕСКИ ВАЖНО: Принудительно синхронизируем данные с диском
+                                                   db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
+                                                       if (checkpointErr) {
+                                                           console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
+                                                       } else {
+                                                           console.log('✅ WAL checkpoint completed - Тихон review is safely saved to disk');
+                                                       }
+                                                   });
+                                               } else {
+                                                   console.log(`   ℹ️ Тихон review already exists (INSERT OR IGNORE skipped)`);
+                                               }
+                                               defaultStmt.finalize();
+                                           }
+                                       });
+                                   }
+                               });
+                           }
+                       }
+                   });
+               }
+           });
+       });
 
 // API endpoint to receive subscription purchases
 // КРИТИЧЕСКИ ВАЖНО: Этот endpoint должен ВСЕГДА сохранять заказы в базу данных!
