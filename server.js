@@ -490,6 +490,8 @@ app.post('/api/review', (req, res) => {
                 // Insert review with order_id (or NULL if no order_id)
                 // Use normalized email for consistency
                 // Explicitly set created_at to current timestamp to ensure newest reviews are first
+                console.log(`📝 Inserting review: name=${name}, email=${normalizedEmail}, rating=${rating}, order_id=${newestOrderId}`);
+                
                 const stmt = db.prepare(`
                     INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
                     VALUES (?, ?, ?, ?, ?, datetime('now'))
@@ -498,14 +500,28 @@ app.post('/api/review', (req, res) => {
                 stmt.run([name, normalizedEmail, text, rating, newestOrderId], function(err) {
                     if (err) {
                         if (err.message.includes('UNIQUE constraint')) {
+                            console.error(`❌ UNIQUE constraint error for ${name} (${normalizedEmail}):`, err.message);
                             return res.status(400).json({ 
                                 success: false,
                                 error: 'Вы уже оставили отзыв для этого заказа. Один заказ = один отзыв.' 
                             });
                         }
-                        console.error('Error inserting review:', err);
+                        console.error(`❌ Error inserting review for ${name}:`, err);
                         return res.status(500).json({ error: 'Database error' });
                     }
+                    
+                    console.log(`✅ Review inserted successfully: ID=${this.lastID}, name=${name}, email=${normalizedEmail}, order_id=${newestOrderId}`);
+                    
+                    // Verify the review was inserted
+                    db.get(`SELECT * FROM reviews WHERE id = ?`, [this.lastID], (err, insertedReview) => {
+                        if (err) {
+                            console.error('Error verifying inserted review:', err);
+                        } else if (insertedReview) {
+                            console.log(`✅ Verified: Review ${this.lastID} exists in database:`, insertedReview.customer_name, insertedReview.created_at);
+                        } else {
+                            console.error(`❌ ERROR: Review ${this.lastID} was NOT found in database after insertion!`);
+                        }
+                    });
                     
                     res.json({ 
                         success: true, 
@@ -547,6 +563,14 @@ app.get('/api/reviews', (req, res) => {
         
         console.log(`Found ${rows.length} reviews in database`);
         
+        // Log all reviews with Илья name before sorting
+        const ilyaReviewsBefore = rows.filter(r => r.customer_name === 'Илья');
+        if (ilyaReviewsBefore.length > 0) {
+            console.log(`🔍 Found ${ilyaReviewsBefore.length} Илья review(s) BEFORE sorting:`, ilyaReviewsBefore.map(r => ({ id: r.id, name: r.customer_name, date: r.created_at, email: r.customer_email })));
+        } else {
+            console.log(`⚠️ NO Илья reviews found in database! Total reviews: ${rows.length}`);
+        }
+        
         // Sort in JavaScript - NEWEST FIRST (DESC) - ПРОСТАЯ И НАДЕЖНАЯ СОРТИРОВКА
         // Helper function to get timestamp from date string
         const getTimestamp = (dateStr) => {
@@ -565,6 +589,15 @@ app.get('/api/reviews', (req, res) => {
             // timeB - timeA: если B новее (больше timestamp), результат положительный, B идет первым
             return timeB - timeA;
         });
+        
+        // Log all reviews with Илья name after sorting
+        const ilyaReviewsAfter = rows.filter(r => r.customer_name === 'Илья');
+        if (ilyaReviewsAfter.length > 0) {
+            ilyaReviewsAfter.forEach((review, index) => {
+                const position = rows.indexOf(review);
+                console.log(`✅ Илья review AFTER sorting: position=${position}, id=${review.id}, date=${review.created_at}, email=${review.customer_email}`);
+            });
+        }
         
         // Apply limit and offset after sorting
         let paginatedRows = rows;
