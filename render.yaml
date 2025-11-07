@@ -8,5 +8,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-    healthCheckPath: /
+      - key: CUSTOM_DOMAIN
+        value: benefideal.ru
+    healthCheckPath: /health
 

@@ -742,20 +742,31 @@ cron.schedule('* * * * *', async () => {
 
 // Auto-ping to prevent sleep on Render free plan (runs every 10 minutes)
 // This keeps the server active by making HTTP requests to itself
+// Note: This only works if the server is already awake (cron stops when server sleeps)
+// For guaranteed uptime, use external service like UptimeRobot
 cron.schedule('*/10 * * * *', async () => {
     try {
-        // Determine server URL
-        const serverUrl = process.env.RENDER_EXTERNAL_URL || 
-                         process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` :
-                         'http://localhost:3000';
+        // Determine server URL - Render sets RENDER_EXTERNAL_URL or use custom domain
+        let serverUrl = process.env.RENDER_EXTERNAL_URL;
         
-        // Ping health endpoint to keep server awake
-        const response = await axios.get(`${serverUrl}/health`, {
-            timeout: 5000,
-            validateStatus: (status) => status < 500 // Accept any status < 500
-        });
+        if (!serverUrl) {
+            // Try to get from custom domain or fallback to localhost for development
+            const customDomain = process.env.CUSTOM_DOMAIN || 'benefideal.ru';
+            serverUrl = `https://${customDomain}`;
+        }
         
-        console.log(`✅ Auto-ping successful at ${new Date().toISOString()} - Server is awake`);
+        // Only ping if we have a valid URL (not localhost in production)
+        if (serverUrl && !serverUrl.includes('localhost')) {
+            // Ping health endpoint to keep server awake
+            const response = await axios.get(`${serverUrl}/health`, {
+                timeout: 10000,
+                validateStatus: (status) => status < 500 // Accept any status < 500
+            });
+            
+            console.log(`✅ Auto-ping successful at ${new Date().toISOString()} - Server is awake`);
+        } else {
+            console.log(`ℹ️ Auto-ping skipped (localhost/dev mode)`);
+        }
     } catch (error) {
         // Silently ignore errors (server might be starting up or sleeping)
         // This is expected behavior on free plan
