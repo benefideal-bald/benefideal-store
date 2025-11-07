@@ -18,15 +18,21 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Initialize SQLite database FIRST
-// On Render, use absolute path for database
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'subscriptions.db');
-const db = new sqlite3.Database(dbPath, (err) => {
+// On Render, use persistent disk storage for database
+// Render provides persistent disk at /opt/render/project/src (or similar)
+// Use environment variable or fallback to project root
+const dbPath = process.env.DATABASE_PATH || (process.env.RENDER ? path.join('/opt/render/project/src', 'subscriptions.db') : path.join(__dirname, 'subscriptions.db'));
+const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
-        console.error('Error opening database:', err);
+        console.error('❌ Error opening database:', err);
         console.error('Database path:', dbPath);
-        // Don't exit - let server start even if DB fails
+        console.error('Current directory:', __dirname);
+        // Try fallback path
+        const fallbackPath = path.join(__dirname, 'subscriptions.db');
+        console.log('Trying fallback path:', fallbackPath);
     } else {
-        console.log('Database opened successfully at:', dbPath);
+        console.log('✅ Database opened successfully at:', dbPath);
+        console.log('Database file exists:', require('fs').existsSync(dbPath));
     }
 });
 
@@ -85,7 +91,10 @@ db.serialize(() => {
             return;
         }
         
+        // Only insert static reviews if table is empty (first run)
+        // This should NOT affect existing client reviews
         if (row && row.count === 0) {
+            console.log('📝 Table is empty, inserting static reviews...');
             const staticReviews = [
                 // Максим и Тимур - статические отзывы (вчера и позавчера) - НЕ новейшие!
                 // Новые клиентские отзывы ВСЕГДА будут первыми, так как они создаются с текущей датой/временем
@@ -137,13 +146,35 @@ db.serialize(() => {
                 
                 stmt.run([review.name, review.email, review.text, review.rating, review.order_id, createdAt.toISOString()], (err) => {
                     if (err) {
-                        console.error('Error inserting static review:', err);
+                        console.error(`❌ Error inserting static review ${review.name}:`, err);
+                    } else {
+                        console.log(`✅ Inserted static review: ${review.name}`);
                     }
                 });
             });
             
-            stmt.finalize(() => {
-                console.log('Static reviews inserted successfully');
+            stmt.finalize((err) => {
+                if (err) {
+                    console.error('❌ Error finalizing static reviews statement:', err);
+                } else {
+                    console.log('✅ Static reviews statement finalized');
+                    // Verify static reviews were inserted
+                    db.get(`SELECT COUNT(*) as count FROM reviews`, [], (err, countRow) => {
+                        if (err) {
+                            console.error('Error counting reviews after static insert:', err);
+                        } else {
+                            console.log(`✅ Total reviews in database after static insert: ${countRow.count}`);
+                        }
+                    });
+                }
+            });
+        } else {
+            console.log(`✅ Reviews table already has ${row.count} reviews, skipping static review insertion`);
+            // Check if Илья review exists
+            db.get(`SELECT COUNT(*) as count FROM reviews WHERE customer_name = 'Илья'`, [], (err, ilyaRow) => {
+                if (!err && ilyaRow) {
+                    console.log(`📊 Илья reviews in database: ${ilyaRow.count}`);
+                }
             });
         }
     });
