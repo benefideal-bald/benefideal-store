@@ -528,43 +528,8 @@ app.get('/api/reviews', (req, res) => {
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     const sortOrder = req.query.sort || 'DESC'; // DESC = newest first (same for both pages)
     
-    // Validate sort order
-    const validSort = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-    
-    // First, update static reviews Максим and Тимур to be older if they exist and are too new
-    // This ensures new client reviews always appear first
-    // Максим should be yesterday at 15:42, Тимур should be 2 days ago at 13:57
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(15, 42, 0, 0);
-    const twoDaysAgo = new Date();
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-    twoDaysAgo.setHours(13, 57, 0, 0);
-    
-    // Always update Максим and Тимур dates to ensure they're not newer than client reviews
-    db.run(`
-        UPDATE reviews 
-        SET created_at = ?
-        WHERE customer_name = 'Максим' AND order_id = 'STATIC_REVIEW_MAXIM'
-    `, [yesterday.toISOString()], (err) => {
-        if (err) {
-            console.error('Error updating Максим date:', err);
-        } else {
-            console.log('Updated Максим date to yesterday');
-        }
-    });
-    
-    db.run(`
-        UPDATE reviews 
-        SET created_at = ?
-        WHERE customer_name = 'Тимур' AND order_id = 'STATIC_REVIEW_TIMUR'
-    `, [twoDaysAgo.toISOString()], (err) => {
-        if (err) {
-            console.error('Error updating Тимур date:', err);
-        } else {
-            console.log('Updated Тимур date to 2 days ago');
-        }
-    });
+    // Validate sort order - ALWAYS DESC (newest first) for both pages
+    const validSort = 'DESC'; // Force DESC - newest first always
     
     // Don't sort in SQL - we'll sort in JavaScript to handle mixed date formats
     // Don't apply LIMIT in SQL - apply it after sorting in JavaScript
@@ -581,46 +546,33 @@ app.get('/api/reviews', (req, res) => {
         
         console.log(`Found ${rows.length} reviews in database`);
         
-        // Sort in JavaScript to handle mixed date formats properly
+        // Sort in JavaScript - NEWEST FIRST (DESC) - это КРИТИЧЕСКИ ВАЖНО!
         rows.sort((a, b) => {
             const normalizeDate = (dateStr) => {
                 if (!dateStr) return 0;
                 
-                // Handle both '2025-11-04 13:57:52' and '2025-10-20T12:47:36.395Z'
-                let normalized = dateStr.toString().replace('T', ' ').replace('Z', '');
-                
-                // Remove milliseconds if present (everything after '.')
-                const dotIndex = normalized.indexOf('.');
-                if (dotIndex > 0) {
-                    normalized = normalized.substring(0, dotIndex);
-                }
-                
-                // Try parsing as ISO string first, then as regular date string
                 try {
-                    // Try direct ISO parsing
+                    // Try direct parsing
                     let date = new Date(dateStr);
                     if (!isNaN(date.getTime())) {
                         return date.getTime();
                     }
                     
-                    // Try parsing normalized string
+                    // Try with normalized format
+                    let normalized = dateStr.toString().replace('T', ' ').replace('Z', '');
+                    const dotIndex = normalized.indexOf('.');
+                    if (dotIndex > 0) {
+                        normalized = normalized.substring(0, dotIndex);
+                    }
+                    
                     date = new Date(normalized);
                     if (!isNaN(date.getTime())) {
                         return date.getTime();
                     }
                     
-                    // Fallback: try adding timezone if missing
-                    if (!normalized.includes('+') && !normalized.includes('-', 10)) {
-                        date = new Date(normalized + 'Z');
-                        if (!isNaN(date.getTime())) {
-                            return date.getTime();
-                        }
-                    }
-                    
-                    console.error('Could not parse date:', dateStr, normalized);
                     return 0;
                 } catch (e) {
-                    console.error('Error parsing date:', dateStr, normalized, e);
+                    console.error('Error parsing date:', dateStr, e);
                     return 0;
                 }
             };
@@ -628,13 +580,9 @@ app.get('/api/reviews', (req, res) => {
             const timeA = normalizeDate(a.created_at);
             const timeB = normalizeDate(b.created_at);
             
-            // DESC = newest first (larger timestamp first)
-            const result = validSort === 'ASC' ? timeA - timeB : timeB - timeA;
-            
-            // Log for debugging
-            if (a.customer_name === 'Илья' || b.customer_name === 'Илья') {
-                console.log(`Sorting: ${a.customer_name} (${a.created_at} = ${timeA}) vs ${b.customer_name} (${b.created_at} = ${timeB}) => ${result > 0 ? a.customer_name : b.customer_name} first`);
-            }
+            // DESC = newest first (larger timestamp = newer = first)
+            // timeB - timeA means: if B is newer (larger), result is positive, so B comes first
+            const result = timeB - timeA;
             
             return result;
         });
