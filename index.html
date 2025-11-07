@@ -306,10 +306,30 @@
                     existingCards.forEach(card => card.remove());
                     
                     // Take first 10 reviews from API (already sorted DESC - newest first)
-                    // Максим should be first (today), Тимур second (yesterday), then others
+                    // КРИТИЧЕСКИ ВАЖНО: Новые клиентские отзывы (Илья) должны быть первыми!
                     const reviewsToAdd = data.reviews.slice(0, 10);
                     
                     console.log('Loading', reviewsToAdd.length, 'reviews. First (newest):', reviewsToAdd[0]?.customer_name, 'Last:', reviewsToAdd[reviewsToAdd.length - 1]?.customer_name);
+                    
+                    // КРИТИЧЕСКИ ВАЖНО: Проверяем, есть ли Илья в первых 10 отзывах
+                    const ilyaInFirst10 = reviewsToAdd.find(r => r.customer_name === 'Илья');
+                    if (ilyaInFirst10) {
+                        const ilyaPosition = reviewsToAdd.indexOf(ilyaInFirst10);
+                        console.log(`✅ Илья review WILL BE DISPLAYED in carousel at position ${ilyaPosition}!`);
+                    } else {
+                        // Проверяем, есть ли Илья вообще в ответе API
+                        const ilyaInAll = data.reviews.find(r => r.customer_name === 'Илья');
+                        if (ilyaInAll) {
+                            const ilyaPositionInAll = data.reviews.indexOf(ilyaInAll);
+                            console.error(`❌ Илья review is at position ${ilyaPositionInAll} in API response, but NOT in first 10!`);
+                            console.error(`❌ This means Илья review is OLDER than expected or sorting is wrong!`);
+                            console.error(`❌ First 10 reviews:`, reviewsToAdd.map(r => `${r.customer_name} (${r.created_at})`));
+                        } else {
+                            console.error(`❌ Илья review NOT FOUND in API response at all!`);
+                            console.error(`❌ Total reviews in API: ${data.reviews.length}`);
+                            console.error(`❌ All review names:`, data.reviews.map(r => r.customer_name));
+                        }
+                    }
                     
                     const fragment = document.createDocumentFragment();
                     
