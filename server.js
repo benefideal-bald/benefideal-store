@@ -128,6 +128,8 @@ db.serialize(() => {
         )
     `);
     
+    // КРИТИЧЕСКИ ВАЖНО: Создаем таблицу отзывов с защитой от удаления
+    // НИКОГДА не используем DROP TABLE или DELETE FROM reviews в коде!
     db.run(`
         CREATE TABLE IF NOT EXISTS reviews (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1079,6 +1081,18 @@ app.post('/api/review', (req, res) => {
                             console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
                         } else {
                             console.log('✅ WAL checkpoint completed - review is safely saved to disk');
+                        }
+                    });
+                    
+                    // КРИТИЧЕСКИ ВАЖНО: Проверяем количество отзывов после сохранения
+                    // Если количество уменьшилось - это КРИТИЧЕСКАЯ проблема!
+                    db.get(`SELECT COUNT(*) as count FROM reviews`, [], (err, countAfter) => {
+                        if (!err && countAfter) {
+                            console.log(`📊 Reviews count after insertion: ${countAfter.count}`);
+                            if (countAfter.count === 0) {
+                                console.error('🚨🚨🚨 КРИТИЧЕСКАЯ ПРОБЛЕМА: All reviews disappeared after insertion!');
+                                console.error('🚨 This should NEVER happen! Database might be corrupted or reset!');
+                            }
                         }
                     });
                     
