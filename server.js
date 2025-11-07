@@ -779,9 +779,26 @@ app.post('/api/review', (req, res) => {
                 
                 console.log(`📝 Inserting NEW review for ${name} - it will be FIRST in the list (newest first)`);
                 
+                // КРИТИЧЕСКИ ВАЖНО: Логируем ВСЕ данные перед вставкой
+                console.log(`📝 ========== INSERTING REVIEW ==========`);
+                console.log(`   Name: "${name}"`);
+                console.log(`   Email: "${normalizedEmail}"`);
+                console.log(`   Text: "${text.substring(0, 50)}..."`);
+                console.log(`   Rating: ${rating}`);
+                console.log(`   Order ID: "${newestOrderId}"`);
+                console.log(`   ======================================`);
+                
                 stmt.run([name, normalizedEmail, text, rating, newestOrderId], function(err) {
                     if (err) {
                         stmt.finalize();
+                        console.error(`❌ ========== REVIEW INSERT FAILED ==========`);
+                        console.error(`   Name: "${name}"`);
+                        console.error(`   Email: "${normalizedEmail}"`);
+                        console.error(`   Order ID: "${newestOrderId}"`);
+                        console.error(`   Error: ${err.message}`);
+                        console.error(`   Error code: ${err.code}`);
+                        console.error(`   ==========================================`);
+                        
                         if (err.message.includes('UNIQUE constraint')) {
                             console.error(`❌ UNIQUE constraint error for ${name} (${normalizedEmail}):`, err.message);
                             return res.status(400).json({ 
@@ -795,66 +812,98 @@ app.post('/api/review', (req, res) => {
                     }
                     
                     const reviewId = this.lastID;
-                    console.log(`✅ Review inserted successfully: ID=${reviewId}, name=${name}, email=${normalizedEmail}, order_id=${newestOrderId}`);
-                    console.log(`✅ Last insert rowid: ${reviewId}`);
+                    const changes = this.changes;
+                    
+                    console.log(`✅ ========== REVIEW INSERTED ==========`);
+                    console.log(`   Review ID: ${reviewId}`);
+                    console.log(`   Changes: ${changes}`);
+                    console.log(`   Name: "${name}"`);
+                    console.log(`   Email: "${normalizedEmail}"`);
+                    console.log(`   Order ID: "${newestOrderId}"`);
+                    console.log(`   =====================================`);
                     
                     // Finalize statement AFTER getting the ID
                     stmt.finalize();
                     
                     // КРИТИЧЕСКИ ВАЖНО: Сразу проверяем, что отзыв действительно сохранен!
-                    setTimeout(() => {
+                    // Делаем несколько проверок с небольшими задержками
+                    const verifyReview = (attempt = 1) => {
                         db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, savedReview) => {
                             if (err) {
-                                console.error(`❌ Error verifying saved review ${reviewId}:`, err);
+                                console.error(`❌ Attempt ${attempt}: Error verifying saved review ${reviewId}:`, err);
+                                if (attempt < 3) {
+                                    setTimeout(() => verifyReview(attempt + 1), 200 * attempt);
+                                }
                             } else if (savedReview) {
-                                console.log(`✅ VERIFIED: Review ${reviewId} exists in database:`);
-                                console.log(`   Name: ${savedReview.customer_name}`);
-                                console.log(`   Email: ${savedReview.customer_email}`);
-                                console.log(`   Created at: ${savedReview.created_at}`);
-                                console.log(`   Order ID: ${savedReview.order_id}`);
+                                console.log(`✅ ========== VERIFIED REVIEW ${reviewId} (attempt ${attempt}) ==========`);
+                                console.log(`   Name: "${savedReview.customer_name}"`);
+                                console.log(`   Email: "${savedReview.customer_email}"`);
+                                console.log(`   Created at: "${savedReview.created_at}"`);
+                                console.log(`   Order ID: "${savedReview.order_id}"`);
+                                console.log(`   Rating: ${savedReview.rating}`);
+                                console.log(`   Text: "${savedReview.review_text.substring(0, 50)}..."`);
+                                console.log(`   ===========================================`);
                                 
                                 // Также проверяем позицию этого отзыва в списке (должен быть первым)
-                                db.all(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 5`, [], (err, topReviews) => {
+                                db.all(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 10`, [], (err, topReviews) => {
                                     if (!err && topReviews) {
                                         const position = topReviews.findIndex(r => r.id === reviewId);
+                                        console.log(`📊 Review ${reviewId} position in top 10: ${position} (0 = newest)`);
                                         if (position === 0) {
                                             console.log(`✅ Review ${reviewId} is FIRST (newest) in the list!`);
-                                        } else {
+                                        } else if (position > 0) {
                                             console.log(`⚠️ Review ${reviewId} is at position ${position} (expected 0 for newest)`);
-                                            console.log(`   Top 5 reviews:`, topReviews.map(r => `${r.customer_name} (${r.created_at})`));
+                                            console.log(`   Top 5 reviews:`, topReviews.slice(0, 5).map(r => `${r.customer_name} (${r.created_at})`));
+                                        } else {
+                                            console.error(`❌ CRITICAL: Review ${reviewId} NOT FOUND in top 10 reviews!`);
+                                            console.error(`   This means review exists but is not in the newest reviews!`);
                                         }
                                     }
                                 });
+                                
+                                // Проверяем, есть ли другие отзывы с таким же email/order_id
+                                db.all(`SELECT * FROM reviews WHERE 
+                                    (LOWER(customer_email) = LOWER(?) OR order_id = ?)
+                                    ORDER BY created_at DESC`, [normalizedEmail, newestOrderId || ''], (err, sameReviews) => {
+                                    if (!err && sameReviews) {
+                                        console.log(`🔍 Found ${sameReviews.length} review(s) with same email/order_id:`);
+                                        sameReviews.forEach((r, idx) => {
+                                            console.log(`   ${idx + 1}. ID=${r.id}, Name="${r.customer_name}", Created="${r.created_at}"`);
+                                        });
+                                    }
+                                });
                             } else {
-                                console.error(`❌ CRITICAL ERROR: Review ${reviewId} was NOT found in database after insertion!`);
+                                console.error(`❌ ========== CRITICAL ERROR (attempt ${attempt}) ==========`);
+                                console.error(`   Review ID ${reviewId} was NOT found in database after insertion!`);
                                 console.error(`   This means the review was NOT saved!`);
+                                console.error(`   Name: "${name}"`);
+                                console.error(`   Email: "${normalizedEmail}"`);
+                                console.error(`   Order ID: "${newestOrderId}"`);
+                                console.error(`   ===========================================`);
+                                if (attempt < 3) {
+                                    setTimeout(() => verifyReview(attempt + 1), 200 * attempt);
+                                }
                             }
                         });
-                    }, 100);
+                    };
                     
-                    // Immediately verify the review was inserted
-                    setTimeout(() => {
-                        db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, insertedReview) => {
-                            if (err) {
-                                console.error('❌ Error verifying inserted review:', err);
-                            } else if (insertedReview) {
-                                console.log(`✅ Verified: Review ${reviewId} exists in database:`);
-                                console.log(`   Name: ${insertedReview.customer_name}`);
-                                console.log(`   Email: ${insertedReview.customer_email}`);
-                                console.log(`   Created: ${insertedReview.created_at}`);
-                                console.log(`   Order ID: ${insertedReview.order_id}`);
-                            } else {
-                                console.error(`❌ CRITICAL ERROR: Review ${reviewId} was NOT found in database after insertion!`);
-                                console.error(`   This means the review was NOT saved!`);
-                            }
-                        });
-                    }, 100);
+                    // Первая проверка сразу
+                    verifyReview(1);
+                    
+                    // Вторая проверка через 100мс
+                    setTimeout(() => verifyReview(2), 100);
+                    
+                    // Третья проверка через 500мс
+                    setTimeout(() => verifyReview(3), 500);
                     
                     // Send response
                     res.json({ 
                         success: true, 
                         message: 'Отзыв успешно отправлен',
-                        review_id: reviewId 
+                        review_id: reviewId,
+                        name: name,
+                        email: normalizedEmail,
+                        order_id: newestOrderId
                     });
                 });
             });
