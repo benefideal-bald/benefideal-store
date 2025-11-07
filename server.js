@@ -1497,6 +1497,16 @@ app.get('/api/debug/restore-tikhon', (req, res) => {
                 console.log(`   ===========================================`);
                 stmt.finalize();
                 
+                // КРИТИЧЕСКИ ВАЖНО: Принудительно синхронизируем данные с диском
+                // Это гарантирует, что отзыв будет сохранен даже при сбое или перезапуске
+                db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
+                    if (checkpointErr) {
+                        console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
+                    } else {
+                        console.log('✅ WAL checkpoint completed - Тихон review is safely saved to disk');
+                    }
+                });
+                
                 // Verify it was inserted MULTIPLE times
                 const verifyReview = (attempt = 1) => {
                     db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, savedReview) => {
