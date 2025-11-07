@@ -204,8 +204,19 @@ app.post('/api/subscription', (req, res) => {
     const { item, name, email, order_id } = req.body;
     
     if (!item || !name || !email) {
+        console.error('❌ Missing required fields:', { item: !!item, name: !!name, email: !!email });
         return res.status(400).json({ error: 'Missing required fields' });
     }
+    
+    // Normalize email to lowercase for consistent storage and lookup
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    console.log('📦 New subscription purchase:');
+    console.log('   Name:', name);
+    console.log('   Email (original):', email);
+    console.log('   Email (normalized):', normalizedEmail);
+    console.log('   Product:', item.title);
+    console.log('   Order ID:', order_id);
     
     const purchaseDate = new Date();
     
@@ -215,13 +226,25 @@ app.post('/api/subscription', (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     
-    stmt.run([name, email, item.title, item.id, item.months || 1, purchaseDate.toISOString(), order_id || null], function(err) {
+    stmt.run([name, normalizedEmail, item.title, item.id, item.months || 1, purchaseDate.toISOString(), order_id || null], function(err) {
         if (err) {
-            console.error('Error inserting subscription:', err);
-            return res.status(500).json({ error: 'Database error' });
+            console.error('❌ Error inserting subscription:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
         const subscriptionId = this.lastID;
+        console.log(`✅ Subscription saved: ID=${subscriptionId}, email=${normalizedEmail}, order_id=${order_id}`);
+        
+        // Verify the subscription was saved
+        db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (err, savedSubscription) => {
+            if (err) {
+                console.error('❌ Error verifying subscription:', err);
+            } else if (savedSubscription) {
+                console.log(`✅ Verified: Subscription ${subscriptionId} exists in database with email: ${savedSubscription.customer_email}`);
+            } else {
+                console.error(`❌ CRITICAL: Subscription ${subscriptionId} was NOT found in database after insertion!`);
+            }
+        });
         
         // Generate reminders based on subscription type
         generateReminders(subscriptionId, item.id, item.months || 1, purchaseDate);
