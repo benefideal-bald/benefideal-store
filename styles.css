@@ -482,8 +482,13 @@ body {
 
 .section-header {
     text-align: center;
-    margin-bottom: var(--space-16);
+    margin-bottom: var(--space-12);
     animation: fadeInUp 0.6s ease-out;
+}
+
+/* Уменьшаем отступы для секции подписок, чтобы карточки были видны */
+.subscriptions .section-header {
+    margin-bottom: var(--space-8);
 }
 
 .section-title {
@@ -504,8 +509,8 @@ body {
 }
 
 .subscriptions {
-    padding: var(--space-24) 0;
-    scroll-margin-top: 100px;
+    padding: var(--space-12) 0 var(--space-24) 0;
+    scroll-margin-top: 80px;
     background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%);
 }
 
