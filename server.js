@@ -548,20 +548,43 @@ app.get('/api/reviews', (req, res) => {
         // Sort in JavaScript to handle mixed date formats properly
         rows.sort((a, b) => {
             const normalizeDate = (dateStr) => {
+                if (!dateStr) return 0;
+                
                 // Handle both '2025-11-04 13:57:52' and '2025-10-20T12:47:36.395Z'
-                let normalized = dateStr.replace('T', ' ').replace('Z', '');
+                let normalized = dateStr.toString().replace('T', ' ').replace('Z', '');
+                
                 // Remove milliseconds if present (everything after '.')
                 const dotIndex = normalized.indexOf('.');
                 if (dotIndex > 0) {
                     normalized = normalized.substring(0, dotIndex);
                 }
-                // Ensure format is 'YYYY-MM-DD HH:MM:SS' for reliable Date parsing
-                // JavaScript Date constructor expects ISO format or 'YYYY-MM-DD HH:MM:SS'
+                
+                // Try parsing as ISO string first, then as regular date string
                 try {
-                    const date = new Date(normalized);
-                    return date.getTime();
+                    // Try direct ISO parsing
+                    let date = new Date(dateStr);
+                    if (!isNaN(date.getTime())) {
+                        return date.getTime();
+                    }
+                    
+                    // Try parsing normalized string
+                    date = new Date(normalized);
+                    if (!isNaN(date.getTime())) {
+                        return date.getTime();
+                    }
+                    
+                    // Fallback: try adding timezone if missing
+                    if (!normalized.includes('+') && !normalized.includes('-', 10)) {
+                        date = new Date(normalized + 'Z');
+                        if (!isNaN(date.getTime())) {
+                            return date.getTime();
+                        }
+                    }
+                    
+                    console.error('Could not parse date:', dateStr, normalized);
+                    return 0;
                 } catch (e) {
-                    console.error('Error parsing date:', normalized, e);
+                    console.error('Error parsing date:', dateStr, normalized, e);
                     return 0;
                 }
             };
@@ -569,7 +592,14 @@ app.get('/api/reviews', (req, res) => {
             const timeA = normalizeDate(a.created_at);
             const timeB = normalizeDate(b.created_at);
             
+            // DESC = newest first (larger timestamp first)
             const result = validSort === 'ASC' ? timeA - timeB : timeB - timeA;
+            
+            // Log for debugging
+            if (a.customer_name === 'Илья' || b.customer_name === 'Илья') {
+                console.log(`Sorting: ${a.customer_name} (${a.created_at} = ${timeA}) vs ${b.customer_name} (${b.created_at} = ${timeB}) => ${result > 0 ? a.customer_name : b.customer_name} first`);
+            }
+            
             return result;
         });
         
