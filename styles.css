@@ -366,18 +366,17 @@ body {
 
 .hero {
     position: relative;
-    min-height: 95vh;
+    min-height: calc(100vh - 80px);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-24) 0 var(--space-40);
+    padding: var(--space-24) 0 var(--space-32);
     margin-top: 80px;
-    margin-bottom: -4rem;
-    padding-bottom: calc(var(--space-40) + 6rem);
+    margin-bottom: 0;
     background: var(--gradient-hero);
     background-size: 200% 200%;
     animation: gradient-shift 15s ease infinite;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .hero::before {
@@ -513,11 +512,9 @@ body {
 }
 
 .subscriptions {
-    padding: calc(var(--space-12) + 4rem) 0 var(--space-24) 0;
+    padding: var(--space-12) 0 var(--space-24) 0;
     scroll-margin-top: 80px;
-    margin-top: -4rem;
-    position: relative;
-    z-index: 1;
+    margin-top: 0;
     background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%);
 }
 
