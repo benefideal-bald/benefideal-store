@@ -905,53 +905,33 @@ app.get('/api/reviews', (req, res) => {
     
     // Log first and last review for debugging - ВАЖНО: первый должен быть НОВЕЙШИМ!
     if (paginatedRows.length > 0) {
-        if (paginatedRows.length > 0) {
-            console.log(`✅ Reviews sorted DESC (newest first):`);
-            console.log(`   FIRST (newest): ${paginatedRows[0].customer_name} - ${paginatedRows[0].created_at}`);
-            if (paginatedRows.length > 1) {
-                console.log(`   SECOND: ${paginatedRows[1].customer_name} - ${paginatedRows[1].created_at}`);
-            }
-            if (paginatedRows.length > 2) {
-                console.log(`   THIRD: ${paginatedRows[2].customer_name} - ${paginatedRows[2].created_at}`);
-            }
-            console.log(`   LAST (oldest in this page): ${paginatedRows[paginatedRows.length-1].customer_name} - ${paginatedRows[paginatedRows.length-1].created_at}`);
-            
-            // КРИТИЧЕСКИ ВАЖНО: Проверяем, есть ли Тихон в результатах
-            const tikhonInPaginated = paginatedRows.find(r => r.customer_name === 'Тихон');
-            if (tikhonInPaginated) {
-                const tikhonIndexInPaginated = paginatedRows.indexOf(tikhonInPaginated);
-                console.log(`✅ Тихон found in PAGINATED results at index ${tikhonIndexInPaginated} - WILL BE DISPLAYED!`);
-            } else {
-                const tikhonInAll = rows.find(r => r.customer_name === 'Тихон');
-                if (tikhonInAll) {
-                    const tikhonIndexInAll = rows.indexOf(tikhonInAll);
-                    console.error(`❌ Тихон is in database but NOT in paginated results!`);
-                    console.error(`❌ Тихон position in all reviews: ${tikhonIndexInAll}, limit: ${limit || 'none'}, offset: ${offset}`);
-                } else {
-                    console.log(`⚠️ Тихон NOT FOUND in database at all!`);
-                }
-            }
-            
-            // КРИТИЧЕСКИ ВАЖНО: Проверяем, есть ли Илья в результатах (и в полном списке, и в пагинированном)
-            const ilyaInAll = rows.find(r => r.customer_name === 'Илья');
-            const ilyaInPaginated = paginatedRows.find(r => r.customer_name === 'Илья');
-            
-            if (ilyaInAll) {
-                const ilyaIndexInAll = rows.indexOf(ilyaInAll);
-                console.log(`   ✅ Илья found in ALL reviews at index ${ilyaIndexInAll} with date: ${ilyaInAll.created_at}`);
-                
-                if (ilyaInPaginated) {
-                    const ilyaIndexInPaginated = paginatedRows.indexOf(ilyaInPaginated);
-                    console.log(`   ✅ Илья found in PAGINATED results at index ${ilyaIndexInPaginated} - WILL BE DISPLAYED!`);
-                } else {
-                    console.error(`   ❌ Илья is in database but NOT in paginated results!`);
-                    console.error(`   ❌ This means Илья review exists but won't be shown to users!`);
-                    console.error(`   ❌ Илья position in all reviews: ${ilyaIndexInAll}, limit: ${limit || 'none'}, offset: ${offset}`);
-                }
-            } else {
-                console.log(`   ⚠️ Илья NOT FOUND in database at all!`);
-            }
+        console.log(`✅ Reviews sorted DESC (newest first):`);
+        console.log(`   FIRST (newest): ${paginatedRows[0].customer_name} - ${paginatedRows[0].created_at}`);
+        if (paginatedRows.length > 1) {
+            console.log(`   SECOND: ${paginatedRows[1].customer_name} - ${paginatedRows[1].created_at}`);
         }
+        if (paginatedRows.length > 2) {
+            console.log(`   THIRD: ${paginatedRows[2].customer_name} - ${paginatedRows[2].created_at}`);
+        }
+        console.log(`   LAST (oldest in this page): ${paginatedRows[paginatedRows.length-1].customer_name} - ${paginatedRows[paginatedRows.length-1].created_at}`);
+        
+        // Проверяем наличие отзывов в результатах
+        const tikhonInPaginated = paginatedRows.find(r => r.customer_name === 'Тихон');
+        const tikhonInAll = allReviews.find(r => r.customer_name === 'Тихон');
+        if (tikhonInPaginated) {
+            console.log(`✅ Тихон found in results`);
+        } else if (tikhonInAll) {
+            console.log(`⚠️ Тихон found in all reviews but not in paginated results`);
+        }
+        
+        const ilyaInPaginated = paginatedRows.find(r => r.customer_name === 'Илья');
+        const ilyaInAll = allReviews.find(r => r.customer_name === 'Илья');
+        if (ilyaInPaginated) {
+            console.log(`✅ Илья found in results`);
+        } else if (ilyaInAll) {
+            console.log(`⚠️ Илья found in all reviews but not in paginated results`);
+        }
+    }
         
         res.json({ 
             success: true,
