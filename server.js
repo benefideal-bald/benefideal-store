@@ -1264,7 +1264,7 @@ app.get('/api/debug/sync-reviews-from-root', (req, res) => {
     console.log('🔄 Syncing reviews from root reviews.json to data/reviews.json...');
     
     try {
-        // Read from root file (Git version)
+        // Read from root file (Git version) - ЭТО ИСТОЧНИК ПРАВДЫ!
         if (!fs.existsSync(reviewsJsonPathGit)) {
             return res.status(404).json({
                 success: false,
@@ -1277,8 +1277,8 @@ app.get('/api/debug/sync-reviews-from-root', (req, res) => {
         
         console.log(`📋 Found ${rootReviews.length} reviews in root reviews.json`);
         
-        // КРИТИЧЕСКИ ВАЖНО: Если data/reviews.json существует, читаем его и объединяем
-        // Удаляем дубликаты по имени, оставляя версии из корневого файла (Git)
+        // КРИТИЧЕСКИ ВАЖНО: Если data/reviews.json существует, читаем его ТОЛЬКО для динамических отзывов
+        // (тех, которых нет в корневом файле)
         let existingReviews = [];
         if (fs.existsSync(reviewsJsonPath)) {
             try {
@@ -1290,45 +1290,44 @@ app.get('/api/debug/sync-reviews-from-root', (req, res) => {
             }
         }
         
-        // Создаем карту отзывов из корневого файла по имени (это версии из Git - приоритетные)
-        const rootReviewsMap = new Map();
+        // Создаем Set имен из корневого файла (это версии из Git - ПРИОРИТЕТНЫЕ)
+        const rootReviewNames = new Set();
         rootReviews.forEach(review => {
             const name = (review.customer_name || '').trim();
             if (name) {
-                rootReviewsMap.set(name, review);
+                rootReviewNames.add(name);
             }
         });
         
-        // Добавляем отзывы из существующего файла, которых нет в корневом (динамические отзывы)
-        const mergedReviews = [];
-        const seenNames = new Set();
+        console.log(`📋 Root file has ${rootReviewNames.size} unique names:`, Array.from(rootReviewNames).join(', '));
         
-        // Сначала добавляем все отзывы из корневого файла (приоритет)
-        rootReviews.forEach(review => {
-            const name = (review.customer_name || '').trim();
-            if (name && !seenNames.has(name)) {
-                mergedReviews.push(review);
-                seenNames.add(name);
-                console.log(`✅ Added from root: ${name}`);
-            }
-        });
+        // Финальный список: сначала ВСЕ отзывы из корневого файла (приоритет!)
+        const finalReviews = [...rootReviews];
+        console.log(`✅ Added ${finalReviews.length} reviews from root (Git) - эти версии имеют приоритет!`);
         
-        // Затем добавляем отзывы из существующего файла, которых нет в корневом
+        // Затем добавляем ТОЛЬКО те отзывы из существующего файла, которых НЕТ в корневом
+        // (динамические отзывы, созданные через форму)
+        let addedDynamic = 0;
         existingReviews.forEach(review => {
             const name = (review.customer_name || '').trim();
-            if (name && !seenNames.has(name)) {
-                mergedReviews.push(review);
-                seenNames.add(name);
-                console.log(`✅ Added from existing (not in root): ${name}`);
-            } else if (name && seenNames.has(name)) {
-                console.log(`🗑️ Skipped duplicate from existing: ${name} (already in root)`);
+            if (name && !rootReviewNames.has(name)) {
+                finalReviews.push(review);
+                addedDynamic++;
+                console.log(`✅ Added dynamic review (not in root): ${name}`);
+            } else if (name && rootReviewNames.has(name)) {
+                console.log(`🗑️ SKIPPED old version from server: ${name} (replaced with version from root/Git)`);
             }
         });
         
-        // Удаляем дубликаты с помощью функции removeDuplicateReviews
-        const uniqueReviews = removeDuplicateReviews(mergedReviews);
+        console.log(`📊 Total: ${finalReviews.length} reviews (${rootReviews.length} from root + ${addedDynamic} dynamic)`);
         
-        console.log(`📊 After merging and deduplication: ${uniqueReviews.length} unique reviews`);
+        // Удаляем дубликаты (на случай если они есть)
+        const uniqueReviews = removeDuplicateReviews(finalReviews);
+        
+        console.log(`📊 After deduplication: ${uniqueReviews.length} unique reviews`);
+        if (finalReviews.length !== uniqueReviews.length) {
+            console.log(`   Removed ${finalReviews.length - uniqueReviews.length} duplicates`);
+        }
         
         // Ensure data directory exists
         const dataDir = path.dirname(reviewsJsonPath);
@@ -1337,21 +1336,26 @@ app.get('/api/debug/sync-reviews-from-root', (req, res) => {
             console.log(`✅ Created data directory: ${dataDir}`);
         }
         
-        // Write to data/reviews.json
+        // ЗАПИСЫВАЕМ: полностью заменяем data/reviews.json версиями из корневого файла
         fs.writeFileSync(reviewsJsonPath, JSON.stringify(uniqueReviews, null, 2), 'utf8');
         
         console.log(`✅ Successfully synced ${uniqueReviews.length} reviews to data/reviews.json`);
-        console.log(`   Removed ${mergedReviews.length - uniqueReviews.length} duplicates`);
+        console.log(`   ✅ Все отзывы из корневого файла (Git) теперь на сервере`);
+        console.log(`   ✅ Старые версии отзывов заменены новыми версиями из Git`);
         
         res.json({
             success: true,
             message: `Successfully synced ${uniqueReviews.length} reviews from root to data/reviews.json`,
             total: uniqueReviews.length,
-            duplicates_removed: mergedReviews.length - uniqueReviews.length,
+            from_root: rootReviews.length,
+            dynamic_added: addedDynamic,
+            duplicates_removed: finalReviews.length - uniqueReviews.length,
+            note: 'Все отзывы из корневого файла (Git) теперь на сервере. Старые версии заменены новыми.',
             reviews: uniqueReviews.map(r => ({
                 name: r.customer_name,
                 text: r.review_text.substring(0, 50) + '...',
-                created_at: r.created_at
+                created_at: r.created_at,
+                source: rootReviewNames.has(r.customer_name) ? 'root (Git)' : 'dynamic'
             }))
         });
     } catch (error) {
