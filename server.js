@@ -1233,6 +1233,46 @@ app.get('/api/reviews', (req, res) => {
     });
 });
 
+// Debug endpoint to force restore all reviews from database
+app.get('/api/debug/restore-all-reviews', (req, res) => {
+    console.log('🔄 Force restore all reviews from database...');
+    migrateReviewsFromDatabase().then((migrated) => {
+        if (migrated) {
+            const allReviews = readReviewsFromJSON();
+            res.json({
+                success: true,
+                message: 'All reviews restored from database!',
+                total: allReviews.length,
+                reviews: allReviews.map(r => ({
+                    name: r.customer_name,
+                    email: r.customer_email,
+                    created_at: r.created_at,
+                    order_id: r.order_id
+                }))
+            });
+        } else {
+            const allReviews = readReviewsFromJSON();
+            res.json({
+                success: true,
+                message: 'No new reviews to migrate, all reviews are already in JSON',
+                total: allReviews.length,
+                reviews: allReviews.map(r => ({
+                    name: r.customer_name,
+                    email: r.customer_email,
+                    created_at: r.created_at,
+                    order_id: r.order_id
+                }))
+            });
+        }
+    }).catch(err => {
+        console.error('❌ Error restoring reviews:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    });
+});
+
 // Debug endpoint to remove duplicates and clean up reviews
 app.get('/api/debug/remove-duplicates', (req, res) => {
     try {
