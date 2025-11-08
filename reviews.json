@@ -88,6 +88,15 @@
     "rating": 5,
     "created_at": "2025-08-25T10:00:00Z",
     "is_static": true
+  },
+  {
+    "id": "static_olga",
+    "customer_name": "Ольга",
+    "customer_email": "static_review_16@benefideal.com",
+    "review_text": "Отличные цены и быстрое обслуживание, я получила доступ к адоб почти сразу после оплаты. Очень рекомендую этот магазин.",
+    "rating": 5,
+    "created_at": "2025-08-20T10:00:00Z",
+    "is_static": true
   }
 ]
 
