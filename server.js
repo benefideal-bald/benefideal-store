@@ -829,31 +829,59 @@ app.post('/api/review', (req, res) => {
 
 // Helper function to remove duplicate reviews
 function removeDuplicateReviews(reviews) {
-    // Create a map to track unique reviews by (email, order_id, name, text)
+    // Create a map to track unique reviews
+    // We use multiple strategies to catch different types of duplicates:
+    // 1. Same email + order_id (same person, same order)
+    // 2. Same name + email + text (same person, same review text, even if order_id differs)
     const uniqueReviewsMap = new Map();
     const duplicatesRemoved = [];
     
     reviews.forEach((review, index) => {
-        // Create a unique key based on email, order_id, name, and first 100 chars of text
         const email = (review.customer_email || '').toLowerCase().trim();
         const orderId = review.order_id || 'null';
         const name = (review.customer_name || '').trim();
-        const text = (review.review_text || '').substring(0, 100).trim();
+        const text = (review.review_text || '').trim();
         
-        const key = `${email}_${orderId}_${name}_${text}`;
+        // Strategy 1: Check by email + order_id (most specific)
+        const key1 = `email_order:${email}_${orderId}`;
         
-        if (!uniqueReviewsMap.has(key)) {
-            // This is a unique review, keep it
-            uniqueReviewsMap.set(key, review);
-        } else {
-            // This is a duplicate
+        // Strategy 2: Check by name + email + text (catches duplicates even if order_id differs)
+        // Normalize text: remove extra spaces, convert to lowercase for comparison
+        const normalizedText = text.toLowerCase().replace(/\s+/g, ' ').trim();
+        const key2 = `name_email_text:${name.toLowerCase()}_${email}_${normalizedText}`;
+        
+        let isDuplicate = false;
+        let duplicateReason = '';
+        
+        // Check if this is a duplicate by either strategy
+        if (uniqueReviewsMap.has(key1)) {
+            isDuplicate = true;
+            duplicateReason = 'same email + order_id';
+        } else if (uniqueReviewsMap.has(key2)) {
+            // Only consider it a duplicate by text if the text is substantial (more than 20 chars)
+            // This prevents false positives from short reviews like "OK" or "Good"
+            if (normalizedText.length > 20) {
+                isDuplicate = true;
+                duplicateReason = 'same name + email + text';
+            }
+        }
+        
+        if (isDuplicate) {
             duplicatesRemoved.push({
                 index: index,
                 name: name,
                 email: email,
-                orderId: orderId
+                orderId: orderId,
+                reason: duplicateReason
             });
-            console.log(`   🗑️ Removed duplicate: ${name} (${email}, order_id: ${orderId})`);
+            console.log(`   🗑️ Removed duplicate: ${name} (${email}, order_id: ${orderId}) - reason: ${duplicateReason}`);
+        } else {
+            // This is a unique review, keep it
+            // Store by both keys to catch future duplicates
+            uniqueReviewsMap.set(key1, review);
+            if (normalizedText.length > 20) {
+                uniqueReviewsMap.set(key2, review);
+            }
         }
     });
     
@@ -861,8 +889,49 @@ function removeDuplicateReviews(reviews) {
         console.log(`   ✅ Removed ${duplicatesRemoved.length} duplicate reviews`);
     }
     
-    // Return array of unique reviews
-    return Array.from(uniqueReviewsMap.values());
+    // Return array of unique reviews (use key1 to get unique reviews)
+    const uniqueReviews = [];
+    const seen = new Set();
+    reviews.forEach(review => {
+        const email = (review.customer_email || '').toLowerCase().trim();
+        const orderId = review.order_id || 'null';
+        const key1 = `email_order:${email}_${orderId}`;
+        
+        if (uniqueReviewsMap.has(key1) && !seen.has(key1)) {
+            uniqueReviews.push(uniqueReviewsMap.get(key1));
+            seen.add(key1);
+        }
+    });
+    
+    // If we removed duplicates by text strategy, we need to filter differently
+    // Let's use a simpler approach: just keep the first occurrence of each unique review
+    const finalUniqueReviews = [];
+    const seenKeys = new Set();
+    
+    reviews.forEach(review => {
+        const email = (review.customer_email || '').toLowerCase().trim();
+        const orderId = review.order_id || 'null';
+        const name = (review.customer_name || '').trim();
+        const text = (review.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ').trim();
+        
+        const key1 = `email_order:${email}_${orderId}`;
+        const key2 = text.length > 20 ? `name_email_text:${name.toLowerCase()}_${email}_${text}` : null;
+        
+        let shouldAdd = false;
+        if (!seenKeys.has(key1)) {
+            if (!key2 || !seenKeys.has(key2)) {
+                shouldAdd = true;
+                seenKeys.add(key1);
+                if (key2) seenKeys.add(key2);
+            }
+        }
+        
+        if (shouldAdd) {
+            finalUniqueReviews.push(review);
+        }
+    });
+    
+    return finalUniqueReviews;
 }
 
 // Helper function to migrate reviews from database to JSON (one-time migration)
