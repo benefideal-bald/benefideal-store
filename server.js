@@ -512,6 +512,22 @@ db.serialize(() => {
                                        });
                                    } else {
                                        console.log(`   ⚠️ No orders found for Тихон`);
+                                       console.log(`   🔍 Checking all subscriptions in database...`);
+                                       // Проверяем все подписки в базе для отладки
+                                       db.all(`SELECT customer_name, customer_email, product_name, purchase_date FROM subscriptions ORDER BY purchase_date DESC LIMIT 10`, [], (err, allSubs) => {
+                                           if (!err && allSubs) {
+                                               console.log(`   📊 Total subscriptions in database: ${allSubs.length}`);
+                                               if (allSubs.length > 0) {
+                                                   console.log(`   📋 Recent subscriptions:`);
+                                                   allSubs.forEach((s, i) => {
+                                                       console.log(`      ${i+1}. ${s.customer_name} (${s.customer_email}) - ${s.product_name} - ${s.purchase_date}`);
+                                                   });
+                                               } else {
+                                                   console.log(`   ⚠️ Database is EMPTY - no subscriptions found!`);
+                                                   console.log(`   💡 This might mean orders are not being saved, or database was cleared.`);
+                                               }
+                                           }
+                                       });
                                        console.log(`   ✅ Will NOT create default review - only restore if order exists`);
                                        console.log(`   💡 Use /api/debug/restore-tikhon endpoint to manually restore if needed`);
                                    }
