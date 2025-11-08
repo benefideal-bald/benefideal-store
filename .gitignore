@@ -1,5 +1,6 @@
 node_modules/
-# subscriptions.db - НЕ игнорируем, чтобы база сохранялась на Render!
+# subscriptions.db - КОММИТИМ в Git для сохранения на Render!
+# Это необходимо, так как на Render Free плане файловая система не персистентна
 # .env
 *.log
 .DS_Store
