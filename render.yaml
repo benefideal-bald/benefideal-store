@@ -10,9 +10,8 @@ services:
         value: production
       - key: CUSTOM_DOMAIN
         value: benefideal.ru
-      - key: DATABASE_PATH
-        value: /opt/render/project/src/subscriptions.db
     healthCheckPath: /health
-    # КРИТИЧЕСКИ ВАЖНО: Используем персистентное хранилище для базы данных
-    # На Render Free плане файлы в /opt/render/project/src/ сохраняются между деплоями
+    # КРИТИЧЕСКИ ВАЖНО: База данных создается в директории data/
+    # Эта директория НЕ в Git, поэтому база данных не будет перезаписана при деплое
+    # На Render файлы в рабочей директории должны сохраняться между деплоями
 
