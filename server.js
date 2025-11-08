@@ -954,12 +954,6 @@ function readReviewsFromJSON() {
         const data = fs.readFileSync(reviewsJsonPath, 'utf8');
         const reviews = JSON.parse(data);
         
-        // Check if we need to migrate from database (run migration check on every read)
-        // This ensures we don't lose any reviews
-        migrateReviewsFromDatabase().catch(err => {
-            console.error('❌ Migration error:', err);
-        });
-        
         return reviews;
     } catch (error) {
         console.error('❌ Error reading reviews.json:', error);
