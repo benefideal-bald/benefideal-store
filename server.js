@@ -52,6 +52,18 @@ if (fs.existsSync(dbPath)) {
     console.log('   Database file size: N/A (file does not exist)');
 }
 
+// КРИТИЧЕСКИ ВАЖНО: Создаем директорию data/ для базы данных, если её нет
+// Эта директория НЕ в Git, поэтому база данных не будет перезаписана при деплое
+const dbDir = path.dirname(dbPath);
+if (!fs.existsSync(dbDir)) {
+    try {
+        fs.mkdirSync(dbDir, { recursive: true });
+        console.log(`✅ Created database directory: ${dbDir}`);
+    } catch (mkdirErr) {
+        console.error(`❌ Error creating database directory: ${mkdirErr}`);
+    }
+}
+
 const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
         console.error('❌ Error opening database:', err);
