@@ -300,72 +300,58 @@
                     // Максим and Тимур are in database with newest dates (today and yesterday)
                     // They should be first 2 in API response, so we take first 10
                     
-                    // Remove ALL existing cards (including Максим and Тимур from HTML)
-                    // We'll load them from API with correct dates
-                    const existingCards = reviewsWrapper.querySelectorAll('.review-card');
-                    existingCards.forEach(card => card.remove());
+                    // КРИТИЧЕСКИ ВАЖНО: НЕ удаляем статические отзывы из HTML!
+                    // Статические отзывы хранятся прямо в HTML и никогда не пропадут
+                    // Удаляем только динамические отзывы (если они были загружены ранее)
+                    const existingDynamicCards = reviewsWrapper.querySelectorAll('.review-card:not([data-static="true"])');
+                    existingDynamicCards.forEach(card => card.remove());
                     
-                    // Take first 10 reviews from API (already sorted DESC - newest first)
-                    // КРИТИЧЕСКИ ВАЖНО: Новые клиентские отзывы (Илья) должны быть первыми!
-                    const reviewsToAdd = data.reviews.slice(0, 10);
+                    // Динамические отзывы от клиентов (уже отсортированы DESC - новые первыми)
+                    const dynamicReviews = data.reviews;
                     
-                    console.log('Loading', reviewsToAdd.length, 'reviews. First (newest):', reviewsToAdd[0]?.customer_name, 'Last:', reviewsToAdd[reviewsToAdd.length - 1]?.customer_name);
+                    console.log('Adding', dynamicReviews.length, 'dynamic reviews from API');
                     
-                    // КРИТИЧЕСКИ ВАЖНО: Проверяем, есть ли Илья и Тихон в первых 10 отзывах
-                    const ilyaInFirst10 = reviewsToAdd.find(r => r.customer_name === 'Илья');
-                    const tikhonInFirst10 = reviewsToAdd.find(r => r.customer_name === 'Тихон');
-                    
-                    if (ilyaInFirst10) {
-                        const ilyaPosition = reviewsToAdd.indexOf(ilyaInFirst10);
-                        console.log(`✅ Илья review WILL BE DISPLAYED in carousel at position ${ilyaPosition}!`);
-                    } else {
-                        // Проверяем, есть ли Илья вообще в ответе API
-                        const ilyaInAll = data.reviews.find(r => r.customer_name === 'Илья');
-                        if (ilyaInAll) {
-                            const ilyaPositionInAll = data.reviews.indexOf(ilyaInAll);
-                            console.error(`❌ Илья review is at position ${ilyaPositionInAll} in API response, but NOT in first 10!`);
-                            console.error(`❌ This means Илья review is OLDER than expected or sorting is wrong!`);
-                            console.error(`❌ First 10 reviews:`, reviewsToAdd.map(r => `${r.customer_name} (${r.created_at})`));
-                        } else {
-                            console.error(`❌ Илья review NOT FOUND in API response at all!`);
-                        }
-                    }
-                    
-                    if (tikhonInFirst10) {
-                        const tikhonPosition = reviewsToAdd.indexOf(tikhonInFirst10);
-                        console.log(`✅ Тихон review WILL BE DISPLAYED in carousel at position ${tikhonPosition}!`);
-                    } else {
-                        // Проверяем, есть ли Тихон вообще в ответе API
-                        const tikhonInAll = data.reviews.find(r => r.customer_name === 'Тихон');
-                        if (tikhonInAll) {
-                            const tikhonPositionInAll = data.reviews.indexOf(tikhonInAll);
-                            console.error(`❌ Тихон review is at position ${tikhonPositionInAll} in API response, but NOT in first 10!`);
-                            console.error(`❌ This means Тихон review is OLDER than expected or sorting is wrong!`);
-                            console.error(`❌ First 10 reviews:`, reviewsToAdd.map(r => `${r.customer_name} (${r.created_at})`));
-                        } else {
-                            console.error(`❌ Тихон review NOT FOUND in API response at all!`);
-                            console.error(`❌ Total reviews in API: ${data.reviews.length}`);
-                            console.error(`❌ All review names:`, data.reviews.map(r => r.customer_name));
-                        }
-                    }
-                    
+                    // Создаем карточки для динамических отзывов
                     const fragment = document.createDocumentFragment();
                     
-                    reviewsToAdd.forEach((review) => {
+                    dynamicReviews.forEach((review) => {
                         const card = createReviewCard(review);
                         if (card) {
                             card.classList.add('dynamic-review');
+                            // Устанавливаем дату из API для правильной сортировки
+                            card.setAttribute('data-date', review.created_at || new Date().toISOString());
                             fragment.appendChild(card);
-                            console.log('Created card for:', review.customer_name, 'date:', review.created_at);
+                            console.log('Created dynamic card for:', review.customer_name, 'date:', review.created_at);
                         }
                     });
                     
-                    // Append all 10 reviews to wrapper (already sorted DESC - newest first)
-                    // Максим (today) -> Тимур (yesterday) -> others (newest first)
-                    reviewsWrapper.appendChild(fragment);
+                    // Вставляем динамические отзывы ПЕРЕД статическими (новые клиентские отзывы первыми)
+                    const firstStaticReview = reviewsWrapper.querySelector('.review-card[data-static="true"]');
+                    if (firstStaticReview) {
+                        reviewsWrapper.insertBefore(fragment, firstStaticReview);
+                    } else {
+                        reviewsWrapper.appendChild(fragment);
+                    }
                     
-                    console.log('✅ Last 10 reviews loaded from API. Total cards:', reviewsWrapper.querySelectorAll('.review-card:not([data-is-clone="true"])').length);
-                    console.log('Order: newest first - Максим (today) -> Тимур (yesterday) -> 8 others');
+                    // Теперь сортируем ВСЕ отзывы (и статические, и динамические) по дате (новые первыми)
+                    // И показываем только первые 10
+                    const allCards = Array.from(reviewsWrapper.querySelectorAll('.review-card'));
+                    allCards.sort((a, b) => {
+                        const dateA = new Date(a.getAttribute('data-date') || 0);
+                        const dateB = new Date(b.getAttribute('data-date') || 0);
+                        return dateB - dateA; // DESC - новые первыми
+                    });
+                    
+                    // Удаляем все карточки из DOM
+                    allCards.forEach(card => card.remove());
+                    
+                    // Добавляем только первые 10 (новейшие)
+                    const top10Cards = allCards.slice(0, 10);
+                    const sortedFragment = document.createDocumentFragment();
+                    top10Cards.forEach(card => sortedFragment.appendChild(card));
+                    reviewsWrapper.appendChild(sortedFragment);
+                    
+                    console.log(`✅ Displaying top 10 reviews (newest first):`, top10Cards.map(c => c.querySelector('.review-name')?.textContent));
                     
                     // Reinitialize carousel after loading reviews (DO NOT reorder cards - order is already correct!)
                     reviewsWrapper.style.transform = 'translate3d(0, 0, 0)';
@@ -383,7 +369,21 @@
                 console.error('Error loading reviews:', error);
                 console.error('Error details:', error.message, error.stack);
                 // Show error to user in console
-                console.warn('⚠️ Не удалось загрузить динамические отзывы. Показываются только статические отзывы.');
+                console.warn('⚠️ Не удалось загрузить динамические отзывы. Показываются только статические отзывы из HTML.');
+                // Если API недоступен, показываем только статические отзывы (они уже в HTML)
+                // Сортируем их по дате и показываем первые 10
+                const staticCards = Array.from(reviewsWrapper.querySelectorAll('.review-card[data-static="true"]'));
+                staticCards.sort((a, b) => {
+                    const dateA = new Date(a.getAttribute('data-date') || 0);
+                    const dateB = new Date(b.getAttribute('data-date') || 0);
+                    return dateB - dateA;
+                });
+                // Удаляем все и добавляем отсортированные (первые 10)
+                staticCards.forEach(card => card.remove());
+                const top10Static = staticCards.slice(0, 10);
+                const staticFragment = document.createDocumentFragment();
+                top10Static.forEach(card => staticFragment.appendChild(card));
+                reviewsWrapper.appendChild(staticFragment);
             }
         };
         
