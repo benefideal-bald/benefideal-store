@@ -195,11 +195,28 @@ db.serialize(() => {
         
         console.log(`📊 Reviews check on startup: ${row.count} reviews found in database`);
         
-        // КРИТИЧЕСКИ ВАЖНО: Переносим отзывы из базы данных в JSON при первом запуске
+        // КРИТИЧЕСКИ ВАЖНО: Переносим отзывы из базы данных в JSON при КАЖДОМ запуске
         // Это гарантирует, что все отзывы из базы данных будут сохранены в JSON
         if (row && row.count > 0) {
-            console.log('🔄 Database has reviews, checking if migration to JSON is needed...');
-            // Migration will happen automatically in readReviewsFromJSON()
+            console.log(`🔄 Database has ${row.count} reviews, starting migration to JSON...`);
+            // Run migration immediately on startup to ensure all reviews are in JSON
+            migrateReviewsFromDatabase().then((migrated) => {
+                if (migrated) {
+                    console.log('✅ Migration completed on startup! All reviews restored to JSON!');
+                } else {
+                    console.log('✅ Migration check completed - all reviews are already in JSON');
+                }
+            }).catch(err => {
+                console.error('❌ Migration error on startup:', err);
+            });
+        } else {
+            // Even if database is empty, check JSON for duplicates
+            console.log('📋 Database is empty, checking JSON for duplicates...');
+            migrateReviewsFromDatabase().then(() => {
+                console.log('✅ JSON check completed');
+            }).catch(err => {
+                console.error('❌ JSON check error:', err);
+            });
         }
         
         // Only insert static reviews if table is empty (first run)
@@ -940,30 +957,59 @@ function migrateReviewsFromDatabase() {
                 return resolve(false);
             }
             
-            // Create a map of existing JSON reviews by (email, order_id, name, text) to avoid duplicates
-            const jsonReviewsMap = new Map();
+            // Create maps to check for existing reviews by multiple criteria
+            // Key 1: email + order_id (most specific)
+            const jsonReviewsMapByEmailOrder = new Map();
+            // Key 2: email + name + text (catches duplicates even if order_id differs)
+            const jsonReviewsMapByEmailNameText = new Map();
+            
             jsonReviews.forEach(review => {
                 const email = (review.customer_email || '').toLowerCase().trim();
                 const orderId = review.order_id || 'null';
-                const name = (review.customer_name || '').trim();
-                const text = (review.review_text || '').substring(0, 100).trim();
-                const key = `${email}_${orderId}_${name}_${text}`;
-                jsonReviewsMap.set(key, review);
+                const name = (review.customer_name || '').trim().toLowerCase();
+                const text = (review.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ');
+                
+                // Key 1: email + order_id
+                const key1 = `${email}_${orderId}`;
+                jsonReviewsMapByEmailOrder.set(key1, review);
+                
+                // Key 2: email + name + text (only for substantial text)
+                if (text.length > 20) {
+                    const key2 = `${email}_${name}_${text.substring(0, 200)}`;
+                    jsonReviewsMapByEmailNameText.set(key2, review);
+                }
             });
+            
+            console.log(`   JSON has ${jsonReviews.length} reviews, checking against ${dbReviews.length} database reviews...`);
             
             // Merge database reviews with JSON reviews
             let migrated = false;
+            let skippedCount = 0;
+            let addedCount = 0;
+            
             dbReviews.forEach(dbReview => {
                 const email = (dbReview.customer_email || '').toLowerCase().trim();
                 const orderId = dbReview.order_id || 'null';
-                const name = (dbReview.customer_name || '').trim();
-                const text = (dbReview.review_text || '').substring(0, 100).trim();
-                const key = `${email}_${orderId}_${name}_${text}`;
+                const name = (dbReview.customer_name || '').trim().toLowerCase();
+                const text = (dbReview.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ');
                 
-                if (!jsonReviewsMap.has(key)) {
+                // Check if this review already exists in JSON
+                const key1 = `${email}_${orderId}`;
+                const key2 = text.length > 20 ? `${email}_${name}_${text.substring(0, 200)}` : null;
+                
+                let exists = false;
+                if (jsonReviewsMapByEmailOrder.has(key1)) {
+                    exists = true;
+                    skippedCount++;
+                } else if (key2 && jsonReviewsMapByEmailNameText.has(key2)) {
+                    exists = true;
+                    skippedCount++;
+                }
+                
+                if (!exists) {
                     // This review is not in JSON, add it
                     const review = {
-                        id: `review_${dbReview.id}_${Date.now()}`,
+                        id: `review_${dbReview.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                         customer_name: dbReview.customer_name,
                         customer_email: dbReview.customer_email,
                         review_text: dbReview.review_text,
@@ -973,13 +1019,26 @@ function migrateReviewsFromDatabase() {
                         is_static: false
                     };
                     jsonReviews.push(review);
-                    jsonReviewsMap.set(key, review);
+                    
+                    // Add to maps to avoid duplicates in this migration
+                    jsonReviewsMapByEmailOrder.set(key1, review);
+                    if (key2) {
+                        jsonReviewsMapByEmailNameText.set(key2, review);
+                    }
+                    
                     migrated = true;
-                    console.log(`   ✅ Migrated review: ${review.customer_name} (${review.created_at})`);
-                } else {
-                    console.log(`   ⏭️ Skipped duplicate: ${name} (${email}, order_id: ${orderId})`);
+                    addedCount++;
+                    console.log(`   ✅ Migrated review: ${review.customer_name} (${review.created_at}, order_id: ${orderId || 'null'})`);
                 }
             });
+            
+            if (skippedCount > 0) {
+                console.log(`   ⏭️ Skipped ${skippedCount} reviews that are already in JSON`);
+            }
+            
+            if (addedCount > 0) {
+                console.log(`   ✅ Added ${addedCount} new reviews from database to JSON`);
+            }
             
             // Remove any remaining duplicates (in case there are duplicates within JSON itself)
             const uniqueReviews = removeDuplicateReviews(jsonReviews);
