@@ -210,10 +210,10 @@ db.serialize(() => {
                 // Остальные статические отзывы (старше)
                 { name: 'София', email: 'static_review_1@benefideal.com', text: 'Заказала CapCut Pro для создания контента в TikTok. Активация прошла за минуты, все функции работают, включая премиум эффекты. Огромная экономия!', rating: 5, order_id: 'STATIC_REVIEW_1', daysAgo: null },
                 { name: 'Павел', email: 'static_review_2@benefideal.com', text: 'Прекрасный сервис! ChatGPT Plus работает идеально, быстрые ответы, доступ к GPT-4. Пользуюсь уже месяц, всё стабильно. Обязательно продлю подписку!', rating: 5, order_id: 'STATIC_REVIEW_2', daysAgo: null },
-                { name: 'Юлия', email: 'static_review_3@benefideal.com', text: 'Adobe заказала для работы над дизайн-проектами. Photoshop, Illustrator, InDesign - все работает без глюков. Поддержка оперативно отвечает на вопросы. Рекомендую!', rating: 5, order_id: 'STATIC_REVIEW_3', daysAgo: null },
+                { name: 'Юлия', email: 'static_review_3@benefideal.com', text: 'Adobe заказала для работы над дизайн-проектами. Photoshop, Illustrator, InDesign все работает без глюков. Поддержка оперативно отвечает на вопросы. Рекомендую!', rating: 5, order_id: 'STATIC_REVIEW_3', daysAgo: null },
                 { name: 'Роман', email: 'static_review_4@benefideal.com', text: 'CapCut Pro стал моим основным редактором. Премиум шаблоны и эффекты открывают новые возможности для творчества. Активация мгновенная, цена приятная!', rating: 5, order_id: 'STATIC_REVIEW_4', daysAgo: null },
-                { name: 'Татьяна', email: 'static_review_5@benefideal.com', text: 'ChatGPT Plus использую для написания текстов и исследования. За такие деньги - просто находка! Все возможности GPT-4 доступны, скорость ответов отличная.', rating: 5, order_id: 'STATIC_REVIEW_5', daysAgo: null },
-                { name: 'Никита', email: 'static_review_6@benefideal.com', text: 'Adobe Creative Cloud - лучшая покупка! Использую для фриланса. Premiere Pro, After Effects работают без нареканий. Экономия огромная, качество не уступает официальной версии!', rating: 5, order_id: 'STATIC_REVIEW_6', daysAgo: null },
+                { name: 'Татьяна', email: 'static_review_5@benefideal.com', text: 'ChatGPT Plus использую для написания текстов и исследования. За такие деньги просто находка! Все возможности GPT-4 доступны, скорость ответов отличная.', rating: 5, order_id: 'STATIC_REVIEW_5', daysAgo: null },
+                { name: 'Никита', email: 'static_review_6@benefideal.com', text: 'Adobe Creative Cloud лучшая покупка! Использую для фриланса. Premiere Pro, After Effects работают без нареканий. Экономия огромная, качество не уступает официальной версии!', rating: 5, order_id: 'STATIC_REVIEW_6', daysAgo: null },
                 { name: 'Арина', email: 'static_review_7@benefideal.com', text: 'CapCut Pro покупала для блога в Instagram. Все премиум функции доступны: убираю водяные знаки, использую эксклюзивные эффекты. Сервис на высоте!', rating: 5, order_id: 'STATIC_REVIEW_7', daysAgo: null },
                 { name: 'Константин', email: 'static_review_8@benefideal.com', text: 'ChatGPT Plus приобрел для работы над стартапом. AI помощник невероятный! Генерирую идеи, пишу код, анализирую данные. Скорость и качество превосходят ожидания!', rating: 5, order_id: 'STATIC_REVIEW_8', daysAgo: null },
                 { name: 'Карина', email: 'static_review_9@benefideal.com', text: 'Adobe заказала для обучения дизайну. Полный доступ ко всем программам по разумной цене. Учеба теперь намного интереснее, все инструменты под рукой!', rating: 5, order_id: 'STATIC_REVIEW_9', daysAgo: null },
@@ -1899,9 +1899,9 @@ function formatReminderMessage(subscription, reminderType) {
     }
 }
 
-// Endpoint to fix long dashes in all reviews
-app.post('/api/debug/fix-dashes', (req, res) => {
-    console.log('🔧 Fixing long dashes in all reviews...');
+// Endpoint to remove long dashes from all reviews (delete them, don't replace)
+app.post('/api/debug/remove-dashes', (req, res) => {
+    console.log('🔧 Removing long dashes from all reviews...');
     
     // Find all reviews with long dashes
     db.all("SELECT id, customer_name, review_text FROM reviews WHERE review_text LIKE '%—%' OR review_text LIKE '%–%' OR review_text LIKE '%—%'", [], (err, rows) => {
@@ -1919,47 +1919,49 @@ app.post('/api/debug/fix-dashes', (req, res) => {
         
         let updated = 0;
         let errors = 0;
+        const updatePromises = [];
         
         rows.forEach((row) => {
+            // Remove long dashes (delete them, don't replace) and clean up spaces
             const newText = row.review_text
-                .replace(/—/g, '-')  // em dash
-                .replace(/–/g, '-')   // en dash
-                .replace(/—/g, '-');  // другой вариант em dash
+                .replace(/—/g, ' ')  // em dash -> space
+                .replace(/–/g, ' ')   // en dash -> space
+                .replace(/—/g, ' ')  // другой вариант em dash -> space
+                .replace(/\s+/g, ' ') // multiple spaces -> single space
+                .trim();
             
             if (newText !== row.review_text) {
-                db.run("UPDATE reviews SET review_text = ? WHERE id = ?", [newText, row.id], (updateErr) => {
-                    if (updateErr) {
-                        console.error(`❌ Error updating review ${row.id}:`, updateErr);
-                        errors++;
-                    } else {
-                        updated++;
-                        console.log(`✅ Updated review ${row.id} (${row.customer_name})`);
-                    }
-                    
-                    if (updated + errors === rows.length) {
-                        console.log(`✅ Fixed ${updated} reviews, ${errors} errors`);
-                        db.run('PRAGMA wal_checkpoint(FULL);');
-                        res.json({ 
-                            success: true, 
-                            message: `Fixed ${updated} reviews with long dashes`,
-                            updated: updated,
-                            errors: errors,
-                            total: rows.length
+                updatePromises.push(
+                    new Promise((resolve, reject) => {
+                        db.run("UPDATE reviews SET review_text = ? WHERE id = ?", [newText, row.id], (updateErr) => {
+                            if (updateErr) {
+                                console.error(`❌ Error updating review ${row.id}:`, updateErr);
+                                errors++;
+                                reject(updateErr);
+                            } else {
+                                updated++;
+                                console.log(`✅ Updated review ${row.id} (${row.customer_name})`);
+                                resolve();
+                            }
                         });
-                    }
-                });
-            } else {
-                updated++; // No change needed
-                if (updated + errors === rows.length) {
-                    res.json({ 
-                        success: true, 
-                        message: `Checked ${rows.length} reviews, ${updated} already fixed`,
-                        updated: updated,
-                        errors: errors,
-                        total: rows.length
-                    });
-                }
+                    })
+                );
             }
+        });
+        
+        Promise.all(updatePromises).then(() => {
+            console.log(`✅ Removed dashes from ${updated} reviews, ${errors} errors`);
+            db.run('PRAGMA wal_checkpoint(FULL);');
+            res.json({ 
+                success: true, 
+                message: `Removed long dashes from ${updated} reviews`,
+                updated: updated,
+                errors: errors,
+                total: rows.length
+            });
+        }).catch((err) => {
+            console.error('❌ Error updating reviews:', err);
+            res.status(500).json({ error: 'Error updating reviews', details: err.message });
         });
     });
 });
