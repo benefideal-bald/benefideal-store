@@ -827,6 +827,44 @@ app.post('/api/review', (req, res) => {
     });
 });
 
+// Helper function to remove duplicate reviews
+function removeDuplicateReviews(reviews) {
+    // Create a map to track unique reviews by (email, order_id, name, text)
+    const uniqueReviewsMap = new Map();
+    const duplicatesRemoved = [];
+    
+    reviews.forEach((review, index) => {
+        // Create a unique key based on email, order_id, name, and first 100 chars of text
+        const email = (review.customer_email || '').toLowerCase().trim();
+        const orderId = review.order_id || 'null';
+        const name = (review.customer_name || '').trim();
+        const text = (review.review_text || '').substring(0, 100).trim();
+        
+        const key = `${email}_${orderId}_${name}_${text}`;
+        
+        if (!uniqueReviewsMap.has(key)) {
+            // This is a unique review, keep it
+            uniqueReviewsMap.set(key, review);
+        } else {
+            // This is a duplicate
+            duplicatesRemoved.push({
+                index: index,
+                name: name,
+                email: email,
+                orderId: orderId
+            });
+            console.log(`   🗑️ Removed duplicate: ${name} (${email}, order_id: ${orderId})`);
+        }
+    });
+    
+    if (duplicatesRemoved.length > 0) {
+        console.log(`   ✅ Removed ${duplicatesRemoved.length} duplicate reviews`);
+    }
+    
+    // Return array of unique reviews
+    return Array.from(uniqueReviewsMap.values());
+}
+
 // Helper function to migrate reviews from database to JSON (one-time migration)
 function migrateReviewsFromDatabase() {
     return new Promise((resolve, reject) => {
@@ -855,20 +893,46 @@ function migrateReviewsFromDatabase() {
             
             if (dbReviews.length === 0) {
                 console.log('   No reviews in database, skipping migration');
+                // Still check for duplicates in JSON and remove them
+                if (jsonReviews.length > 0) {
+                    const uniqueReviews = removeDuplicateReviews(jsonReviews);
+                    if (uniqueReviews.length !== jsonReviews.length) {
+                        // Sort by created_at (newest first)
+                        uniqueReviews.sort((a, b) => {
+                            const timeA = new Date(a.created_at).getTime();
+                            const timeB = new Date(b.created_at).getTime();
+                            return timeB - timeA;
+                        });
+                        
+                        const saved = writeReviewsToJSON(uniqueReviews);
+                        if (saved) {
+                            console.log(`✅ Removed duplicates! Total reviews in JSON: ${uniqueReviews.length} (was ${jsonReviews.length})`);
+                            return resolve(true);
+                        }
+                    }
+                }
                 return resolve(false);
             }
             
-            // Create a map of existing JSON reviews by (email, order_id) to avoid duplicates
+            // Create a map of existing JSON reviews by (email, order_id, name, text) to avoid duplicates
             const jsonReviewsMap = new Map();
             jsonReviews.forEach(review => {
-                const key = `${review.customer_email.toLowerCase()}_${review.order_id || 'null'}`;
+                const email = (review.customer_email || '').toLowerCase().trim();
+                const orderId = review.order_id || 'null';
+                const name = (review.customer_name || '').trim();
+                const text = (review.review_text || '').substring(0, 100).trim();
+                const key = `${email}_${orderId}_${name}_${text}`;
                 jsonReviewsMap.set(key, review);
             });
             
             // Merge database reviews with JSON reviews
             let migrated = false;
             dbReviews.forEach(dbReview => {
-                const key = `${dbReview.customer_email.toLowerCase()}_${dbReview.order_id || 'null'}`;
+                const email = (dbReview.customer_email || '').toLowerCase().trim();
+                const orderId = dbReview.order_id || 'null';
+                const name = (dbReview.customer_name || '').trim();
+                const text = (dbReview.review_text || '').substring(0, 100).trim();
+                const key = `${email}_${orderId}_${name}_${text}`;
                 
                 if (!jsonReviewsMap.has(key)) {
                     // This review is not in JSON, add it
@@ -886,28 +950,37 @@ function migrateReviewsFromDatabase() {
                     jsonReviewsMap.set(key, review);
                     migrated = true;
                     console.log(`   ✅ Migrated review: ${review.customer_name} (${review.created_at})`);
+                } else {
+                    console.log(`   ⏭️ Skipped duplicate: ${name} (${email}, order_id: ${orderId})`);
                 }
             });
             
-            if (migrated) {
+            // Remove any remaining duplicates (in case there are duplicates within JSON itself)
+            const uniqueReviews = removeDuplicateReviews(jsonReviews);
+            
+            if (migrated || uniqueReviews.length !== jsonReviews.length) {
                 // Sort by created_at (newest first)
-                jsonReviews.sort((a, b) => {
+                uniqueReviews.sort((a, b) => {
                     const timeA = new Date(a.created_at).getTime();
                     const timeB = new Date(b.created_at).getTime();
                     return timeB - timeA;
                 });
                 
                 // Save to JSON
-                const saved = writeReviewsToJSON(jsonReviews);
+                const saved = writeReviewsToJSON(uniqueReviews);
                 if (saved) {
-                    console.log(`✅ Migration complete! Total reviews in JSON: ${jsonReviews.length}`);
+                    if (migrated) {
+                        console.log(`✅ Migration complete! Total reviews in JSON: ${uniqueReviews.length}`);
+                    } else {
+                        console.log(`✅ Removed duplicates! Total reviews in JSON: ${uniqueReviews.length} (was ${jsonReviews.length})`);
+                    }
                     resolve(true);
                 } else {
                     console.error('❌ Failed to save migrated reviews to JSON');
                     resolve(false);
                 }
             } else {
-                console.log('   No new reviews to migrate');
+                console.log('   No new reviews to migrate, no duplicates found');
                 resolve(false);
             }
         });
@@ -990,6 +1063,14 @@ app.get('/api/reviews', (req, res) => {
     let allReviews = readReviewsFromJSON();
     
     console.log(`Found ${allReviews.length} reviews in JSON file`);
+    
+    // Удаляем дубликаты перед возвратом (на всякий случай)
+    const beforeDedup = allReviews.length;
+    allReviews = removeDuplicateReviews(allReviews);
+    if (allReviews.length !== beforeDedup) {
+        console.log(`   Removed ${beforeDedup - allReviews.length} duplicates, saving cleaned version...`);
+        writeReviewsToJSON(allReviews);
+    }
     
     // Сортируем отзывы по дате (новые первыми)
     const getTimestamp = (dateStr) => {
