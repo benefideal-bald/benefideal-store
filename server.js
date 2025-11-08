@@ -1899,6 +1899,71 @@ function formatReminderMessage(subscription, reminderType) {
     }
 }
 
+// Endpoint to fix long dashes in all reviews
+app.post('/api/debug/fix-dashes', (req, res) => {
+    console.log('🔧 Fixing long dashes in all reviews...');
+    
+    // Find all reviews with long dashes
+    db.all("SELECT id, customer_name, review_text FROM reviews WHERE review_text LIKE '%—%' OR review_text LIKE '%–%' OR review_text LIKE '%—%'", [], (err, rows) => {
+        if (err) {
+            console.error('❌ Error finding reviews:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        if (rows.length === 0) {
+            console.log('✅ No reviews with long dashes found');
+            return res.json({ success: true, message: 'No reviews with long dashes found', updated: 0 });
+        }
+        
+        console.log(`Found ${rows.length} reviews with long dashes`);
+        
+        let updated = 0;
+        let errors = 0;
+        
+        rows.forEach((row) => {
+            const newText = row.review_text
+                .replace(/—/g, '-')  // em dash
+                .replace(/–/g, '-')   // en dash
+                .replace(/—/g, '-');  // другой вариант em dash
+            
+            if (newText !== row.review_text) {
+                db.run("UPDATE reviews SET review_text = ? WHERE id = ?", [newText, row.id], (updateErr) => {
+                    if (updateErr) {
+                        console.error(`❌ Error updating review ${row.id}:`, updateErr);
+                        errors++;
+                    } else {
+                        updated++;
+                        console.log(`✅ Updated review ${row.id} (${row.customer_name})`);
+                    }
+                    
+                    if (updated + errors === rows.length) {
+                        console.log(`✅ Fixed ${updated} reviews, ${errors} errors`);
+                        db.run('PRAGMA wal_checkpoint(FULL);');
+                        res.json({ 
+                            success: true, 
+                            message: `Fixed ${updated} reviews with long dashes`,
+                            updated: updated,
+                            errors: errors,
+                            total: rows.length
+                        });
+                    }
+                });
+            } else {
+                updated++; // No change needed
+                if (updated + errors === rows.length) {
+                    res.json({ 
+                        success: true, 
+                        message: `Checked ${rows.length} reviews, ${updated} already fixed`,
+                        updated: updated,
+                        errors: errors,
+                        total: rows.length
+                    });
+                }
+            }
+        });
+    });
+});
+
 // Cron job to check and send reminders (runs every minute)
 cron.schedule('* * * * *', async () => {
     const now = new Date();
