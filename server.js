@@ -18,10 +18,10 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Initialize SQLite database FIRST
-// КРИТИЧЕСКИ ВАЖНО: На Render файловая система PERSISTENT в корне проекта
-// НО файлы могут удаляться при деплое, если они в .gitignore
-// Используем путь в корне проекта, но НЕ в .gitignore, чтобы файл сохранялся
-// Если DATABASE_PATH не указан, используем корень проекта (persistent на Render)
+// КРИТИЧЕСКИ ВАЖНО: На Render нужно использовать персистентное хранилище
+// На Render Free плане файлы сохраняются в /opt/render/project/src/
+// Используем переменную окружения DATABASE_PATH для указания пути
+// Если не указана, используем текущую директорию (для локальной разработки)
 // ВАЖНО: База данных НЕ должна удаляться при деплое - это критически важно для сохранения отзывов!
 const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'subscriptions.db');
 const fs = require('fs');
