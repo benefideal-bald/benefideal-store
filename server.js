@@ -1148,6 +1148,61 @@ app.get('/api/reviews', (req, res) => {
     });
 });
 
+// Debug endpoint to remove duplicates and clean up reviews
+app.get('/api/debug/remove-duplicates', (req, res) => {
+    try {
+        let allReviews = readReviewsFromJSON();
+        const beforeCount = allReviews.length;
+        
+        console.log(`🔍 Checking for duplicates in ${beforeCount} reviews...`);
+        
+        // Remove duplicates
+        const uniqueReviews = removeDuplicateReviews(allReviews);
+        const afterCount = uniqueReviews.length;
+        
+        if (afterCount < beforeCount) {
+            // Sort by created_at (newest first)
+            uniqueReviews.sort((a, b) => {
+                const timeA = new Date(a.created_at).getTime();
+                const timeB = new Date(b.created_at).getTime();
+                return timeB - timeA;
+            });
+            
+            // Save cleaned version
+            const saved = writeReviewsToJSON(uniqueReviews);
+            
+            if (saved) {
+                res.json({
+                    success: true,
+                    message: `Removed ${beforeCount - afterCount} duplicate reviews`,
+                    before: beforeCount,
+                    after: afterCount,
+                    removed: beforeCount - afterCount
+                });
+            } else {
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to save cleaned reviews'
+                });
+            }
+        } else {
+            res.json({
+                success: true,
+                message: 'No duplicates found',
+                before: beforeCount,
+                after: afterCount,
+                removed: 0
+            });
+        }
+    } catch (error) {
+        console.error('❌ Error removing duplicates:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // Debug endpoint to check all Илья reviews and recent client reviews
 app.get('/api/debug/ilya', (req, res) => {
     // First check reviews with name "Илья"
