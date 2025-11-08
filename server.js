@@ -329,6 +329,12 @@ db.serialize(() => {
         } else {
             console.log(`✅ Reviews table already has ${row.count} reviews, skipping static review insertion`);
             console.log(`   ✅ Existing client reviews are SAFE - they will NOT be deleted or overwritten!`);
+            console.log(`   ✅ CLIENT REVIEWS PROTECTED - код НЕ будет их трогать!`);
+            
+            // КРИТИЧЕСКИ ВАЖНО: Проверяем ТОЛЬКО отсутствующие отзывы (Тихон, Илья)
+            // НЕ трогаем существующие клиентские отзывы!
+            // Восстанавливаем ТОЛЬКО если отзыва точно нет И есть заказ
+            console.log(`   🔧 Checking for missing critical reviews (Тихон, Илья) - will NOT touch existing client reviews`);
             
             // КРИТИЧЕСКИ ВАЖНО: Проверяем, есть ли отзыв Ильи, и если нет - проверяем, есть ли его заказ
             // Если есть заказ, но нет отзыва - автоматически создаем отзыв Ильи
@@ -422,16 +428,17 @@ db.serialize(() => {
                    db.get(`SELECT COUNT(*) as count FROM reviews WHERE customer_name = 'Тихон'`, [], (err, tikhonRow) => {
                        if (!err && tikhonRow) {
                            if (tikhonRow.count > 0) {
-                               console.log(`✅ Тихон reviews in database: ${tikhonRow.count}`);
+                               console.log(`✅ Тихон reviews in database: ${tikhonRow.count} - will NOT touch them!`);
                                // Get the newest Тихон review
                                db.get(`SELECT * FROM reviews WHERE customer_name = 'Тихон' ORDER BY created_at DESC LIMIT 1`, [], (err, newestTikhon) => {
                                    if (!err && newestTikhon) {
-                                       console.log(`   ✅ Newest Тихон review: ID=${newestTikhon.id}, created_at=${newestTikhon.created_at}`);
+                                       console.log(`   ✅ Newest Тихон review: ID=${newestTikhon.id}, created_at=${newestTikhon.created_at} - SAFE, not touching!`);
                                    }
                                });
                            } else {
                                console.log(`⚠️ Тихон reviews NOT found in database`);
-                               console.log(`   🔍 Checking if Тихон has an order in subscriptions...`);
+                               console.log(`   🔍 Will check if Тихон has an order - if yes, will restore review`);
+                               console.log(`   ✅ Will NOT create default review - only restore if order exists`);
                                
                                // Проверяем, есть ли заказ Тихона (по имени "Тихон" в любом формате)
                                db.all(`SELECT * FROM subscriptions WHERE 
@@ -459,12 +466,12 @@ db.serialize(() => {
                                            }
                                            
                                            if (existingReview) {
-                                               console.log(`   ✅ Review already exists for this order: ID=${existingReview.id}`);
+                                               console.log(`   ✅ Review already exists for this order: ID=${existingReview.id} - will NOT touch it!`);
                                                return;
                                            }
                                            
                                            // Автоматически создаем отзыв Тихона с CURRENT_TIMESTAMP (будет самым новым!)
-                                           console.log(`   🔧 AUTO-RESTORING Тихон review with CURRENT_TIMESTAMP...`);
+                                           console.log(`   🔧 AUTO-RESTORING Тихон review with CURRENT_TIMESTAMP (order exists, review missing)...`);
                                            
                                            const restoreOrderId = tikhonOrder.order_id || `AUTO_RESTORED_TIKHON_${Date.now()}`;
                                            const stmt = db.prepare(`
