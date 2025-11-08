@@ -157,9 +157,108 @@
             </div>
             <div class="reviews-grid">
                 <div class="reviews-wrapper" id="reviewsWrapper">
-                <!-- Last 10 reviews from API will be loaded here (newest first) -->
-                <!-- Максим and Тимур are in database with newest dates (today and yesterday) -->
-                <!-- They will be first 2 in API response, so they appear first automatically -->
+                <!-- Статические отзывы - хранятся прямо в HTML, НИКОГДА не пропадут! -->
+                <div class="review-card" data-static="true" data-date="2025-11-08T13:48:59">
+                    <div class="review-header">
+                        <div class="review-avatar"><i class="fas fa-user"></i></div>
+                        <div class="review-info">
+                            <h4 class="review-name">Тихон</h4>
+                            <div class="review-stars">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="review-text">Купил кепкат про на 3 месяца я доволен</p>
+                </div>
+                <div class="review-card" data-static="true" data-date="2025-11-07T12:00:00">
+                    <div class="review-header">
+                        <div class="review-avatar"><i class="fas fa-user"></i></div>
+                        <div class="review-info">
+                            <h4 class="review-name">Максим</h4>
+                            <div class="review-stars">★★★★☆</div>
+                        </div>
+                    </div>
+                    <p class="review-text">Приобрел кепкат про на месяц, все работает как следует</p>
+                </div>
+                <div class="review-card" data-static="true" data-date="2025-11-06T10:00:00">
+                    <div class="review-header">
+                        <div class="review-avatar"><i class="fas fa-user"></i></div>
+                        <div class="review-info">
+                            <h4 class="review-name">Тимур</h4>
+                            <div class="review-stars">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="review-text">Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡</p>
+                </div>
+                <div class="review-card" data-static="true" data-date="2025-10-15T10:00:00">
+                    <div class="review-header">
+                        <div class="review-avatar"><i class="fas fa-user"></i></div>
+                        <div class="review-info">
+                            <h4 class="review-name">София</h4>
+                            <div class="review-stars">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="review-text">Заказала CapCut Pro для создания контента в TikTok. Активация прошла за минуты, все функции работают, включая премиум эффекты. Огромная экономия!</p>
+                </div>
+                <div class="review-card" data-static="true" data-date="2025-10-10T10:00:00">
+                    <div class="review-header">
+                        <div class="review-avatar"><i class="fas fa-user"></i></div>
+                        <div class="review-info">
+                            <h4 class="review-name">Павел</h4>
+                            <div class="review-stars">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="review-text">Прекрасный сервис! ChatGPT Plus работает идеально, быстрые ответы, доступ к GPT-4. Пользуюсь уже месяц, всё стабильно. Обязательно продлю подписку!</p>
+                </div>
+                <div class="review-card" data-static="true" data-date="2025-09-20T10:00:00">
+                    <div class="review-header">
+                        <div class="review-avatar"><i class="fas fa-user"></i></div>
+                        <div class="review-info">
+                            <h4 class="review-name">Юлия</h4>
+                            <div class="review-stars">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="review-text">Adobe заказала для работы над дизайн проектами. Photoshop, Illustrator, InDesign все работает без глюков. Поддержка оперативно отвечает на вопросы. Рекомендую!</p>
+                </div>
+                <div class="review-card" data-static="true" data-date="2025-09-15T10:00:00">
+                    <div class="review-header">
+                        <div class="review-avatar"><i class="fas fa-user"></i></div>
+                        <div class="review-info">
+                            <h4 class="review-name">Роман</h4>
+                            <div class="review-stars">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="review-text">CapCut Pro стал моим основным редактором. Премиум шаблоны и эффекты открывают новые возможности для творчества. Активация мгновенная, цена приятная!</p>
+                </div>
+                <div class="review-card" data-static="true" data-date="2025-09-10T10:00:00">
+                    <div class="review-header">
+                        <div class="review-avatar"><i class="fas fa-user"></i></div>
+                        <div class="review-info">
+                            <h4 class="review-name">Татьяна</h4>
+                            <div class="review-stars">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="review-text">ChatGPT Plus использую для написания текстов и исследования. За такие деньги просто находка! Все возможности GPT 4 доступны, скорость ответов отличная.</p>
+                </div>
+                <div class="review-card" data-static="true" data-date="2025-09-05T10:00:00">
+                    <div class="review-header">
+                        <div class="review-avatar"><i class="fas fa-user"></i></div>
+                        <div class="review-info">
+                            <h4 class="review-name">Никита</h4>
+                            <div class="review-stars">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="review-text">Adobe Creative Cloud лучшая покупка! Использую для фриланса. Premiere Pro, After Effects работают без нареканий. Экономия огромная, качество не уступает официальной версии!</p>
+                </div>
+                <div class="review-card" data-static="true" data-date="2025-08-25T10:00:00">
+                    <div class="review-header">
+                        <div class="review-avatar"><i class="fas fa-user"></i></div>
+                        <div class="review-info">
+                            <h4 class="review-name">Арина</h4>
+                            <div class="review-stars">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="review-text">CapCut Pro покупала для блога в Instagram. Все премиум функции доступны: убираю водяные знаки, использую эксклюзивные эффекты. Сервис на высоте!</p>
+                </div>
+                <!-- Динамические отзывы от клиентов будут добавлены здесь через API -->
                 </div>
             </div>
             <div style="text-align: center; margin-top: var(--space-8);">
