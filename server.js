@@ -27,7 +27,10 @@ app.use(bodyParser.json());
 // Эта директория НЕ в Git, поэтому база данных не будет перезаписана при деплое
 // На Render файлы в рабочей директории должны сохраняться между деплоями
 const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'subscriptions.db');
-const reviewsJsonPath = path.join(process.cwd(), 'reviews.json');
+// КРИТИЧЕСКИ ВАЖНО: reviews.json храним в data/ - эта директория сохраняется на Render между деплоями
+// Но при первом деплое копируем из корня проекта (из Git) если файл в data/ не существует
+const reviewsJsonPath = path.join(process.cwd(), 'data', 'reviews.json');
+const reviewsJsonPathGit = path.join(process.cwd(), 'reviews.json'); // Файл в Git для начальных отзывов
 const fs = require('fs');
 
 // КРИТИЧЕСКИ ВАЖНО: Проверяем, существует ли база данных и её размер
@@ -820,11 +823,28 @@ app.post('/api/review', (req, res) => {
 // Helper function to read reviews from JSON file
 function readReviewsFromJSON() {
     try {
-        if (!fs.existsSync(reviewsJsonPath)) {
-            console.warn('⚠️ reviews.json not found, creating with empty array');
-            fs.writeFileSync(reviewsJsonPath, JSON.stringify([], null, 2));
-            return [];
+        // Создаем директорию data/ если её нет
+        const dataDir = path.dirname(reviewsJsonPath);
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+            console.log(`✅ Created data directory: ${dataDir}`);
         }
+        
+        // Если файл в data/ не существует, копируем из Git (начальные отзывы)
+        if (!fs.existsSync(reviewsJsonPath)) {
+            if (fs.existsSync(reviewsJsonPathGit)) {
+                console.log('📋 Copying initial reviews.json from Git to data/ directory...');
+                const initialData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
+                fs.writeFileSync(reviewsJsonPath, initialData, 'utf8');
+                console.log('✅ Initial reviews copied to data/reviews.json');
+                return JSON.parse(initialData);
+            } else {
+                console.warn('⚠️ reviews.json not found, creating with empty array');
+                fs.writeFileSync(reviewsJsonPath, JSON.stringify([], null, 2), 'utf8');
+                return [];
+            }
+        }
+        
         const data = fs.readFileSync(reviewsJsonPath, 'utf8');
         return JSON.parse(data);
     } catch (error) {
