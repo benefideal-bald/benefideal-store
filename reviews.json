@@ -1,0 +1,93 @@
+[
+  {
+    "id": "static_tikhon",
+    "customer_name": "Тихон",
+    "customer_email": "tikhon@example.com",
+    "review_text": "Купил кепкат про на 3 месяца я доволен",
+    "rating": 5,
+    "created_at": "2025-11-08T13:48:59Z",
+    "is_static": true
+  },
+  {
+    "id": "static_maxim",
+    "customer_name": "Максим",
+    "customer_email": "static_review_maxim@benefideal.com",
+    "review_text": "Приобрел кепкат про на месяц, все работает как следует",
+    "rating": 4,
+    "created_at": "2025-11-07T12:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_timur",
+    "customer_name": "Тимур",
+    "customer_email": "static_review_timur@benefideal.com",
+    "review_text": "Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡",
+    "rating": 5,
+    "created_at": "2025-11-06T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_sofia",
+    "customer_name": "София",
+    "customer_email": "static_review_1@benefideal.com",
+    "review_text": "Заказала CapCut Pro для создания контента в TikTok. Активация прошла за минуты, все функции работают, включая премиум эффекты. Огромная экономия!",
+    "rating": 5,
+    "created_at": "2025-10-15T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_pavel",
+    "customer_name": "Павел",
+    "customer_email": "static_review_2@benefideal.com",
+    "review_text": "Прекрасный сервис! ChatGPT Plus работает идеально, быстрые ответы, доступ к GPT-4. Пользуюсь уже месяц, всё стабильно. Обязательно продлю подписку!",
+    "rating": 5,
+    "created_at": "2025-10-10T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_yulia",
+    "customer_name": "Юлия",
+    "customer_email": "static_review_3@benefideal.com",
+    "review_text": "Adobe заказала для работы над дизайн проектами. Photoshop, Illustrator, InDesign все работает без глюков. Поддержка оперативно отвечает на вопросы. Рекомендую!",
+    "rating": 5,
+    "created_at": "2025-09-20T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_roman",
+    "customer_name": "Роман",
+    "customer_email": "static_review_4@benefideal.com",
+    "review_text": "CapCut Pro стал моим основным редактором. Премиум шаблоны и эффекты открывают новые возможности для творчества. Активация мгновенная, цена приятная!",
+    "rating": 5,
+    "created_at": "2025-09-15T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_tatyana",
+    "customer_name": "Татьяна",
+    "customer_email": "static_review_5@benefideal.com",
+    "review_text": "ChatGPT Plus использую для написания текстов и исследования. За такие деньги просто находка! Все возможности GPT 4 доступны, скорость ответов отличная.",
+    "rating": 5,
+    "created_at": "2025-09-10T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_nikita",
+    "customer_name": "Никита",
+    "customer_email": "static_review_6@benefideal.com",
+    "review_text": "Adobe Creative Cloud лучшая покупка! Использую для фриланса. Premiere Pro, After Effects работают без нареканий. Экономия огромная, качество не уступает официальной версии!",
+    "rating": 5,
+    "created_at": "2025-09-05T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_arina",
+    "customer_name": "Арина",
+    "customer_email": "static_review_7@benefideal.com",
+    "review_text": "CapCut Pro покупала для блога в Instagram. Все премиум функции доступны: убираю водяные знаки, использую эксклюзивные эффекты. Сервис на высоте!",
+    "rating": 5,
+    "created_at": "2025-08-25T10:00:00Z",
+    "is_static": true
+  }
+]
+

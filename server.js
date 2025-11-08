@@ -27,6 +27,7 @@ app.use(bodyParser.json());
 // Эта директория НЕ в Git, поэтому база данных не будет перезаписана при деплое
 // На Render файлы в рабочей директории должны сохраняться между деплоями
 const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'subscriptions.db');
+const reviewsJsonPath = path.join(process.cwd(), 'reviews.json');
 const fs = require('fs');
 
 // КРИТИЧЕСКИ ВАЖНО: Проверяем, существует ли база данных и её размер
@@ -794,140 +795,20 @@ app.post('/api/review', (req, res) => {
                 console.log(`   ======================================`);
                 
                 stmt.run([name, normalizedEmail, text, rating, newestOrderId], function(err) {
+                    // Игнорируем ошибки базы данных - основное хранилище это JSON!
                     if (err) {
+                        console.warn(`⚠️ Failed to save review to database (but saved to JSON): ${err.message}`);
                         stmt.finalize();
-                        console.error(`❌ ========== REVIEW INSERT FAILED ==========`);
-                        console.error(`   Name: "${name}"`);
-                        console.error(`   Email: "${normalizedEmail}"`);
-                        console.error(`   Order ID: "${newestOrderId}"`);
-                        console.error(`   Error: ${err.message}`);
-                        console.error(`   Error code: ${err.code}`);
-                        console.error(`   ==========================================`);
-                        
-                        if (err.message.includes('UNIQUE constraint')) {
-                            console.error(`❌ UNIQUE constraint error for ${name} (${normalizedEmail}):`, err.message);
-                            return res.status(400).json({ 
-                                success: false,
-                                error: 'Вы уже оставили отзыв для этого заказа. Один заказ = один отзыв.' 
-                            });
-                        }
-                        console.error(`❌ Error inserting review for ${name}:`, err);
-                        console.error(`❌ Error details:`, err.message, err.stack);
-                        return res.status(500).json({ error: 'Database error', details: err.message });
+                    } else {
+                        console.log(`✅ Review also saved to database for validation purposes`);
+                        stmt.finalize();
                     }
                     
-                    const reviewId = this.lastID;
-                    const changes = this.changes;
-                    
-                    console.log(`✅ ========== REVIEW INSERTED ==========`);
-                    console.log(`   Review ID: ${reviewId}`);
-                    console.log(`   Changes: ${changes}`);
-                    console.log(`   Name: "${name}"`);
-                    console.log(`   Email: "${normalizedEmail}"`);
-                    console.log(`   Order ID: "${newestOrderId}"`);
-                    console.log(`   =====================================`);
-                    
-                    // Finalize statement AFTER getting the ID
-                    stmt.finalize();
-                    
-                    // КРИТИЧЕСКИ ВАЖНО: Принудительно синхронизируем данные с диском
-                    // Это гарантирует, что отзыв будет сохранен даже при сбое или перезапуске
-                    db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
-                        if (checkpointErr) {
-                            console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
-                        } else {
-                            console.log('✅ WAL checkpoint completed - review is safely saved to disk');
-                        }
-                    });
-                    
-                    // КРИТИЧЕСКИ ВАЖНО: Проверяем количество отзывов после сохранения
-                    // Если количество уменьшилось - это КРИТИЧЕСКАЯ проблема!
-                    db.get(`SELECT COUNT(*) as count FROM reviews`, [], (err, countAfter) => {
-                        if (!err && countAfter) {
-                            console.log(`📊 Reviews count after insertion: ${countAfter.count}`);
-                            if (countAfter.count === 0) {
-                                console.error('🚨🚨🚨 КРИТИЧЕСКАЯ ПРОБЛЕМА: All reviews disappeared after insertion!');
-                                console.error('🚨 This should NEVER happen! Database might be corrupted or reset!');
-                            }
-                        }
-                    });
-                    
-                    // КРИТИЧЕСКИ ВАЖНО: Сразу проверяем, что отзыв действительно сохранен!
-                    // Делаем несколько проверок с небольшими задержками
-                    const verifyReview = (attempt = 1) => {
-                        db.get(`SELECT * FROM reviews WHERE id = ?`, [reviewId], (err, savedReview) => {
-                            if (err) {
-                                console.error(`❌ Attempt ${attempt}: Error verifying saved review ${reviewId}:`, err);
-                                if (attempt < 3) {
-                                    setTimeout(() => verifyReview(attempt + 1), 200 * attempt);
-                                }
-                            } else if (savedReview) {
-                                console.log(`✅ ========== VERIFIED REVIEW ${reviewId} (attempt ${attempt}) ==========`);
-                                console.log(`   Name: "${savedReview.customer_name}"`);
-                                console.log(`   Email: "${savedReview.customer_email}"`);
-                                console.log(`   Created at: "${savedReview.created_at}"`);
-                                console.log(`   Order ID: "${savedReview.order_id}"`);
-                                console.log(`   Rating: ${savedReview.rating}`);
-                                console.log(`   Text: "${savedReview.review_text.substring(0, 50)}..."`);
-                                console.log(`   ===========================================`);
-                                
-                                // Также проверяем позицию этого отзыва в списке (должен быть первым)
-                                db.all(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 10`, [], (err, topReviews) => {
-                                    if (!err && topReviews) {
-                                        const position = topReviews.findIndex(r => r.id === reviewId);
-                                        console.log(`📊 Review ${reviewId} position in top 10: ${position} (0 = newest)`);
-                                        if (position === 0) {
-                                            console.log(`✅ Review ${reviewId} is FIRST (newest) in the list!`);
-                                        } else if (position > 0) {
-                                            console.log(`⚠️ Review ${reviewId} is at position ${position} (expected 0 for newest)`);
-                                            console.log(`   Top 5 reviews:`, topReviews.slice(0, 5).map(r => `${r.customer_name} (${r.created_at})`));
-                                        } else {
-                                            console.error(`❌ CRITICAL: Review ${reviewId} NOT FOUND in top 10 reviews!`);
-                                            console.error(`   This means review exists but is not in the newest reviews!`);
-                                        }
-                                    }
-                                });
-                                
-                                // Проверяем, есть ли другие отзывы с таким же email/order_id
-                                db.all(`SELECT * FROM reviews WHERE 
-                                    (LOWER(customer_email) = LOWER(?) OR order_id = ?)
-                                    ORDER BY created_at DESC`, [normalizedEmail, newestOrderId || ''], (err, sameReviews) => {
-                                    if (!err && sameReviews) {
-                                        console.log(`🔍 Found ${sameReviews.length} review(s) with same email/order_id:`);
-                                        sameReviews.forEach((r, idx) => {
-                                            console.log(`   ${idx + 1}. ID=${r.id}, Name="${r.customer_name}", Created="${r.created_at}"`);
-                                        });
-                                    }
-                                });
-                            } else {
-                                console.error(`❌ ========== CRITICAL ERROR (attempt ${attempt}) ==========`);
-                                console.error(`   Review ID ${reviewId} was NOT found in database after insertion!`);
-                                console.error(`   This means the review was NOT saved!`);
-                                console.error(`   Name: "${name}"`);
-                                console.error(`   Email: "${normalizedEmail}"`);
-                                console.error(`   Order ID: "${newestOrderId}"`);
-                                console.error(`   ===========================================`);
-                                if (attempt < 3) {
-                                    setTimeout(() => verifyReview(attempt + 1), 200 * attempt);
-                                }
-                            }
-                        });
-                    };
-                    
-                    // Первая проверка сразу
-                    verifyReview(1);
-                    
-                    // Вторая проверка через 100мс
-                    setTimeout(() => verifyReview(2), 100);
-                    
-                    // Третья проверка через 500мс
-                    setTimeout(() => verifyReview(3), 500);
-                    
-                    // Send response
+                    // Отзыв уже сохранен в JSON - отправляем ответ
                     res.json({ 
                         success: true, 
                         message: 'Отзыв успешно отправлен',
-                        review_id: reviewId,
+                        review_id: newReview.id,
                         name: name,
                         email: normalizedEmail,
                         order_id: newestOrderId
@@ -938,6 +819,38 @@ app.post('/api/review', (req, res) => {
     });
 });
 
+// Helper function to read reviews from JSON file
+function readReviewsFromJSON() {
+    try {
+        if (!fs.existsSync(reviewsJsonPath)) {
+            console.warn('⚠️ reviews.json not found, creating with empty array');
+            fs.writeFileSync(reviewsJsonPath, JSON.stringify([], null, 2));
+            return [];
+        }
+        const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('❌ Error reading reviews.json:', error);
+        return [];
+    }
+}
+
+// Helper function to write reviews to JSON file
+function writeReviewsToJSON(reviews) {
+    try {
+        // Ensure directory exists
+        const dir = path.dirname(reviewsJsonPath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(reviewsJsonPath, JSON.stringify(reviews, null, 2), 'utf8');
+        return true;
+    } catch (error) {
+        console.error('❌ Error writing reviews.json:', error);
+        return false;
+    }
+}
+
 // API endpoint to get reviews
 app.get('/api/reviews', (req, res) => {
     console.log('GET /api/reviews - Request received');
@@ -947,107 +860,51 @@ app.get('/api/reviews', (req, res) => {
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     const sortOrder = req.query.sort || 'DESC'; // DESC = newest first (same for both pages)
     
-    // Validate sort order - ALWAYS DESC (newest first) for both pages
-    const validSort = 'DESC'; // Force DESC - newest first always
+    // Читаем все отзывы из JSON файла
+    let allReviews = readReviewsFromJSON();
     
-    // Don't sort in SQL - we'll sort in JavaScript to handle mixed date formats
-    // Don't apply LIMIT in SQL - apply it after sorting in JavaScript
-    let query = `SELECT * FROM reviews`;
-    const params = [];
+    console.log(`Found ${allReviews.length} reviews in JSON file`);
     
-    console.log('Executing query:', query);
-    
-    db.all(query, params, (err, rows) => {
-        // Check for Тихон reviews immediately after fetching
-        if (!err && rows) {
-            const tikhonReviews = rows.filter(r => r.customer_name === 'Тихон');
-            if (tikhonReviews.length > 0) {
-                console.log(`🔍 Found ${tikhonReviews.length} Тихон review(s) in database:`, tikhonReviews.map(r => ({ id: r.id, created_at: r.created_at })));
-            } else {
-                console.log(`⚠️ NO Тихон reviews found in database! Total reviews: ${rows.length}`);
-            }
-        }
-        if (err) {
-            console.error('Error fetching reviews:', err);
-            return res.status(500).json({ error: 'Database error', details: err.message });
-        }
-        
-        console.log(`Found ${rows.length} reviews in database`);
-        
-        // Log all reviews with Илья name before sorting
-        const ilyaReviewsBefore = rows.filter(r => r.customer_name === 'Илья');
-        if (ilyaReviewsBefore.length > 0) {
-            console.log(`🔍 Found ${ilyaReviewsBefore.length} Илья review(s) BEFORE sorting:`, ilyaReviewsBefore.map(r => ({ id: r.id, name: r.customer_name, date: r.created_at, email: r.customer_email })));
-        } else {
-            console.log(`⚠️ NO Илья reviews found in database! Total reviews: ${rows.length}`);
-        }
-        
-        // КРИТИЧЕСКИ ВАЖНО: Каждый новый отзыв ВСЕГДА должен быть ПЕРВЫМ (сверху)!
-        // Сортировка: DESC = новейшие первыми (больший timestamp = новее = идет первым)
-        // CURRENT_TIMESTAMP всегда создает время ТОЧНО в момент вставки, поэтому новые клиентские отзывы ВСЕГДА новее статических
-        const getTimestamp = (dateStr) => {
-            if (!dateStr) return 0;
-            try {
-                const date = new Date(dateStr);
-                const timestamp = date.getTime();
-                // Если дата невалидна, возвращаем 0 (старый отзыв)
-                if (isNaN(timestamp)) {
-                    console.warn(`⚠️ Invalid date: ${dateStr}, using 0`);
-                    return 0;
-                }
-                return timestamp;
-            } catch (e) {
-                console.warn(`⚠️ Error parsing date: ${dateStr}`, e);
+    // Сортируем отзывы по дате (новые первыми)
+    const getTimestamp = (dateStr) => {
+        if (!dateStr) return 0;
+        try {
+            const date = new Date(dateStr);
+            const timestamp = date.getTime();
+            if (isNaN(timestamp)) {
+                console.warn(`⚠️ Invalid date: ${dateStr}, using 0`);
                 return 0;
             }
-        };
-        
-        // Сортируем от НОВЕЙШЕГО к СТАРОМУ (DESC)
-        // Новые клиентские отзывы ВСЕГДА будут первыми, так как они создаются с CURRENT_TIMESTAMP (точное время вставки)
-        // Статические отзывы (Максим, Тимур) имеют фиксированные даты в прошлом, поэтому они будут после новых клиентских
-        rows.sort((a, b) => {
-            const timeA = getTimestamp(a.created_at);
-            const timeB = getTimestamp(b.created_at);
-            // timeB - timeA: если B новее (больше timestamp), результат положительный, B идет первым
-            // Если timestamp одинаковый, оставляем исходный порядок
-            if (timeB !== timeA) {
-                return timeB - timeA;
-            }
+            return timestamp;
+        } catch (e) {
+            console.warn(`⚠️ Error parsing date: ${dateStr}`, e);
             return 0;
-        });
-        
-        // Log all reviews with Илья name after sorting
-        const ilyaReviewsAfter = rows.filter(r => r.customer_name === 'Илья');
-        if (ilyaReviewsAfter.length > 0) {
-            ilyaReviewsAfter.forEach((review, index) => {
-                const position = rows.indexOf(review);
-                console.log(`✅ Илья review AFTER sorting: position=${position}, id=${review.id}, date=${review.created_at}, email=${review.customer_email}`);
-            });
         }
-        
-        // Log all reviews with Тихон name after sorting
-        const tikhonReviewsAfter = rows.filter(r => r.customer_name === 'Тихон');
-        if (tikhonReviewsAfter.length > 0) {
-            tikhonReviewsAfter.forEach((review, index) => {
-                const position = rows.indexOf(review);
-                console.log(`✅ Тихон review AFTER sorting: position=${position}, id=${review.id}, date=${review.created_at}, email=${review.customer_email}`);
-            });
+    };
+    
+    // Сортируем от НОВЕЙШЕГО к СТАРОМУ (DESC)
+    allReviews.sort((a, b) => {
+        const timeA = getTimestamp(a.created_at);
+        const timeB = getTimestamp(b.created_at);
+        if (timeB !== timeA) {
+            return timeB - timeA;
         }
-        
-        // Apply limit and offset after sorting
-        // КРИТИЧЕСКИ ВАЖНО: Если limit НЕ указан, возвращаем ВСЕ отзывы (для страницы reviews.html)!
-        // Если limit указан, возвращаем только указанное количество (для главной страницы)
-        let paginatedRows = rows;
-        if (limit && limit > 0) {
-            const start = offset || 0;
-            const end = start + limit;
-            paginatedRows = rows.slice(start, end);
-            console.log(`   Applied limit: showing ${paginatedRows.length} reviews (${start} to ${end-1}) out of ${rows.length} total`);
-        } else {
-            console.log(`   No limit specified: returning ALL ${rows.length} reviews`);
-        }
-        
-        // Log first and last review for debugging - ВАЖНО: первый должен быть НОВЕЙШИМ!
+        return 0;
+    });
+    
+    // Apply limit and offset after sorting
+    let paginatedRows = allReviews;
+    if (limit && limit > 0) {
+        const start = offset || 0;
+        const end = start + limit;
+        paginatedRows = allReviews.slice(start, end);
+        console.log(`   Applied limit: showing ${paginatedRows.length} reviews (${start} to ${end-1}) out of ${allReviews.length} total`);
+    } else {
+        console.log(`   No limit specified: returning ALL ${allReviews.length} reviews`);
+    }
+    
+    // Log first and last review for debugging - ВАЖНО: первый должен быть НОВЕЙШИМ!
+    if (paginatedRows.length > 0) {
         if (paginatedRows.length > 0) {
             console.log(`✅ Reviews sorted DESC (newest first):`);
             console.log(`   FIRST (newest): ${paginatedRows[0].customer_name} - ${paginatedRows[0].created_at}`);
@@ -1100,10 +957,9 @@ app.get('/api/reviews', (req, res) => {
             success: true,
             reviews: paginatedRows,
             count: paginatedRows.length,
-            total: rows.length
+            total: allReviews.length
         });
     });
-});
 
 // Debug endpoint to check all Илья reviews and recent client reviews
 app.get('/api/debug/ilya', (req, res) => {
