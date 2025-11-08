@@ -159,27 +159,7 @@ db.serialize(() => {
                         console.error('🚨 Проверьте логи Render на наличие ошибок базы данных!');
                     } else {
                         console.log(`✅ Reviews table has ${countRow.count} reviews - all safe!`);
-                        
-                        // Проверяем конкретные отзывы (Тихон, Илья)
-                        db.get(`SELECT COUNT(*) as count FROM reviews WHERE customer_name = 'Тихон'`, [], (err, tikhonCount) => {
-                            if (!err && tikhonCount) {
-                                if (tikhonCount.count === 0) {
-                                    console.warn('⚠️ WARNING: Тихон review is MISSING! Will be auto-restored.');
-                                } else {
-                                    console.log(`✅ Тихон reviews: ${tikhonCount.count}`);
-                                }
-                            }
-                        });
-                        
-                        db.get(`SELECT COUNT(*) as count FROM reviews WHERE customer_name = 'Илья'`, [], (err, ilyaCount) => {
-                            if (!err && ilyaCount) {
-                                if (ilyaCount.count === 0) {
-                                    console.warn('⚠️ WARNING: Илья review is MISSING! Will be auto-restored.');
-                                } else {
-                                    console.log(`✅ Илья reviews: ${ilyaCount.count}`);
-                                }
-                            }
-                        });
+                        console.log(`✅ ALL REVIEWS ARE EQUAL - никаких специальных проверок для конкретных имен!`);
                     }
                 }
             });
@@ -304,23 +284,6 @@ db.serialize(() => {
                                 console.error('Error counting reviews:', err);
                             } else {
                                 console.log(`✅ Total reviews in database: ${countRow.count}`);
-                                
-                                // Check if Илья review exists
-                                db.get(`SELECT COUNT(*) as count FROM reviews WHERE customer_name = 'Илья'`, [], (err, ilyaRow) => {
-                                    if (!err && ilyaRow) {
-                                        if (ilyaRow.count > 0) {
-                                            console.log(`✅ Илья reviews in database: ${ilyaRow.count}`);
-                                            // Get the newest Илья review
-                                            db.get(`SELECT * FROM reviews WHERE customer_name = 'Илья' ORDER BY created_at DESC LIMIT 1`, [], (err, newestIlya) => {
-                                                if (!err && newestIlya) {
-                                                    console.log(`   ✅ Newest Илья review: ID=${newestIlya.id}, created_at=${newestIlya.created_at}`);
-                                                }
-                                            });
-                                        } else {
-                                            console.log(`⚠️ Илья reviews NOT found in database`);
-                                        }
-                                    }
-                                });
                             }
                         });
                     }
@@ -332,6 +295,8 @@ db.serialize(() => {
             console.log(`   ✅ Все отзывы обрабатываются одинаково - никакой специальной логики!`);
             console.log(`   ✅ CLIENT REVIEWS PROTECTED - никакие отзывы не будут удалены или перезаписаны автоматически!`);
         }
+    });
+});
 
 // API endpoint to receive subscription purchases
 // КРИТИЧЕСКИ ВАЖНО: Этот endpoint должен ВСЕГДА сохранять заказы в базу данных!
