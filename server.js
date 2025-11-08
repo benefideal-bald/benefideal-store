@@ -846,15 +846,41 @@ app.post('/api/review', (req, res) => {
 
 // Helper function to remove duplicate reviews
 function removeDuplicateReviews(reviews) {
-    // Simple and effective approach: keep first occurrence of each unique review
+    // Enhanced approach: remove duplicates by multiple criteria
     // A review is considered duplicate if:
-    // 1. Same email + order_id (same person, same order), OR
-    // 2. Same name + email + text (same person, same review text, even if order_id differs)
+    // 1. Same customer_name (same person - keep newest by created_at)
+    // 2. Same email + order_id (same person, same order)
+    // 3. Same name + email + text (same person, same review text, even if order_id differs)
+    
+    // First pass: group by customer_name and keep only newest
+    const byName = new Map();
+    reviews.forEach((review) => {
+        const name = (review.customer_name || '').trim();
+        if (!name) return; // Skip reviews without name
+        
+        const existing = byName.get(name);
+        if (!existing) {
+            byName.set(name, review);
+        } else {
+            // Keep the one with newer created_at date
+            const existingDate = existing.created_at || '';
+            const newDate = review.created_at || '';
+            if (newDate > existingDate) {
+                byName.set(name, review);
+                console.log(`   🔄 Replaced duplicate by name: ${name} (kept newer version)`);
+            } else {
+                console.log(`   🗑️ Removed duplicate by name: ${name} (kept older version)`);
+            }
+        }
+    });
+    
+    // Convert back to array and apply additional duplicate checks
+    const nameFilteredReviews = Array.from(byName.values());
     const uniqueReviews = [];
     const seenKeys = new Set();
     const duplicatesRemoved = [];
     
-    reviews.forEach((review, index) => {
+    nameFilteredReviews.forEach((review, index) => {
         const email = (review.customer_email || '').toLowerCase().trim();
         const orderId = review.order_id || 'null';
         const name = (review.customer_name || '').trim();
@@ -1251,6 +1277,59 @@ app.get('/api/debug/sync-reviews-from-root', (req, res) => {
         
         console.log(`📋 Found ${rootReviews.length} reviews in root reviews.json`);
         
+        // КРИТИЧЕСКИ ВАЖНО: Если data/reviews.json существует, читаем его и объединяем
+        // Удаляем дубликаты по имени, оставляя версии из корневого файла (Git)
+        let existingReviews = [];
+        if (fs.existsSync(reviewsJsonPath)) {
+            try {
+                const existingData = fs.readFileSync(reviewsJsonPath, 'utf8');
+                existingReviews = JSON.parse(existingData);
+                console.log(`📋 Found ${existingReviews.length} existing reviews in data/reviews.json`);
+            } catch (error) {
+                console.warn('⚠️ Error reading existing reviews.json:', error.message);
+            }
+        }
+        
+        // Создаем карту отзывов из корневого файла по имени (это версии из Git - приоритетные)
+        const rootReviewsMap = new Map();
+        rootReviews.forEach(review => {
+            const name = (review.customer_name || '').trim();
+            if (name) {
+                rootReviewsMap.set(name, review);
+            }
+        });
+        
+        // Добавляем отзывы из существующего файла, которых нет в корневом (динамические отзывы)
+        const mergedReviews = [];
+        const seenNames = new Set();
+        
+        // Сначала добавляем все отзывы из корневого файла (приоритет)
+        rootReviews.forEach(review => {
+            const name = (review.customer_name || '').trim();
+            if (name && !seenNames.has(name)) {
+                mergedReviews.push(review);
+                seenNames.add(name);
+                console.log(`✅ Added from root: ${name}`);
+            }
+        });
+        
+        // Затем добавляем отзывы из существующего файла, которых нет в корневом
+        existingReviews.forEach(review => {
+            const name = (review.customer_name || '').trim();
+            if (name && !seenNames.has(name)) {
+                mergedReviews.push(review);
+                seenNames.add(name);
+                console.log(`✅ Added from existing (not in root): ${name}`);
+            } else if (name && seenNames.has(name)) {
+                console.log(`🗑️ Skipped duplicate from existing: ${name} (already in root)`);
+            }
+        });
+        
+        // Удаляем дубликаты с помощью функции removeDuplicateReviews
+        const uniqueReviews = removeDuplicateReviews(mergedReviews);
+        
+        console.log(`📊 After merging and deduplication: ${uniqueReviews.length} unique reviews`);
+        
         // Ensure data directory exists
         const dataDir = path.dirname(reviewsJsonPath);
         if (!fs.existsSync(dataDir)) {
@@ -1259,15 +1338,17 @@ app.get('/api/debug/sync-reviews-from-root', (req, res) => {
         }
         
         // Write to data/reviews.json
-        fs.writeFileSync(reviewsJsonPath, JSON.stringify(rootReviews, null, 2), 'utf8');
+        fs.writeFileSync(reviewsJsonPath, JSON.stringify(uniqueReviews, null, 2), 'utf8');
         
-        console.log(`✅ Successfully synced ${rootReviews.length} reviews to data/reviews.json`);
+        console.log(`✅ Successfully synced ${uniqueReviews.length} reviews to data/reviews.json`);
+        console.log(`   Removed ${mergedReviews.length - uniqueReviews.length} duplicates`);
         
         res.json({
             success: true,
-            message: `Successfully synced ${rootReviews.length} reviews from root to data/reviews.json`,
-            total: rootReviews.length,
-            reviews: rootReviews.map(r => ({
+            message: `Successfully synced ${uniqueReviews.length} reviews from root to data/reviews.json`,
+            total: uniqueReviews.length,
+            duplicates_removed: mergedReviews.length - uniqueReviews.length,
+            reviews: uniqueReviews.map(r => ({
                 name: r.customer_name,
                 text: r.review_text.substring(0, 50) + '...',
                 created_at: r.created_at
