@@ -1439,20 +1439,25 @@ app.get('/api/debug/restore-tikhon', (req, res) => {
             }
             
             // Create Тихон review with CURRENT_TIMESTAMP (will be newest)
-            // КРИТИЧЕСКИ ВАЖНО: Создаем отзыв ГАРАНТИРОВАННО, даже если заказа нет
-            console.log(`📝 Creating Тихон review with CURRENT_TIMESTAMP...`);
+            // КРИТИЧЕСКИ ВАЖНО: Используем INSERT OR IGNORE, чтобы НЕ перезаписать существующий отзыв
+            // Если отзыв уже существует, он не будет перезаписан - это защищает от потери данных
+            // Используем уникальный order_id для Тихона, чтобы гарантировать, что отзыв не будет потерян
+            const tikhonFinalOrderId = tikhonOrderId || 'TIKHON_REVIEW_PERMANENT_' + Date.now();
+            
+            console.log(`📝 Creating Тихон review with CURRENT_TIMESTAMP (INSERT OR IGNORE)...`);
             console.log(`   Name: Тихон`);
             console.log(`   Email: ${tikhonEmail}`);
-            console.log(`   Order ID: ${tikhonOrderId || 'NULL'}`);
+            console.log(`   Order ID: ${tikhonFinalOrderId}`);
             console.log(`   Text: Купил кепкат про на 3 месяца я доволен`);
             console.log(`   Rating: 5`);
+            console.log(`   ⚠️  Using INSERT OR IGNORE - existing Тихон review will NOT be overwritten!`);
             
             const stmt = db.prepare(`
-                INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                INSERT OR IGNORE INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
                 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             `);
             
-            stmt.run(['Тихон', tikhonEmail, 'Купил кепкат про на 3 месяца я доволен', 5, tikhonOrderId], function(insertErr) {
+            stmt.run(['Тихон', tikhonEmail, 'Купил кепкат про на 3 месяца я доволен', 5, tikhonFinalOrderId], function(insertErr) {
                 if (insertErr) {
                     stmt.finalize();
                     console.error(`❌ ========== ERROR INSERTING ТИХОН REVIEW ==========`);
