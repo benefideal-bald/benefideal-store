@@ -932,14 +932,14 @@ app.get('/api/reviews', (req, res) => {
             console.log(`⚠️ Илья found in all reviews but not in paginated results`);
         }
     }
-        
-        res.json({ 
-            success: true,
-            reviews: paginatedRows,
-            count: paginatedRows.length,
-            total: allReviews.length
-        });
+    
+    res.json({ 
+        success: true,
+        reviews: paginatedRows,
+        count: paginatedRows.length,
+        total: allReviews.length
     });
+});
 
 // Debug endpoint to check all Илья reviews and recent client reviews
 app.get('/api/debug/ilya', (req, res) => {
