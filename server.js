@@ -737,83 +737,81 @@ app.post('/api/review', (req, res) => {
             const newestOrder = allOrders[0];
             const newestOrderId = newestOrder.order_id === 'NULL_ORDER' ? null : newestOrder.order_id;
             
-            // Check if this order already has a review
-            let reviewCheckQuery;
-            let reviewCheckParams;
+            // Check if this order already has a review - проверяем в JSON файле!
+            let allReviews = readReviewsFromJSON();
+            const existingReview = allReviews.find(r => 
+                r.customer_email.toLowerCase() === normalizedEmail && 
+                (r.order_id === newestOrderId || (newestOrderId === null && (r.order_id === null || r.order_id === '')))
+            );
             
-            if (newestOrderId === null) {
-                // For orders without order_id, check reviews with NULL order_id
-                reviewCheckQuery = `
-                    SELECT COUNT(*) as count 
-                    FROM reviews 
-                    WHERE LOWER(customer_email) = LOWER(?) AND (order_id IS NULL OR order_id = '')
-                `;
-                reviewCheckParams = [normalizedEmail];
-            } else {
-                // For orders with order_id, check reviews with that order_id
-                reviewCheckQuery = `
-                    SELECT COUNT(*) as count 
-                    FROM reviews 
-                    WHERE LOWER(customer_email) = LOWER(?) AND order_id = ?
-                `;
-                reviewCheckParams = [normalizedEmail, newestOrderId];
+            if (existingReview) {
+                console.log(`⚠️ Review already exists for email ${normalizedEmail} and order_id ${newestOrderId}`);
+                return res.status(400).json({ 
+                    success: false,
+                    error: 'Вы уже оставили отзыв для вашего последнего заказа.' 
+                });
             }
             
-            db.get(reviewCheckQuery, reviewCheckParams, (err, reviewedCheck) => {
+            // Добавляем отзыв в JSON файл (все отзывы хранятся вместе!)
+            console.log(`📝 Adding review to JSON: name=${name}, email=${normalizedEmail}, rating=${rating}, order_id=${newestOrderId}`);
+            
+            // Создаем новый отзыв
+            const newReview = {
+                id: `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                customer_name: name,
+                customer_email: normalizedEmail,
+                review_text: text,
+                rating: parseInt(rating),
+                order_id: newestOrderId,
+                created_at: new Date().toISOString(),
+                is_static: false
+            };
+            
+            // Добавляем новый отзыв в массив
+            allReviews.push(newReview);
+            
+            // Сохраняем обратно в JSON
+            const saved = writeReviewsToJSON(allReviews);
+            
+            if (!saved) {
+                console.error(`❌ Error saving review to JSON for ${name}`);
+                return res.status(500).json({ error: 'Error saving review', details: 'Failed to write to reviews.json' });
+            }
+            
+            console.log(`✅ ========== REVIEW SAVED TO JSON ==========`);
+            console.log(`   ID: "${newReview.id}"`);
+            console.log(`   Name: "${name}"`);
+            console.log(`   Email: "${normalizedEmail}"`);
+            console.log(`   Text: "${text.substring(0, 50)}..."`);
+            console.log(`   Rating: ${rating}`);
+            console.log(`   Order ID: "${newestOrderId}"`);
+            console.log(`   Created at: "${newReview.created_at}"`);
+            console.log(`   ======================================`);
+            
+            // Также сохраняем в базу данных для валидации (опционально, для обратной совместимости)
+            const stmt = db.prepare(`
+                INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `);
+            
+            stmt.run([name, normalizedEmail, text, rating, newestOrderId], function(err) {
+                // Игнорируем ошибки базы данных - основное хранилище это JSON!
                 if (err) {
-                    console.error('Error checking reviews:', err);
-                    return res.status(500).json({ error: 'Database error' });
+                    console.warn(`⚠️ Failed to save review to database (but saved to JSON): ${err.message}`);
+                } else {
+                    console.log(`✅ Review also saved to database for validation purposes`);
                 }
-                
-                if (reviewedCheck && reviewedCheck.count > 0) {
-                    return res.status(400).json({ 
-                        success: false,
-                        error: 'Вы уже оставили отзыв для вашего последнего заказа.' 
-                    });
-                }
-                
-                // Insert review with order_id (or NULL if no order_id)
-                // Use normalized email for consistency
-                // Explicitly set created_at to current timestamp to ensure newest reviews are first
-                console.log(`📝 Inserting review: name=${name}, email=${normalizedEmail}, rating=${rating}, order_id=${newestOrderId}`);
-                
-                // КРИТИЧЕСКИ ВАЖНО: Используем CURRENT_TIMESTAMP чтобы новый отзыв был САМЫМ НОВЫМ и ПЕРВЫМ в списке!
-                const stmt = db.prepare(`
-                    INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
-                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                `);
-                
-                console.log(`📝 Inserting NEW review for ${name} - it will be FIRST in the list (newest first)`);
-                
-                // КРИТИЧЕСКИ ВАЖНО: Логируем ВСЕ данные перед вставкой
-                console.log(`📝 ========== INSERTING REVIEW ==========`);
-                console.log(`   Name: "${name}"`);
-                console.log(`   Email: "${normalizedEmail}"`);
-                console.log(`   Text: "${text.substring(0, 50)}..."`);
-                console.log(`   Rating: ${rating}`);
-                console.log(`   Order ID: "${newestOrderId}"`);
-                console.log(`   ======================================`);
-                
-                stmt.run([name, normalizedEmail, text, rating, newestOrderId], function(err) {
-                    // Игнорируем ошибки базы данных - основное хранилище это JSON!
-                    if (err) {
-                        console.warn(`⚠️ Failed to save review to database (but saved to JSON): ${err.message}`);
-                        stmt.finalize();
-                    } else {
-                        console.log(`✅ Review also saved to database for validation purposes`);
-                        stmt.finalize();
-                    }
-                    
-                    // Отзыв уже сохранен в JSON - отправляем ответ
-                    res.json({ 
-                        success: true, 
-                        message: 'Отзыв успешно отправлен',
-                        review_id: newReview.id,
-                        name: name,
-                        email: normalizedEmail,
-                        order_id: newestOrderId
-                    });
-                });
+                stmt.finalize();
+            });
+            
+            // Отзыв уже сохранен в JSON - отправляем ответ
+            res.json({ 
+                success: true, 
+                message: 'Отзыв успешно отправлен',
+                review_id: newReview.id,
+                name: name,
+                email: normalizedEmail,
+                order_id: newestOrderId
             });
         });
     });
