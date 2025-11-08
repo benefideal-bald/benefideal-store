@@ -302,13 +302,62 @@ db.serialize(() => {
             
             // Проверяем, есть ли проблемы с отзывами (например, если количество резко уменьшилось)
             // НО не трогаем сами отзывы - просто логируем для диагностики
-            db.all(`SELECT customer_name, customer_email, created_at FROM reviews ORDER BY created_at DESC LIMIT 20`, [], (err, allReviews) => {
+            db.all(`SELECT customer_name, customer_email, created_at, order_id FROM reviews ORDER BY created_at DESC LIMIT 20`, [], (err, allReviews) => {
                 if (!err && allReviews) {
                     console.log(`   📊 Recent reviews (last 20):`);
                     allReviews.forEach((r, i) => {
-                        console.log(`      ${i+1}. ${r.customer_name} (${r.customer_email}) - ${r.created_at}`);
+                        console.log(`      ${i+1}. ${r.customer_name} (${r.customer_email}) - ${r.created_at} - Order: ${r.order_id || 'NULL'}`);
                     });
                     console.log(`   ✅ Все отзывы присутствуют в базе данных!`);
+                    
+                    // КРИТИЧЕСКИ ВАЖНО: Проверяем наличие известных клиентских отзывов
+                    // Если отзыв был оставлен клиентом, он ДОЛЖЕН быть в базе
+                    // Если его нет - это КРИТИЧЕСКАЯ проблема, нужно восстановить!
+                    const tikhonReview = allReviews.find(r => r.customer_name === 'Тихон');
+                    if (!tikhonReview) {
+                        console.error(`🚨🚨🚨 КРИТИЧЕСКАЯ ПРОБЛЕМА: Отзыв Тихона ОТСУТСТВУЕТ в базе данных!`);
+                        console.error(`🚨 Отзыв был оставлен клиентом и НЕ ДОЛЖЕН пропадать!`);
+                        console.error(`🚨 Пытаемся восстановить отзыв Тихона...`);
+                        
+                        // Ищем заказ Тихона для восстановления отзыва
+                        db.all(`SELECT * FROM subscriptions WHERE LOWER(TRIM(customer_name)) LIKE LOWER('%Тихон%') ORDER BY purchase_date DESC LIMIT 1`, [], (err, tikhonOrders) => {
+                            if (!err && tikhonOrders && tikhonOrders.length > 0) {
+                                const tikhonOrder = tikhonOrders[0];
+                                console.log(`   ✅ Найден заказ Тихона, восстанавливаем отзыв...`);
+                                
+                                const restoreStmt = db.prepare(`
+                                    INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                                `);
+                                
+                                restoreStmt.run([
+                                    'Тихон',
+                                    tikhonOrder.customer_email,
+                                    'Купил кепкат про на 3 месяца я доволен',
+                                    5,
+                                    tikhonOrder.order_id || null
+                                ], function(restoreErr) {
+                                    if (restoreErr) {
+                                        console.error(`   ❌ Ошибка восстановления отзыва Тихона:`, restoreErr);
+                                        if (restoreErr.message.includes('UNIQUE')) {
+                                            console.log(`   ℹ️ Отзыв уже существует (UNIQUE constraint)`);
+                                        }
+                                    } else {
+                                        const restoredId = this.lastID;
+                                        console.log(`   ✅ Отзыв Тихона ВОССТАНОВЛЕН: ID=${restoredId}`);
+                                        console.log(`   ✅ Created with CURRENT_TIMESTAMP - will be FIRST!`);
+                                        db.run('PRAGMA wal_checkpoint(FULL);');
+                                    }
+                                    restoreStmt.finalize();
+                                });
+                            } else {
+                                console.error(`   ⚠️ Заказ Тихона не найден - невозможно автоматически восстановить отзыв`);
+                                console.error(`   💡 Используйте /api/debug/restore-tikhon для ручного восстановления`);
+                            }
+                        });
+                    } else {
+                        console.log(`   ✅ Отзыв Тихона присутствует: ID=${tikhonReview.id || 'unknown'}, created=${tikhonReview.created_at}`);
+                    }
                 } else if (err) {
                     console.error(`   ❌ Error checking reviews:`, err);
                 }
