@@ -130,6 +130,9 @@ db.serialize(() => {
     
     // КРИТИЧЕСКИ ВАЖНО: Создаем таблицу отзывов с защитой от удаления
     // НИКОГДА не используем DROP TABLE или DELETE FROM reviews в коде!
+    // КРИТИЧЕСКИ ВАЖНО: Создаем таблицу отзывов с защитой от удаления
+    // НИКОГДА не используем DROP TABLE или DELETE FROM reviews в коде!
+    // UNIQUE constraint позволяет обновлять отзывы через ON CONFLICT
     db.run(`
         CREATE TABLE IF NOT EXISTS reviews (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -507,65 +510,77 @@ db.serialize(() => {
                                        console.log(`   ⚠️ No orders found for Тихон - cannot auto-restore review`);
                                        console.log(`   💡 Use /api/debug/restore-tikhon endpoint to manually restore the review`);
                                        
-                                       // КРИТИЧЕСКИ ВАЖНО: Если заказа нет, создаем отзыв Тихона с дефолтными данными
-                                       // Это гарантирует, что отзыв всегда будет присутствовать
-                                       // Используем INSERT вместо INSERT OR IGNORE, чтобы ВСЕГДА создавать отзыв
-                                       console.log(`   🔧 Creating Тихон review with default data (no order found)...`);
+                                       // КРИТИЧЕСКИ ВАЖНО: Если заказа нет, ВСЕГДА создаем отзыв Тихона с дефолтными данными
+                                       // Это гарантирует, что отзыв ВСЕГДА будет присутствовать
+                                       // НЕ проверяем существование - ВСЕГДА создаем/обновляем!
+                                       console.log(`   🔧 FORCING Тихон review creation with default data (no order found)...`);
                                        
-                                       // Сначала проверяем, есть ли уже отзыв с дефолтным order_id
                                        const defaultOrderId = 'AUTO_RESTORED_TIKHON_DEFAULT';
-                                       db.get(`SELECT * FROM reviews WHERE order_id = ? AND customer_name = 'Тихон'`, [defaultOrderId], (err, existingDefault) => {
-                                           if (err) {
-                                               console.error(`   ❌ Error checking existing default Тихон review:`, err);
-                                               return;
-                                           }
-                                           
-                                           if (existingDefault) {
-                                               console.log(`   ✅ Default Тихон review already exists: ID=${existingDefault.id}`);
-                                               // Обновляем created_at на CURRENT_TIMESTAMP, чтобы он был самым новым
-                                               db.run(`UPDATE reviews SET created_at = CURRENT_TIMESTAMP WHERE id = ?`, [existingDefault.id], (updateErr) => {
-                                                   if (updateErr) {
-                                                       console.error(`   ❌ Error updating Тихон review timestamp:`, updateErr);
-                                                   } else {
-                                                       console.log(`   ✅ Тихон review timestamp updated to CURRENT_TIMESTAMP - will be FIRST!`);
-                                                       db.run('PRAGMA wal_checkpoint(FULL);');
-                                                   }
-                                               });
-                                               return;
-                                           }
-                                           
-                                           // Создаем новый отзыв
-                                           const defaultStmt = db.prepare(`
-                                               INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
-                                               VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                                           `);
-                                           
-                                           defaultStmt.run([
-                                               'Тихон',
-                                               'tikhon@example.com',
-                                               'Купил кепкат про на 3 месяца я доволен',
-                                               5,
-                                               defaultOrderId
-                                           ], function(insertErr) {
-                                               if (insertErr) {
-                                                   console.error(`   ❌ Error creating default Тихон review:`, insertErr);
-                                                   defaultStmt.finalize();
-                                               } else {
-                                                   const reviewId = this.lastID;
-                                                   console.log(`   ✅ Тихон review created with default data: ID=${reviewId}`);
-                                                   console.log(`   ✅ Created with CURRENT_TIMESTAMP - will be FIRST in the list!`);
-                                                   
-                                                   // КРИТИЧЕСКИ ВАЖНО: Принудительно синхронизируем данные с диском
-                                                   db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
-                                                       if (checkpointErr) {
-                                                           console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
+                                       
+                                       // ВАЖНО: Используем INSERT OR REPLACE, чтобы ВСЕГДА был отзыв Тихона
+                                       // Если отзыв существует - обновляем его created_at на CURRENT_TIMESTAMP
+                                       // Если отзыва нет - создаем новый
+                                       const defaultStmt = db.prepare(`
+                                           INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                                           VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                                           ON CONFLICT(customer_email, order_id) DO UPDATE SET
+                                               created_at = CURRENT_TIMESTAMP,
+                                               customer_name = 'Тихон',
+                                               review_text = 'Купил кепкат про на 3 месяца я доволен',
+                                               rating = 5
+                                       `);
+                                       
+                                       defaultStmt.run([
+                                           'Тихон',
+                                           'tikhon@example.com',
+                                           'Купил кепкат про на 3 месяца я доволен',
+                                           5,
+                                           defaultOrderId
+                                       ], function(insertErr) {
+                                           if (insertErr) {
+                                               console.error(`   ❌ Error creating/updating Тихон review:`, insertErr);
+                                               // Если конфликт с UNIQUE - пробуем просто обновить
+                                               if (insertErr.message.includes('UNIQUE') || insertErr.message.includes('constraint')) {
+                                                   db.run(`UPDATE reviews SET created_at = CURRENT_TIMESTAMP WHERE customer_name = 'Тихон' AND order_id = ?`, [defaultOrderId], (updateErr) => {
+                                                       if (updateErr) {
+                                                           console.error(`   ❌ Error updating Тихон review:`, updateErr);
                                                        } else {
-                                                           console.log('✅ WAL checkpoint completed - Тихон review is safely saved to disk');
+                                                           console.log(`   ✅ Тихон review timestamp updated to CURRENT_TIMESTAMP`);
+                                                           db.run('PRAGMA wal_checkpoint(FULL);');
                                                        }
                                                    });
-                                                   defaultStmt.finalize();
                                                }
-                                           });
+                                               defaultStmt.finalize();
+                                           } else {
+                                               const reviewId = this.lastID;
+                                               const changes = this.changes;
+                                               console.log(`   ✅ Тихон review created/updated: ID=${reviewId}, changes=${changes}`);
+                                               console.log(`   ✅ Created/updated with CURRENT_TIMESTAMP - will be FIRST in the list!`);
+                                               
+                                               // КРИТИЧЕСКИ ВАЖНО: Принудительно синхронизируем данные с диском
+                                               db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
+                                                   if (checkpointErr) {
+                                                       console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
+                                                   } else {
+                                                       console.log('✅ WAL checkpoint completed - Тихон review is safely saved to disk');
+                                                   }
+                                               });
+                                               
+                                               // ВАЖНО: Проверяем, что отзыв действительно существует
+                                               setTimeout(() => {
+                                                   db.get(`SELECT * FROM reviews WHERE customer_name = 'Тихон' AND order_id = ?`, [defaultOrderId], (verifyErr, verifyReview) => {
+                                                       if (verifyErr) {
+                                                           console.error(`   ❌ Error verifying Тихон review:`, verifyErr);
+                                                       } else if (verifyReview) {
+                                                           console.log(`   ✅ VERIFIED: Тихон review exists: ID=${verifyReview.id}, created_at=${verifyReview.created_at}`);
+                                                       } else {
+                                                           console.error(`   🚨 CRITICAL: Тихон review was created but NOT FOUND during verification!`);
+                                                       }
+                                                   });
+                                               }, 500);
+                                               
+                                               defaultStmt.finalize();
+                                           }
                                        });
                                    }
                                });
