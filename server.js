@@ -1233,6 +1233,56 @@ app.get('/api/reviews', (req, res) => {
     });
 });
 
+// Endpoint to sync reviews from root reviews.json to data/reviews.json
+app.get('/api/debug/sync-reviews-from-root', (req, res) => {
+    console.log('🔄 Syncing reviews from root reviews.json to data/reviews.json...');
+    
+    try {
+        // Read from root file (Git version)
+        if (!fs.existsSync(reviewsJsonPathGit)) {
+            return res.status(404).json({
+                success: false,
+                error: 'Root reviews.json not found'
+            });
+        }
+        
+        const rootData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
+        const rootReviews = JSON.parse(rootData);
+        
+        console.log(`📋 Found ${rootReviews.length} reviews in root reviews.json`);
+        
+        // Ensure data directory exists
+        const dataDir = path.dirname(reviewsJsonPath);
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+            console.log(`✅ Created data directory: ${dataDir}`);
+        }
+        
+        // Write to data/reviews.json
+        fs.writeFileSync(reviewsJsonPath, JSON.stringify(rootReviews, null, 2), 'utf8');
+        
+        console.log(`✅ Successfully synced ${rootReviews.length} reviews to data/reviews.json`);
+        
+        res.json({
+            success: true,
+            message: `Successfully synced ${rootReviews.length} reviews from root to data/reviews.json`,
+            total: rootReviews.length,
+            reviews: rootReviews.map(r => ({
+                name: r.customer_name,
+                text: r.review_text.substring(0, 50) + '...',
+                created_at: r.created_at
+            }))
+        });
+    } catch (error) {
+        console.error('❌ Error syncing reviews:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error syncing reviews',
+            details: error.message
+        });
+    }
+});
+
 // Debug endpoint to force restore all reviews from database
 app.get('/api/debug/restore-all-reviews', (req, res) => {
     console.log('🔄 Force restore all reviews from database...');
@@ -2310,6 +2360,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('  POST /api/review - Submit review');
     console.log('  POST /api/review/verify - Verify review eligibility');
     console.log('  POST /api/subscription - Submit subscription');
+    console.log('  GET  /api/debug/sync-reviews-from-root - Sync reviews from root to data/');
 }).on('error', (err) => {
     console.error('❌ Server error:', err);
     if (err.code === 'EADDRINUSE') {
