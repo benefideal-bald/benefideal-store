@@ -130,9 +130,7 @@ db.serialize(() => {
     
     // КРИТИЧЕСКИ ВАЖНО: Создаем таблицу отзывов с защитой от удаления
     // НИКОГДА не используем DROP TABLE или DELETE FROM reviews в коде!
-    // КРИТИЧЕСКИ ВАЖНО: Создаем таблицу отзывов с защитой от удаления
-    // НИКОГДА не используем DROP TABLE или DELETE FROM reviews в коде!
-    // UNIQUE constraint позволяет обновлять отзывы через ON CONFLICT
+    // UNIQUE constraint (customer_email, order_id) позволяет обновлять отзывы через ON CONFLICT
     db.run(`
         CREATE TABLE IF NOT EXISTS reviews (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -538,15 +536,29 @@ db.serialize(() => {
                                            defaultOrderId
                                        ], function(insertErr) {
                                            if (insertErr) {
-                                               console.error(`   ❌ Error creating/updating Тихон review:`, insertErr);
-                                               // Если конфликт с UNIQUE - пробуем просто обновить
+                                               console.error(`   ❌ Error creating Тихон review:`, insertErr);
+                                               // Если конфликт с UNIQUE - отзыв уже существует, обновляем его
                                                if (insertErr.message.includes('UNIQUE') || insertErr.message.includes('constraint')) {
-                                                   db.run(`UPDATE reviews SET created_at = CURRENT_TIMESTAMP WHERE customer_name = 'Тихон' AND order_id = ?`, [defaultOrderId], (updateErr) => {
+                                                   console.log(`   ℹ️ Тихон review already exists, updating timestamp...`);
+                                                   db.run(`UPDATE reviews SET created_at = CURRENT_TIMESTAMP, customer_name = 'Тихон', review_text = 'Купил кепкат про на 3 месяца я доволен', rating = 5 WHERE customer_email = ? AND order_id = ?`, ['tikhon@example.com', defaultOrderId], (updateErr) => {
                                                        if (updateErr) {
                                                            console.error(`   ❌ Error updating Тихон review:`, updateErr);
                                                        } else {
-                                                           console.log(`   ✅ Тихон review timestamp updated to CURRENT_TIMESTAMP`);
-                                                           db.run('PRAGMA wal_checkpoint(FULL);');
+                                                           console.log(`   ✅ Тихон review timestamp updated to CURRENT_TIMESTAMP - will be FIRST!`);
+                                                           db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
+                                                               if (!checkpointErr) {
+                                                                   console.log('✅ WAL checkpoint completed - Тихон review updated');
+                                                               }
+                                                           });
+                                                           
+                                                           // Проверяем, что отзыв обновлен
+                                                           setTimeout(() => {
+                                                               db.get(`SELECT * FROM reviews WHERE customer_name = 'Тихон' AND order_id = ?`, [defaultOrderId], (verifyErr, verifyReview) => {
+                                                                   if (!verifyErr && verifyReview) {
+                                                                       console.log(`   ✅ VERIFIED: Тихон review updated: ID=${verifyReview.id}, created_at=${verifyReview.created_at}`);
+                                                                   }
+                                                               });
+                                                           }, 500);
                                                        }
                                                    });
                                                }
