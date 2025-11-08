@@ -193,7 +193,14 @@ db.serialize(() => {
             return;
         }
         
-        console.log(`📊 Reviews check on startup: ${row.count} reviews found`);
+        console.log(`📊 Reviews check on startup: ${row.count} reviews found in database`);
+        
+        // КРИТИЧЕСКИ ВАЖНО: Переносим отзывы из базы данных в JSON при первом запуске
+        // Это гарантирует, что все отзывы из базы данных будут сохранены в JSON
+        if (row && row.count > 0) {
+            console.log('🔄 Database has reviews, checking if migration to JSON is needed...');
+            // Migration will happen automatically in readReviewsFromJSON()
+        }
         
         // Only insert static reviews if table is empty (first run)
         // This should NOT affect existing client reviews
@@ -820,6 +827,93 @@ app.post('/api/review', (req, res) => {
     });
 });
 
+// Helper function to migrate reviews from database to JSON (one-time migration)
+function migrateReviewsFromDatabase() {
+    return new Promise((resolve, reject) => {
+        console.log('🔄 Checking if migration from database to JSON is needed...');
+        
+        // Check if JSON file exists and has reviews
+        let jsonReviews = [];
+        if (fs.existsSync(reviewsJsonPath)) {
+            try {
+                const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+                jsonReviews = JSON.parse(data);
+                console.log(`   JSON file has ${jsonReviews.length} reviews`);
+            } catch (error) {
+                console.warn('   Error reading JSON file:', error.message);
+            }
+        }
+        
+        // Get all reviews from database
+        db.all(`SELECT * FROM reviews ORDER BY created_at DESC`, [], (err, dbReviews) => {
+            if (err) {
+                console.error('❌ Error reading reviews from database:', err);
+                return resolve(false);
+            }
+            
+            console.log(`   Database has ${dbReviews.length} reviews`);
+            
+            if (dbReviews.length === 0) {
+                console.log('   No reviews in database, skipping migration');
+                return resolve(false);
+            }
+            
+            // Create a map of existing JSON reviews by (email, order_id) to avoid duplicates
+            const jsonReviewsMap = new Map();
+            jsonReviews.forEach(review => {
+                const key = `${review.customer_email.toLowerCase()}_${review.order_id || 'null'}`;
+                jsonReviewsMap.set(key, review);
+            });
+            
+            // Merge database reviews with JSON reviews
+            let migrated = false;
+            dbReviews.forEach(dbReview => {
+                const key = `${dbReview.customer_email.toLowerCase()}_${dbReview.order_id || 'null'}`;
+                
+                if (!jsonReviewsMap.has(key)) {
+                    // This review is not in JSON, add it
+                    const review = {
+                        id: `review_${dbReview.id}_${Date.now()}`,
+                        customer_name: dbReview.customer_name,
+                        customer_email: dbReview.customer_email,
+                        review_text: dbReview.review_text,
+                        rating: dbReview.rating,
+                        order_id: dbReview.order_id || null,
+                        created_at: dbReview.created_at,
+                        is_static: false
+                    };
+                    jsonReviews.push(review);
+                    jsonReviewsMap.set(key, review);
+                    migrated = true;
+                    console.log(`   ✅ Migrated review: ${review.customer_name} (${review.created_at})`);
+                }
+            });
+            
+            if (migrated) {
+                // Sort by created_at (newest first)
+                jsonReviews.sort((a, b) => {
+                    const timeA = new Date(a.created_at).getTime();
+                    const timeB = new Date(b.created_at).getTime();
+                    return timeB - timeA;
+                });
+                
+                // Save to JSON
+                const saved = writeReviewsToJSON(jsonReviews);
+                if (saved) {
+                    console.log(`✅ Migration complete! Total reviews in JSON: ${jsonReviews.length}`);
+                    resolve(true);
+                } else {
+                    console.error('❌ Failed to save migrated reviews to JSON');
+                    resolve(false);
+                }
+            } else {
+                console.log('   No new reviews to migrate');
+                resolve(false);
+            }
+        });
+    });
+}
+
 // Helper function to read reviews from JSON file
 function readReviewsFromJSON() {
     try {
@@ -837,16 +931,36 @@ function readReviewsFromJSON() {
                 const initialData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
                 fs.writeFileSync(reviewsJsonPath, initialData, 'utf8');
                 console.log('✅ Initial reviews copied to data/reviews.json');
+                
+                // After copying, try to migrate from database
+                migrateReviewsFromDatabase().then(() => {
+                    console.log('✅ Migration check completed');
+                });
+                
                 return JSON.parse(initialData);
             } else {
                 console.warn('⚠️ reviews.json not found, creating with empty array');
                 fs.writeFileSync(reviewsJsonPath, JSON.stringify([], null, 2), 'utf8');
+                
+                // Try to migrate from database
+                migrateReviewsFromDatabase().then(() => {
+                    console.log('✅ Migration check completed');
+                });
+                
                 return [];
             }
         }
         
         const data = fs.readFileSync(reviewsJsonPath, 'utf8');
-        return JSON.parse(data);
+        const reviews = JSON.parse(data);
+        
+        // Check if we need to migrate from database (run migration check on every read)
+        // This ensures we don't lose any reviews
+        migrateReviewsFromDatabase().catch(err => {
+            console.error('❌ Migration error:', err);
+        });
+        
+        return reviews;
     } catch (error) {
         console.error('❌ Error reading reviews.json:', error);
         return [];
