@@ -169,5 +169,14 @@
     "rating": 5,
     "created_at": "2025-08-20T10:00:00Z",
     "is_static": true
+  },
+  {
+    "id": "review_vlad",
+    "customer_name": "Влад",
+    "customer_email": "tonnyfreesalto82@gmail.com",
+    "review_text": "Купил адоб на пол года все работает как часы, спасибо большое за ваш сервис",
+    "rating": 5,
+    "created_at": "2025-11-09T19:38:08Z",
+    "is_static": false
   }
 ]

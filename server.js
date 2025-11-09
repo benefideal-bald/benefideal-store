@@ -2211,29 +2211,60 @@ app.get('/api/debug/restore-vlad', (req, res) => {
             
             const orderId = orders && orders.length > 0 ? orders[0].order_id : null;
             
-            // Create review with default text (can be edited later)
+            // Create review with correct text
             const newReview = {
                 id: `review_${Date.now()}_vlad_restored`,
                 customer_name: vladName,
                 customer_email: vladEmail,
-                review_text: 'Отзыв восстановлен. Текст отзыва был потерян, но отзыв сохранен.',
+                review_text: 'Купил адоб на пол года все работает как часы, спасибо большое за ваш сервис',
                 rating: 5,
                 order_id: orderId,
-                created_at: new Date().toISOString(),
+                created_at: new Date('2025-11-09T19:38:08Z').toISOString(),
                 is_static: false
             };
             
-            allReviews.push(newReview);
-            writeReviewsToJSON(allReviews);
+            // Read current reviews first
+            if (fs.existsSync(reviewsJsonPath)) {
+                try {
+                    const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+                    allReviews = JSON.parse(data);
+                } catch (error) {
+                    console.error('❌ Error reading reviews.json:', error);
+                }
+            }
             
-            console.log(`✅ Created new Влад review with default text`);
+            // Check if already exists
+            const exists = allReviews.find(r => 
+                (r.customer_email && r.customer_email.toLowerCase() === vladEmail.toLowerCase()) ||
+                (r.customer_name && r.customer_name.trim() === vladName)
+            );
             
-            res.json({
-                success: true,
-                message: 'Влад review not found. Created new review with default text.',
-                review: newReview,
-                note: 'You can edit the review text later if you remember the original text.'
-            });
+            if (!exists) {
+                allReviews.push(newReview);
+                const saved = writeReviewsToJSON(allReviews);
+                
+                if (saved) {
+                    console.log(`✅ Created new Влад review with correct text`);
+                    res.json({
+                        success: true,
+                        message: 'Влад review created successfully',
+                        review: newReview
+                    });
+                } else {
+                    console.error(`❌ Failed to save Влад review`);
+                    res.status(500).json({
+                        success: false,
+                        error: 'Failed to save review to JSON file'
+                    });
+                }
+            } else {
+                console.log(`⚠️ Влад review already exists`);
+                res.json({
+                    success: true,
+                    message: 'Влад review already exists',
+                    review: exists
+                });
+            }
         });
     });
 });
