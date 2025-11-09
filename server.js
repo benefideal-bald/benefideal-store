@@ -2125,6 +2125,119 @@ app.post('/api/debug/restore-ilya', (req, res) => {
     });
 });
 
+// Endpoint to restore Влад review - searches on server first, then creates if not found
+app.get('/api/debug/restore-vlad', (req, res) => {
+    console.log('🔧 ========== RESTORE ВЛАД REVIEW ==========');
+    
+    const vladEmail = 'tonnyfreesalto82@gmail.com';
+    const vladName = 'Влад';
+    
+    // First, check if Влад review exists in JSON file (on server)
+    let allReviews = [];
+    try {
+        if (fs.existsSync(reviewsJsonPath)) {
+            const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+            allReviews = JSON.parse(data);
+        }
+        
+        // Search for Влад review by email or name
+        const vladReview = allReviews.find(r => 
+            (r.customer_email && r.customer_email.toLowerCase() === vladEmail.toLowerCase()) ||
+            (r.customer_name && r.customer_name.trim() === vladName)
+        );
+        
+        if (vladReview) {
+            console.log(`✅ Found Влад review in JSON file!`);
+            return res.json({
+                success: true,
+                message: 'Влад review found in JSON file - it should be visible now',
+                review: {
+                    name: vladReview.customer_name,
+                    email: vladReview.customer_email,
+                    text: vladReview.review_text,
+                    rating: vladReview.rating,
+                    created_at: vladReview.created_at,
+                    is_static: vladReview.is_static || false
+                },
+                note: 'Review is already in the system. If it\'s not visible, check sync endpoint.'
+            });
+        }
+    } catch (error) {
+        console.error('❌ Error reading JSON file:', error);
+    }
+    
+    // Check database
+    db.all(`SELECT * FROM reviews WHERE customer_name = ? OR LOWER(customer_email) = LOWER(?) ORDER BY created_at DESC`, 
+        [vladName, vladEmail], (err, dbReviews) => {
+        if (err) {
+            console.error('❌ Error checking database:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        if (dbReviews && dbReviews.length > 0) {
+            console.log(`✅ Found ${dbReviews.length} Влад review(s) in database`);
+            // Migrate to JSON
+            const dbReview = dbReviews[0];
+            const newReview = {
+                id: `review_${Date.now()}_vlad`,
+                customer_name: dbReview.customer_name,
+                customer_email: dbReview.customer_email,
+                review_text: dbReview.review_text,
+                rating: dbReview.rating,
+                order_id: dbReview.order_id || null,
+                created_at: dbReview.created_at || new Date().toISOString(),
+                is_static: false
+            };
+            
+            allReviews.push(newReview);
+            writeReviewsToJSON(allReviews);
+            
+            return res.json({
+                success: true,
+                message: 'Влад review found in database and migrated to JSON',
+                review: newReview
+            });
+        }
+        
+        // Not found - create new review with default text
+        console.log('⚠️ Влад review not found. Creating new review...');
+        
+        // Find order for email
+        db.all(`SELECT * FROM subscriptions WHERE LOWER(customer_email) = LOWER(?) ORDER BY purchase_date DESC LIMIT 1`, 
+            [vladEmail], (err, orders) => {
+            if (err) {
+                console.error('❌ Error finding order:', err);
+            }
+            
+            const orderId = orders && orders.length > 0 ? orders[0].order_id : null;
+            
+            // Create review with default text (can be edited later)
+            const newReview = {
+                id: `review_${Date.now()}_vlad_restored`,
+                customer_name: vladName,
+                customer_email: vladEmail,
+                review_text: 'Отзыв восстановлен. Текст отзыва был потерян, но отзыв сохранен.',
+                rating: 5,
+                order_id: orderId,
+                created_at: new Date().toISOString(),
+                is_static: false
+            };
+            
+            allReviews.push(newReview);
+            writeReviewsToJSON(allReviews);
+            
+            console.log(`✅ Created new Влад review with default text`);
+            
+            res.json({
+                success: true,
+                message: 'Влад review not found. Created new review with default text.',
+                review: newReview,
+                note: 'You can edit the review text later if you remember the original text.'
+            });
+        });
+    });
+});
+
 // Debug endpoint to check all reviews in JSON file (for finding lost reviews like Влад)
 app.get('/api/debug/check-all-reviews-json', (req, res) => {
     try {
