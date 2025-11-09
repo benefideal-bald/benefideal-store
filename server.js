@@ -2125,6 +2125,68 @@ app.post('/api/debug/restore-ilya', (req, res) => {
     });
 });
 
+// Debug endpoint to check all reviews in JSON file (for finding lost reviews like Влад)
+app.get('/api/debug/check-all-reviews-json', (req, res) => {
+    try {
+        // Read from data/reviews.json (server's persistent storage)
+        let allReviews = [];
+        if (fs.existsSync(reviewsJsonPath)) {
+            const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+            allReviews = JSON.parse(data);
+        }
+        
+        // Also read from root reviews.json (Git)
+        let rootReviews = [];
+        if (fs.existsSync(reviewsJsonPathGit)) {
+            const rootData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
+            rootReviews = JSON.parse(rootData);
+        }
+        
+        // Search for specific name if provided
+        const searchName = req.query.name ? req.query.name.trim().toLowerCase() : null;
+        const searchEmail = req.query.email ? req.query.email.trim().toLowerCase() : null;
+        
+        let filteredReviews = allReviews;
+        if (searchName) {
+            filteredReviews = allReviews.filter(r => 
+                (r.customer_name || '').toLowerCase().includes(searchName)
+            );
+        }
+        if (searchEmail) {
+            filteredReviews = filteredReviews.filter(r => 
+                (r.customer_email || '').toLowerCase().includes(searchEmail)
+            );
+        }
+        
+        res.json({
+            success: true,
+            total_reviews_in_data_json: allReviews.length,
+            total_reviews_in_root_json: rootReviews.length,
+            search_name: searchName || null,
+            search_email: searchEmail || null,
+            found_reviews: filteredReviews.length,
+            reviews: filteredReviews.map(r => ({
+                name: r.customer_name,
+                email: r.customer_email,
+                text: r.review_text ? r.review_text.substring(0, 50) + '...' : '',
+                created_at: r.created_at,
+                is_static: r.is_static || false,
+                order_id: r.order_id || null
+            })),
+            all_review_names: allReviews.map(r => r.customer_name),
+            note: searchName 
+                ? `Searching for reviews with name containing "${searchName}"`
+                : 'All reviews from data/reviews.json'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            stack: error.stack
+        });
+    }
+});
+
 // Debug endpoint to check all emails in subscriptions
 app.get('/api/debug/emails', (req, res) => {
     const searchEmail = req.query.email ? req.query.email.toLowerCase().trim() : null;
