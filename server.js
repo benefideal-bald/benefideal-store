@@ -911,10 +911,11 @@ app.post('/api/review', (req, res) => {
             if (!existsInData) {
                 dynamicReviews.push(newReview);
                 const saved = writeReviewsToJSON(dynamicReviews);
-            
-            if (!saved) {
-                console.error(`❌ Error saving review to JSON for ${name}`);
-                return res.status(500).json({ error: 'Error saving review', details: 'Failed to write to reviews.json' });
+                
+                if (!saved) {
+                    console.error(`❌ Error saving review to JSON for ${name}`);
+                    return res.status(500).json({ error: 'Error saving review', details: 'Failed to write to reviews.json' });
+                }
             }
             
             console.log(`✅ ========== REVIEW SAVED TO JSON ==========`);
