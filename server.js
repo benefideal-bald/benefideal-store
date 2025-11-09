@@ -2317,6 +2317,172 @@ app.get('/api/debug/restore-vlad', (req, res) => {
     });
 });
 
+// Endpoint to restore Таня review - searches on server first, then creates if not found
+app.get('/api/debug/restore-tanya', (req, res) => {
+    console.log('🔧 ========== RESTORE ТАНЯ REVIEW ==========');
+    
+    const tanyaName = 'Таня';
+    const tanyaText = 'все как супер ❤️❤️ спасибо 🤗';
+    
+    // First, check if Таня review exists in JSON file (on server) - use readReviewsFromJSON() to see merged reviews
+    let allReviews = readReviewsFromJSON();
+    
+    // Search for Таня review by name
+    const tanyaReview = allReviews.find(r => 
+        (r.customer_name && r.customer_name.trim() === tanyaName) ||
+        (r.review_text && r.review_text.includes('супер') && r.review_text.includes('❤️'))
+    );
+    
+    if (tanyaReview) {
+        console.log(`✅ Found Таня review!`);
+        return res.json({
+            success: true,
+            message: 'Таня review found - it should be visible now',
+            review: {
+                name: tanyaReview.customer_name,
+                email: tanyaReview.customer_email,
+                text: tanyaReview.review_text,
+                rating: tanyaReview.rating,
+                created_at: tanyaReview.created_at,
+                is_static: tanyaReview.is_static || false,
+                order_id: tanyaReview.order_id || null
+            },
+            note: 'Review is already in the system. If it\'s not visible, check sync endpoint.'
+        });
+    }
+    
+    // Check database
+    db.all(`SELECT * FROM reviews WHERE customer_name = ? OR review_text LIKE ? ORDER BY created_at DESC`, 
+        [tanyaName, '%супер%'], (err, dbReviews) => {
+        if (err) {
+            console.error('❌ Error checking database:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        if (dbReviews && dbReviews.length > 0) {
+            console.log(`✅ Found ${dbReviews.length} Таня review(s) in database`);
+            // Migrate to JSON
+            const dbReview = dbReviews[0];
+            const newReview = {
+                id: `review_${Date.now()}_tanya`,
+                customer_name: dbReview.customer_name || tanyaName,
+                customer_email: dbReview.customer_email,
+                review_text: dbReview.review_text || tanyaText,
+                rating: dbReview.rating || 5,
+                order_id: dbReview.order_id || null,
+                created_at: dbReview.created_at || new Date().toISOString(),
+                is_static: false
+            };
+            
+            // Read current dynamic reviews
+            let dynamicReviews = [];
+            if (fs.existsSync(reviewsJsonPath)) {
+                try {
+                    const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+                    dynamicReviews = JSON.parse(data);
+                } catch (error) {
+                    console.error('❌ Error reading reviews.json:', error);
+                }
+            }
+            
+            // Check if already exists
+            const exists = dynamicReviews.find(r => 
+                (r.customer_email && r.customer_email.toLowerCase() === newReview.customer_email.toLowerCase()) ||
+                (r.customer_name && r.customer_name.trim() === tanyaName)
+            );
+            
+            if (!exists) {
+                dynamicReviews.push(newReview);
+                const saved = writeReviewsToJSON(dynamicReviews);
+                
+                if (saved) {
+                    console.log(`✅ Migrated Таня review from database to JSON`);
+                    return res.json({
+                        success: true,
+                        message: 'Таня review found in database and migrated to JSON',
+                        review: newReview
+                    });
+                }
+            }
+        }
+        
+        // Not found - try to find email from subscriptions
+        db.all(`SELECT * FROM subscriptions WHERE customer_name LIKE ? ORDER BY purchase_date DESC LIMIT 1`, 
+            [`%${tanyaName}%`], (err, orders) => {
+            if (err) {
+                console.error('❌ Error finding order:', err);
+            }
+            
+            const orderId = orders && orders.length > 0 ? orders[0].order_id : null;
+            const email = orders && orders.length > 0 ? orders[0].customer_email : null;
+            
+            if (!email) {
+                return res.json({
+                    success: false,
+                    message: 'Таня review not found. Need email to create new review.',
+                    note: 'Please provide email or order_id to create review'
+                });
+            }
+            
+            // Create review with correct text
+            const newReview = {
+                id: `review_${Date.now()}_tanya_restored`,
+                customer_name: tanyaName,
+                customer_email: email,
+                review_text: tanyaText,
+                rating: 5,
+                order_id: orderId,
+                created_at: new Date().toISOString(),
+                is_static: false
+            };
+            
+            // Read current dynamic reviews
+            let dynamicReviews = [];
+            if (fs.existsSync(reviewsJsonPath)) {
+                try {
+                    const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+                    dynamicReviews = JSON.parse(data);
+                } catch (error) {
+                    console.error('❌ Error reading reviews.json:', error);
+                }
+            }
+            
+            // Check if already exists
+            const exists = dynamicReviews.find(r => 
+                (r.customer_email && r.customer_email.toLowerCase() === email.toLowerCase()) ||
+                (r.customer_name && r.customer_name.trim() === tanyaName)
+            );
+            
+            if (!exists) {
+                dynamicReviews.push(newReview);
+                const saved = writeReviewsToJSON(dynamicReviews);
+                
+                if (saved) {
+                    console.log(`✅ Created new Таня review`);
+                    res.json({
+                        success: true,
+                        message: 'Таня review created successfully',
+                        review: newReview
+                    });
+                } else {
+                    console.error(`❌ Failed to save Таня review`);
+                    res.status(500).json({
+                        success: false,
+                        error: 'Failed to save review to JSON file'
+                    });
+                }
+            } else {
+                console.log(`⚠️ Таня review already exists`);
+                res.json({
+                    success: true,
+                    message: 'Таня review already exists',
+                    review: exists
+                });
+            }
+        });
+    });
+});
+
 // Debug endpoint to check all reviews in JSON file (for finding lost reviews like Влад, Таня)
 app.get('/api/debug/check-all-reviews-json', (req, res) => {
     try {
