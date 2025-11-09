@@ -856,9 +856,41 @@ app.post('/api/review', (req, res) => {
                 is_static: false
             };
             
-            // КРИТИЧЕСКИ ВАЖНО: Читаем ТОЛЬКО динамические отзывы из data/reviews.json
-            // НЕ используем readReviewsFromJSON(), потому что она объединяет root + data
-            // Нам нужно сохранить ТОЛЬКО динамические отзывы в data/reviews.json
+            // КРИТИЧЕСКИ ВАЖНО: Сохраняем ВСЕ отзывы в корневой reviews.json (Git версия)!
+            // Пользователь хочет, чтобы ВСЕ отзывы были в одном месте - в корневом reviews.json
+            // Читаем корневой reviews.json (Git версия)
+            let allReviewsInRoot = [];
+            if (fs.existsSync(reviewsJsonPathGit)) {
+                try {
+                    const rootData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
+                    allReviewsInRoot = JSON.parse(rootData);
+                } catch (error) {
+                    console.warn('⚠️ Error reading root reviews.json:', error.message);
+                }
+            }
+            
+            // Проверяем, нет ли уже такого отзыва (по email + order_id)
+            const email = normalizedEmail.toLowerCase().trim();
+            const orderId = newestOrderId || 'null';
+            const existsInRoot = allReviewsInRoot.some(r => {
+                const rEmail = (r.customer_email || '').toLowerCase().trim();
+                const rOrderId = r.order_id || 'null';
+                return rEmail === email && rOrderId === orderId;
+            });
+            
+            if (!existsInRoot) {
+                // Добавляем новый отзыв в корневой reviews.json
+                allReviewsInRoot.push(newReview);
+                
+                // Удаляем дубликаты перед сохранением
+                const uniqueReviews = removeDuplicateReviews(allReviewsInRoot);
+                
+                // Сохраняем ВСЕ отзывы в корневой reviews.json (Git версия)
+                fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(uniqueReviews, null, 2), 'utf8');
+                console.log(`✅ Saved review to root reviews.json (Git) - total: ${uniqueReviews.length} reviews`);
+            }
+            
+            // Также сохраняем в data/reviews.json для резервного копирования
             let dynamicReviews = [];
             if (fs.existsSync(reviewsJsonPath)) {
                 try {
@@ -869,16 +901,16 @@ app.post('/api/review', (req, res) => {
                 }
             }
             
-            // Добавляем новый отзыв в массив динамических отзывов
-            dynamicReviews.push(newReview);
+            // Проверяем, нет ли уже такого отзыва в data/reviews.json
+            const existsInData = dynamicReviews.some(r => {
+                const rEmail = (r.customer_email || '').toLowerCase().trim();
+                const rOrderId = r.order_id || 'null';
+                return rEmail === email && rOrderId === orderId;
+            });
             
-            // КРИТИЧЕСКИ ВАЖНО: Сохраняем ТОЛЬКО динамические отзывы в data/reviews.json
-            // НЕ сохраняем статические отзывы из Git - они уже в корневом reviews.json
-            // При чтении отзывов функция readReviewsFromJSON() автоматически объединяет:
-            // - корневой reviews.json (из Git) - статические отзывы
-            // - data/reviews.json (на сервере) - динамические отзывы
-            // Это гарантирует, что динамические отзывы НЕ потеряются при деплое!
-            const saved = writeReviewsToJSON(dynamicReviews);
+            if (!existsInData) {
+                dynamicReviews.push(newReview);
+                const saved = writeReviewsToJSON(dynamicReviews);
             
             if (!saved) {
                 console.error(`❌ Error saving review to JSON for ${name}`);
@@ -1261,16 +1293,33 @@ function readReviewsFromJSON() {
             console.log(`✅ Using ${rootReviews.length} reviews from root (Git)`);
         }
         
-        // Удаляем дубликаты и сохраняем синхронизированную версию
+        // Удаляем дубликаты
         const uniqueReviews = removeDuplicateReviews(mergedReviews);
         
-        // КРИТИЧЕСКИ ВАЖНО: Сохраняем ТОЛЬКО в data/reviews.json (персистентное хранилище на Render)
-        // НЕ сохраняем в корневой reviews.json, потому что он перезаписывается при деплое из Git!
-        // data/reviews.json НЕ перезаписывается при деплое на Render - это наше решение!
-        if (mergedReviews.length > 0 || !fs.existsSync(reviewsJsonPath)) {
-            writeReviewsToJSON(uniqueReviews);
-            if (addedDynamic > 0 || rootReviews.length !== existingReviews.length) {
-                console.log(`✅ Synced reviews to data/reviews.json (${uniqueReviews.length} total, ${rootReviews.length} from Git)`);
+        // КРИТИЧЕСКИ ВАЖНО: НЕ сохраняем все объединенные отзывы в data/reviews.json!
+        // uniqueReviews содержит ВСЕ отзывы (root + data), но мы должны сохранять ТОЛЬКО динамические!
+        // Если сохранить все, то при следующем чтении мы получим дубликаты (root + data, где data = все отзывы)
+        // Вместо этого сохраняем ТОЛЬКО динамические отзывы (те, которых нет в root)
+        
+        // Находим динамические отзывы (те, которых нет в корневом файле)
+        const dynamicReviewsToSave = uniqueReviews.filter(review => {
+            const email = (review.customer_email || '').toLowerCase().trim();
+            const orderId = review.order_id || 'null';
+            const name = (review.customer_name || '').trim();
+            const text = (review.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ').trim();
+            
+            const key1 = `email_order:${email}_${orderId}`;
+            const key2 = text.length > 20 ? `name_email_text:${name.toLowerCase()}_${email}_${text.substring(0, 200)}` : null;
+            
+            // Сохраняем только те, которых НЕТ в корневом файле
+            return !rootReviewKeys.has(key1) && !(key2 && rootReviewKeys.has(key2));
+        });
+        
+        // Сохраняем ТОЛЬКО динамические отзывы в data/reviews.json
+        if (dynamicReviewsToSave.length !== existingReviews.length || !fs.existsSync(reviewsJsonPath)) {
+            writeReviewsToJSON(dynamicReviewsToSave);
+            if (addedDynamic > 0 || dynamicReviewsToSave.length !== existingReviews.length) {
+                console.log(`✅ Saved ${dynamicReviewsToSave.length} dynamic reviews to data/reviews.json (${rootReviews.length} static in root)`);
             }
         }
         
@@ -2483,6 +2532,94 @@ app.get('/api/debug/restore-tanya', (req, res) => {
             }
         });
     });
+});
+
+// Endpoint to FORCE create Таня review - creates it even if email not found
+app.get('/api/debug/force-create-tanya', (req, res) => {
+    console.log('🔧 ========== FORCE CREATE ТАНЯ REVIEW ==========');
+    
+    const tanyaName = 'Таня';
+    const tanyaText = 'все как супер ❤️❤️ спасибо 🤗';
+    const tanyaEmail = req.query.email || 'tanya@example.com'; // Use provided email or default
+    const tanyaOrderId = req.query.order_id || null;
+    
+    // Read current dynamic reviews
+    let dynamicReviews = [];
+    if (fs.existsSync(reviewsJsonPath)) {
+        try {
+            const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+            dynamicReviews = JSON.parse(data);
+        } catch (error) {
+            console.error('❌ Error reading reviews.json:', error);
+        }
+    }
+    
+    // Check if already exists
+    const exists = dynamicReviews.find(r => 
+        (r.customer_name && r.customer_name.trim() === tanyaName) ||
+        (r.review_text && r.review_text.includes('супер') && r.review_text.includes('❤️'))
+    );
+    
+    if (exists) {
+        console.log(`⚠️ Таня review already exists`);
+        return res.json({
+            success: true,
+            message: 'Таня review already exists',
+            review: exists
+        });
+    }
+    
+    // Create review with correct text
+    const newReview = {
+        id: `review_${Date.now()}_tanya_forced`,
+        customer_name: tanyaName,
+        customer_email: tanyaEmail,
+        review_text: tanyaText,
+        rating: 5,
+        order_id: tanyaOrderId,
+        created_at: new Date().toISOString(),
+        is_static: false
+    };
+    
+    // Add to dynamic reviews
+    dynamicReviews.push(newReview);
+    const saved = writeReviewsToJSON(dynamicReviews);
+    
+    if (saved) {
+        console.log(`✅ FORCED created Таня review`);
+        console.log(`   Name: ${tanyaName}`);
+        console.log(`   Email: ${tanyaEmail}`);
+        console.log(`   Text: ${tanyaText}`);
+        console.log(`   Saved to: data/reviews.json`);
+        
+        // Also save to database
+        const stmt = db.prepare(`
+            INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `);
+        
+        stmt.run([tanyaName, tanyaEmail, tanyaText, 5, tanyaOrderId], function(err) {
+            if (err) {
+                console.warn(`⚠️ Failed to save to database (but saved to JSON): ${err.message}`);
+            } else {
+                console.log(`✅ Also saved to database`);
+            }
+            stmt.finalize();
+        });
+        
+        res.json({
+            success: true,
+            message: 'Таня review FORCED created successfully',
+            review: newReview,
+            note: 'Review is now in data/reviews.json and will be visible on site'
+        });
+    } else {
+        console.error(`❌ Failed to save Таня review`);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to save review to JSON file'
+        });
+    }
 });
 
 // Debug endpoint to check all reviews in JSON file (for finding lost reviews like Влад, Таня)
