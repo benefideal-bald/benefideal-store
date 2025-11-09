@@ -856,16 +856,29 @@ app.post('/api/review', (req, res) => {
                 is_static: false
             };
             
-            // Добавляем новый отзыв в массив
-            allReviews.push(newReview);
+            // КРИТИЧЕСКИ ВАЖНО: Читаем ТОЛЬКО динамические отзывы из data/reviews.json
+            // НЕ используем readReviewsFromJSON(), потому что она объединяет root + data
+            // Нам нужно сохранить ТОЛЬКО динамические отзывы в data/reviews.json
+            let dynamicReviews = [];
+            if (fs.existsSync(reviewsJsonPath)) {
+                try {
+                    const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+                    dynamicReviews = JSON.parse(data);
+                } catch (error) {
+                    console.warn('⚠️ Error reading data/reviews.json:', error.message);
+                }
+            }
             
-            // КРИТИЧЕСКИ ВАЖНО: Сохраняем ТОЛЬКО в data/reviews.json (персистентное хранилище на Render)
-            // НЕ сохраняем в корневой reviews.json, потому что он перезаписывается при деплое из Git!
+            // Добавляем новый отзыв в массив динамических отзывов
+            dynamicReviews.push(newReview);
+            
+            // КРИТИЧЕСКИ ВАЖНО: Сохраняем ТОЛЬКО динамические отзывы в data/reviews.json
+            // НЕ сохраняем статические отзывы из Git - они уже в корневом reviews.json
             // При чтении отзывов функция readReviewsFromJSON() автоматически объединяет:
             // - корневой reviews.json (из Git) - статические отзывы
             // - data/reviews.json (на сервере) - динамические отзывы
             // Это гарантирует, что динамические отзывы НЕ потеряются при деплое!
-            const saved = writeReviewsToJSON(allReviews);
+            const saved = writeReviewsToJSON(dynamicReviews);
             
             if (!saved) {
                 console.error(`❌ Error saving review to JSON for ${name}`);
