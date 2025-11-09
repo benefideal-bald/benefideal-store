@@ -914,35 +914,23 @@ function removeDuplicateReviews(reviews) {
     // 2. Same email + order_id (same person, same order)
     // 3. Same name + email + text (same person, same review text, even if order_id differs)
     
-    // First pass: group by customer_name and keep only newest
-    const byName = new Map();
-    reviews.forEach((review) => {
-        const name = (review.customer_name || '').trim();
-        if (!name) return; // Skip reviews without name
-        
-        const existing = byName.get(name);
-        if (!existing) {
-            byName.set(name, review);
-        } else {
-            // Keep the one with newer created_at date
-            const existingDate = existing.created_at || '';
-            const newDate = review.created_at || '';
-            if (newDate > existingDate) {
-                byName.set(name, review);
-                console.log(`   🔄 Replaced duplicate by name: ${name} (kept newer version)`);
-            } else {
-                console.log(`   🗑️ Removed duplicate by name: ${name} (kept older version)`);
-            }
-        }
+    // КРИТИЧЕСКИ ВАЖНО: НЕ группируем по имени!
+    // Разные люди могут иметь одинаковые имена (например, "Влад", "Алексей" и т.д.)
+    // Поэтому проверяем дубликаты только по email + order_id или email + name + text
+    // Это гарантирует, что разные люди с одинаковыми именами не потеряют свои отзывы
+    
+    // Сортируем по дате создания (новые первыми), чтобы при дубликатах сохранять самые новые
+    const sortedReviews = [...reviews].sort((a, b) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA; // Новые первыми
     });
     
-    // Convert back to array and apply additional duplicate checks
-    const nameFilteredReviews = Array.from(byName.values());
     const uniqueReviews = [];
     const seenKeys = new Set();
     const duplicatesRemoved = [];
     
-    nameFilteredReviews.forEach((review, index) => {
+    sortedReviews.forEach((review, index) => {
         const email = (review.customer_email || '').toLowerCase().trim();
         const orderId = review.order_id || 'null';
         const name = (review.customer_name || '').trim();
@@ -991,6 +979,8 @@ function removeDuplicateReviews(reviews) {
     
     if (duplicatesRemoved.length > 0) {
         console.log(`   ✅ Removed ${duplicatesRemoved.length} duplicate reviews (${reviews.length} → ${uniqueReviews.length})`);
+    } else {
+        console.log(`   ✅ No duplicates found (${reviews.length} reviews)`);
     }
     
     return uniqueReviews;
@@ -1195,12 +1185,24 @@ function readReviewsFromJSON() {
             }
         }
         
-        // Создаем Set имен из корневого файла (приоритетные версии)
-        const rootReviewNames = new Set();
+        // КРИТИЧЕСКИ ВАЖНО: Проверяем дубликаты по email + order_id, НЕ только по имени!
+        // Разные люди могут иметь одинаковые имена, поэтому нужно проверять уникальность по email + order_id
+        // Создаем Set ключей из корневого файла для проверки дубликатов
+        const rootReviewKeys = new Set();
         rootReviews.forEach(review => {
+            const email = (review.customer_email || '').toLowerCase().trim();
+            const orderId = review.order_id || 'null';
             const name = (review.customer_name || '').trim();
-            if (name) {
-                rootReviewNames.add(name);
+            const text = (review.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ').trim();
+            
+            // Key 1: email + order_id (самый точный)
+            const key1 = `email_order:${email}_${orderId}`;
+            rootReviewKeys.add(key1);
+            
+            // Key 2: email + name + text (для случаев, когда order_id может отличаться)
+            if (text.length > 20) {
+                const key2 = `name_email_text:${name.toLowerCase()}_${email}_${text.substring(0, 200)}`;
+                rootReviewKeys.add(key2);
             }
         });
         
@@ -1209,11 +1211,27 @@ function readReviewsFromJSON() {
         let addedDynamic = 0;
         
         existingReviews.forEach(review => {
+            const email = (review.customer_email || '').toLowerCase().trim();
+            const orderId = review.order_id || 'null';
             const name = (review.customer_name || '').trim();
-            // Добавляем только те отзывы, которых НЕТ в корневом файле (динамические)
-            if (name && !rootReviewNames.has(name)) {
+            const text = (review.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ').trim();
+            
+            if (!name) return; // Пропускаем отзывы без имени
+            
+            // Key 1: email + order_id
+            const key1 = `email_order:${email}_${orderId}`;
+            // Key 2: email + name + text
+            const key2 = text.length > 20 ? `name_email_text:${name.toLowerCase()}_${email}_${text.substring(0, 200)}` : null;
+            
+            // Добавляем только те отзывы, которых НЕТ в корневом файле (проверяем по ключам, не по имени!)
+            const existsInRoot = rootReviewKeys.has(key1) || (key2 && rootReviewKeys.has(key2));
+            
+            if (!existsInRoot) {
                 mergedReviews.push(review);
                 addedDynamic++;
+                console.log(`   ✅ Added dynamic review: ${name} (${email})`);
+            } else {
+                console.log(`   🗑️ Skipped duplicate dynamic review: ${name} (${email}) - already in root file`);
             }
         });
         
