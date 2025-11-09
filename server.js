@@ -1404,16 +1404,27 @@ app.get('/api/debug/sync-reviews-from-root', (req, res) => {
             }
         }
         
-        // Создаем Set имен из корневого файла (это версии из Git - ПРИОРИТЕТНЫЕ)
-        const rootReviewNames = new Set();
+        // КРИТИЧЕСКИ ВАЖНО: Проверяем дубликаты по email + order_id, НЕ только по имени!
+        // Разные люди могут иметь одинаковые имена, поэтому нужно проверять уникальность по email + order_id
+        const rootReviewKeys = new Set();
         rootReviews.forEach(review => {
+            const email = (review.customer_email || '').toLowerCase().trim();
+            const orderId = review.order_id || 'null';
             const name = (review.customer_name || '').trim();
-            if (name) {
-                rootReviewNames.add(name);
+            const text = (review.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ').trim();
+            
+            // Key 1: email + order_id (самый точный)
+            const key1 = `email_order:${email}_${orderId}`;
+            rootReviewKeys.add(key1);
+            
+            // Key 2: email + name + text (для случаев, когда order_id может отличаться)
+            if (text.length > 20) {
+                const key2 = `name_email_text:${name.toLowerCase()}_${email}_${text.substring(0, 200)}`;
+                rootReviewKeys.add(key2);
             }
         });
         
-        console.log(`📋 Root file has ${rootReviewNames.size} unique names:`, Array.from(rootReviewNames).join(', '));
+        console.log(`📋 Root file has ${rootReviews.length} reviews`);
         
         // Финальный список: сначала ВСЕ отзывы из корневого файла (приоритет!)
         const finalReviews = [...rootReviews];
@@ -1421,15 +1432,30 @@ app.get('/api/debug/sync-reviews-from-root', (req, res) => {
         
         // Затем добавляем ТОЛЬКО те отзывы из существующего файла, которых НЕТ в корневом
         // (динамические отзывы, созданные через форму)
+        // КРИТИЧЕСКИ ВАЖНО: Проверяем по email + order_id, НЕ только по имени!
         let addedDynamic = 0;
         existingReviews.forEach(review => {
+            const email = (review.customer_email || '').toLowerCase().trim();
+            const orderId = review.order_id || 'null';
             const name = (review.customer_name || '').trim();
-            if (name && !rootReviewNames.has(name)) {
+            const text = (review.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ').trim();
+            
+            if (!name) return; // Пропускаем отзывы без имени
+            
+            // Key 1: email + order_id
+            const key1 = `email_order:${email}_${orderId}`;
+            // Key 2: email + name + text
+            const key2 = text.length > 20 ? `name_email_text:${name.toLowerCase()}_${email}_${text.substring(0, 200)}` : null;
+            
+            // Добавляем только те отзывы, которых НЕТ в корневом файле (проверяем по ключам, не по имени!)
+            const existsInRoot = rootReviewKeys.has(key1) || (key2 && rootReviewKeys.has(key2));
+            
+            if (!existsInRoot) {
                 finalReviews.push(review);
                 addedDynamic++;
-                console.log(`✅ Added dynamic review (not in root): ${name}`);
-            } else if (name && rootReviewNames.has(name)) {
-                console.log(`🗑️ SKIPPED old version from server: ${name} (replaced with version from root/Git)`);
+                console.log(`✅ Added dynamic review (not in root): ${name} (${email})`);
+            } else {
+                console.log(`🗑️ SKIPPED duplicate dynamic review: ${name} (${email}) - already in root file`);
             }
         });
         
@@ -1469,7 +1495,7 @@ app.get('/api/debug/sync-reviews-from-root', (req, res) => {
                 name: r.customer_name,
                 text: r.review_text.substring(0, 50) + '...',
                 created_at: r.created_at,
-                source: rootReviewNames.has(r.customer_name) ? 'root (Git)' : 'dynamic'
+                source: rootReviewKeys.has(`email_order:${(r.customer_email || '').toLowerCase().trim()}_${r.order_id || 'null'}`) ? 'root (Git)' : 'dynamic'
             }))
         });
     } catch (error) {
