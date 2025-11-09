@@ -556,6 +556,53 @@ app.post('/api/test-reminder', (req, res) => {
     stmt.finalize();
 });
 
+// Endpoint to create Pashok's test subscription (can be called via GET from browser)
+app.get('/api/create-pashok', (req, res) => {
+    // Purchase date: October 9, 2025 at 22:15 UTC (one month ago)
+    const purchaseDate = new Date('2025-10-09T22:15:00Z');
+    
+    console.log('📝 Creating Pashok subscription...');
+    console.log('   Purchase date:', purchaseDate.toISOString());
+    
+    // Create subscription
+    const stmt = db.prepare(`
+        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(['Пашок', 'test555@gmail.com', 'Chat-GPT Plus', 1, 3, purchaseDate.toISOString(), 'ORDER-PASHOK-20251009'], function(err) {
+        if (err) {
+            console.error('❌ Error creating Pashok subscription:', err);
+            stmt.finalize();
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        const subscriptionId = this.lastID;
+        console.log(`✅ Pashok subscription created: ID=${subscriptionId}`);
+        
+        stmt.finalize();
+        
+        // Generate reminders using the same function as real subscriptions
+        generateReminders(subscriptionId, 1, 3, purchaseDate);
+        
+        // Get all reminders that were created
+        db.all(`SELECT reminder_date, reminder_type FROM reminders WHERE subscription_id = ? ORDER BY reminder_date`, [subscriptionId], (err, reminders) => {
+            if (err) {
+                console.error('❌ Error fetching reminders:', err);
+            }
+            
+            res.json({ 
+                success: true, 
+                message: 'Pashok subscription created successfully',
+                subscription_id: subscriptionId,
+                purchase_date: purchaseDate.toISOString(),
+                reminders: reminders || [],
+                note: 'Reminders will be sent automatically. Check Telegram at the scheduled times.'
+            });
+        });
+    });
+});
+
 // API endpoint to verify email exists in orders
 app.post('/api/review/verify', (req, res) => {
     const { email } = req.body;
