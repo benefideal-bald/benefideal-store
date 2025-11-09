@@ -1315,8 +1315,10 @@ app.get('/api/reviews', (req, res) => {
     const beforeDedup = allReviews.length;
     allReviews = removeDuplicateReviews(allReviews);
     if (allReviews.length !== beforeDedup) {
-        console.log(`   Removed ${beforeDedup - allReviews.length} duplicates, saving cleaned version...`);
-        writeReviewsToJSON(allReviews);
+        console.log(`   Removed ${beforeDedup - allReviews.length} duplicates`);
+        // НЕ сохраняем все отзывы в data/reviews.json - это объединенные отзывы (root + data)
+        // Сохраняем только динамические отзывы в data/reviews.json через readReviewsFromJSON()
+        // которая уже делает это правильно
     }
     
     // Сортируем отзывы по дате (новые первыми)
