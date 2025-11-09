@@ -1259,6 +1259,61 @@ function readReviewsFromJSON() {
             }
         }
         
+        // КРИТИЧЕСКИ ВАЖНО: Резервное копирование динамических отзывов в корневой reviews.json (Git)
+        // Это защита от потери данных на Render Free плане (файловая система не полностью персистентна)
+        // Если data/reviews.json потеряется, динамические отзывы будут в Git при следующем деплое
+        try {
+            // Находим динамические отзывы (те, которых нет в корневом файле)
+            const dynamicReviews = uniqueReviews.filter(review => {
+                const email = (review.customer_email || '').toLowerCase().trim();
+                const orderId = review.order_id || 'null';
+                const name = (review.customer_name || '').trim();
+                const text = (review.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ').trim();
+                
+                const key1 = `email_order:${email}_${orderId}`;
+                const key2 = text.length > 20 ? `name_email_text:${name.toLowerCase()}_${email}_${text.substring(0, 200)}` : null;
+                
+                return !rootReviewKeys.has(key1) && !(key2 && rootReviewKeys.has(key2));
+            });
+            
+            // Если есть динамические отзывы, добавляем их в корневой файл (для резервного копирования)
+            if (dynamicReviews.length > 0) {
+                const backupReviews = [...rootReviews];
+                let addedToBackup = 0;
+                
+                dynamicReviews.forEach(review => {
+                    const email = (review.customer_email || '').toLowerCase().trim();
+                    const orderId = review.order_id || 'null';
+                    
+                    // Проверяем, нет ли уже такого отзыва в резервной копии
+                    const existsInBackup = backupReviews.some(r => {
+                        const rEmail = (r.customer_email || '').toLowerCase().trim();
+                        const rOrderId = r.order_id || 'null';
+                        return rEmail === email && rOrderId === orderId;
+                    });
+                    
+                    if (!existsInBackup) {
+                        backupReviews.push(review);
+                        addedToBackup++;
+                    }
+                });
+                
+                if (addedToBackup > 0) {
+                    // Удаляем дубликаты перед сохранением
+                    const uniqueBackupReviews = removeDuplicateReviews(backupReviews);
+                    
+                    // Сохраняем резервную копию в корневой файл (будет в Git при следующем деплое)
+                    fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(uniqueBackupReviews, null, 2), 'utf8');
+                    console.log(`💾 Backup: Saved ${addedToBackup} dynamic reviews to root reviews.json (Git) for safety`);
+                    console.log(`   Total reviews in backup: ${uniqueBackupReviews.length}`);
+                }
+            }
+        } catch (error) {
+            // Не критично, если не удалось создать резервную копию
+            // Главное - отзывы сохранены в data/reviews.json
+            console.warn(`⚠️ Failed to create backup in root reviews.json (non-critical): ${error.message}`);
+        }
+        
         return uniqueReviews;
     } catch (error) {
         console.error('❌ Error reading reviews.json:', error);
