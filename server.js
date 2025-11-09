@@ -2304,17 +2304,20 @@ app.get('/api/debug/restore-vlad', (req, res) => {
     });
 });
 
-// Debug endpoint to check all reviews in JSON file (for finding lost reviews like Влад)
+// Debug endpoint to check all reviews in JSON file (for finding lost reviews like Влад, Таня)
 app.get('/api/debug/check-all-reviews-json', (req, res) => {
     try {
-        // Read from data/reviews.json (server's persistent storage)
-        let allReviews = [];
+        // КРИТИЧЕСКИ ВАЖНО: Используем readReviewsFromJSON() - она объединяет все отзывы правильно!
+        // Это гарантирует, что мы видим ВСЕ отзывы (и из Git, и динамические)
+        const allReviews = readReviewsFromJSON();
+        
+        // Also read separately for comparison
+        let dataReviews = [];
         if (fs.existsSync(reviewsJsonPath)) {
             const data = fs.readFileSync(reviewsJsonPath, 'utf8');
-            allReviews = JSON.parse(data);
+            dataReviews = JSON.parse(data);
         }
         
-        // Also read from root reviews.json (Git)
         let rootReviews = [];
         if (fs.existsSync(reviewsJsonPathGit)) {
             const rootData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
@@ -2339,7 +2342,8 @@ app.get('/api/debug/check-all-reviews-json', (req, res) => {
         
         res.json({
             success: true,
-            total_reviews_in_data_json: allReviews.length,
+            total_reviews_merged: allReviews.length, // Объединенные отзывы (как на сайте)
+            total_reviews_in_data_json: dataReviews.length,
             total_reviews_in_root_json: rootReviews.length,
             search_name: searchName || null,
             search_email: searchEmail || null,
@@ -2347,15 +2351,17 @@ app.get('/api/debug/check-all-reviews-json', (req, res) => {
             reviews: filteredReviews.map(r => ({
                 name: r.customer_name,
                 email: r.customer_email,
-                text: r.review_text ? r.review_text.substring(0, 50) + '...' : '',
+                text: r.review_text ? r.review_text.substring(0, 100) + '...' : '',
+                full_text: r.review_text || '',
                 created_at: r.created_at,
                 is_static: r.is_static || false,
-                order_id: r.order_id || null
+                order_id: r.order_id || null,
+                id: r.id || null
             })),
             all_review_names: allReviews.map(r => r.customer_name),
             note: searchName 
                 ? `Searching for reviews with name containing "${searchName}"`
-                : 'All reviews from data/reviews.json'
+                : 'All reviews (merged from root + data/reviews.json - as shown on site)'
         });
     } catch (error) {
         res.status(500).json({
