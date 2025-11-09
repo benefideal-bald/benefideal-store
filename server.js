@@ -585,6 +585,21 @@ app.get('/api/create-pashok', (req, res) => {
         // Generate reminders using the same function as real subscriptions
         generateReminders(subscriptionId, 1, 3, purchaseDate);
         
+        // Also create a test reminder that should trigger immediately (for testing)
+        const testReminderDate = new Date();
+        testReminderDate.setSeconds(testReminderDate.getSeconds() + 10); // 10 seconds from now
+        
+        db.run(`
+            INSERT INTO reminders (subscription_id, reminder_date, reminder_type)
+            VALUES (?, ?, ?)
+        `, [subscriptionId, testReminderDate.toISOString(), 'renewal_2months'], (err) => {
+            if (err) {
+                console.error('❌ Error creating test reminder:', err);
+            } else {
+                console.log(`✅ Test reminder created for ${testReminderDate.toISOString()} (should trigger in ~10 seconds)`);
+            }
+        });
+        
         // Get all reminders that were created
         db.all(`SELECT reminder_date, reminder_type FROM reminders WHERE subscription_id = ? ORDER BY reminder_date`, [subscriptionId], (err, reminders) => {
             if (err) {
@@ -597,7 +612,7 @@ app.get('/api/create-pashok', (req, res) => {
                 subscription_id: subscriptionId,
                 purchase_date: purchaseDate.toISOString(),
                 reminders: reminders || [],
-                note: 'Reminders will be sent automatically. Check Telegram at the scheduled times.'
+                note: 'Reminders will be sent automatically. A test reminder will be sent in ~10 seconds to verify the system works.'
             });
         });
     });
