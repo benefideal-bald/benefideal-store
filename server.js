@@ -859,12 +859,56 @@ app.post('/api/review', (req, res) => {
             // Добавляем новый отзыв в массив
             allReviews.push(newReview);
             
-            // Сохраняем обратно в JSON
+            // КРИТИЧЕСКИ ВАЖНО: Сохраняем в data/reviews.json (для работы на сервере)
             const saved = writeReviewsToJSON(allReviews);
             
             if (!saved) {
                 console.error(`❌ Error saving review to JSON for ${name}`);
                 return res.status(500).json({ error: 'Error saving review', details: 'Failed to write to reviews.json' });
+            }
+            
+            // КРИТИЧЕСКИ ВАЖНО: Также сохраняем в корневой reviews.json (Git версия)!
+            // Это гарантирует, что отзыв не потеряется при деплое
+            try {
+                let rootReviews = [];
+                if (fs.existsSync(reviewsJsonPathGit)) {
+                    try {
+                        const rootData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
+                        rootReviews = JSON.parse(rootData);
+                    } catch (error) {
+                        console.warn('⚠️ Error reading root reviews.json:', error.message);
+                    }
+                }
+                
+                // Проверяем, нет ли уже такого отзыва в корневом файле (по email + order_id)
+                const email = normalizedEmail.toLowerCase().trim();
+                const orderId = newestOrderId || 'null';
+                const key = `email_order:${email}_${orderId}`;
+                
+                const existsInRoot = rootReviews.some(r => {
+                    const rEmail = (r.customer_email || '').toLowerCase().trim();
+                    const rOrderId = r.order_id || 'null';
+                    return rEmail === email && rOrderId === orderId;
+                });
+                
+                if (!existsInRoot) {
+                    // Добавляем новый отзыв в корневой файл
+                    rootReviews.push(newReview);
+                    
+                    // Удаляем дубликаты перед сохранением
+                    const uniqueRootReviews = removeDuplicateReviews(rootReviews);
+                    
+                    // Сохраняем в корневой файл (Git версия)
+                    fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(uniqueRootReviews, null, 2), 'utf8');
+                    console.log(`✅ Review also saved to root reviews.json (Git) - will be in Git on next deploy!`);
+                    console.log(`   Total reviews in root file: ${uniqueRootReviews.length}`);
+                } else {
+                    console.log(`⚠️ Review already exists in root reviews.json (skipped)`);
+                }
+            } catch (error) {
+                // Не критично, если не удалось сохранить в корневой файл
+                // Главное - отзыв сохранен в data/reviews.json
+                console.warn(`⚠️ Failed to save review to root reviews.json (but saved to data/reviews.json): ${error.message}`);
             }
             
             console.log(`✅ ========== REVIEW SAVED TO JSON ==========`);
@@ -875,6 +919,7 @@ app.post('/api/review', (req, res) => {
             console.log(`   Rating: ${rating}`);
             console.log(`   Order ID: "${newestOrderId}"`);
             console.log(`   Created at: "${newReview.created_at}"`);
+            console.log(`   Saved to: data/reviews.json AND root reviews.json (Git)`);
             console.log(`   ======================================`);
             
             // Также сохраняем в базу данных для валидации (опционально, для обратной совместимости)
