@@ -1108,37 +1108,71 @@ function readReviewsFromJSON() {
             console.log(`✅ Created data directory: ${dataDir}`);
         }
         
-        // Если файл в data/ не существует, копируем из Git (начальные отзывы)
-        if (!fs.existsSync(reviewsJsonPath)) {
-            if (fs.existsSync(reviewsJsonPathGit)) {
-                console.log('📋 Copying initial reviews.json from Git to data/ directory...');
-                const initialData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
-                fs.writeFileSync(reviewsJsonPath, initialData, 'utf8');
-                console.log('✅ Initial reviews copied to data/reviews.json');
-                
-                // After copying, try to migrate from database
-                migrateReviewsFromDatabase().then(() => {
-                    console.log('✅ Migration check completed');
-                });
-                
-                return JSON.parse(initialData);
-            } else {
-                console.warn('⚠️ reviews.json not found, creating with empty array');
-                fs.writeFileSync(reviewsJsonPath, JSON.stringify([], null, 2), 'utf8');
-                
-                // Try to migrate from database
-                migrateReviewsFromDatabase().then(() => {
-                    console.log('✅ Migration check completed');
-                });
-                
-                return [];
+        // КРИТИЧЕСКИ ВАЖНО: Всегда синхронизируем с корневым файлом (Git) - это источник правды!
+        // Читаем корневой файл (Git) - приоритетные версии
+        let rootReviews = [];
+        if (fs.existsSync(reviewsJsonPathGit)) {
+            try {
+                const rootData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
+                rootReviews = JSON.parse(rootData);
+                console.log(`📋 Read ${rootReviews.length} reviews from root reviews.json (Git)`);
+            } catch (error) {
+                console.warn('⚠️ Error reading root reviews.json:', error.message);
             }
         }
         
-        const data = fs.readFileSync(reviewsJsonPath, 'utf8');
-        const reviews = JSON.parse(data);
+        // Читаем существующие отзывы из data/reviews.json (для динамических отзывов)
+        let existingReviews = [];
+        if (fs.existsSync(reviewsJsonPath)) {
+            try {
+                const existingData = fs.readFileSync(reviewsJsonPath, 'utf8');
+                existingReviews = JSON.parse(existingData);
+                console.log(`📋 Read ${existingReviews.length} reviews from data/reviews.json`);
+            } catch (error) {
+                console.warn('⚠️ Error reading data/reviews.json:', error.message);
+            }
+        }
         
-        return reviews;
+        // Создаем Set имен из корневого файла (приоритетные версии)
+        const rootReviewNames = new Set();
+        rootReviews.forEach(review => {
+            const name = (review.customer_name || '').trim();
+            if (name) {
+                rootReviewNames.add(name);
+            }
+        });
+        
+        // Объединяем: сначала все из корневого файла (приоритет!), затем динамические из data/
+        const mergedReviews = [...rootReviews];
+        let addedDynamic = 0;
+        
+        existingReviews.forEach(review => {
+            const name = (review.customer_name || '').trim();
+            // Добавляем только те отзывы, которых НЕТ в корневом файле (динамические)
+            if (name && !rootReviewNames.has(name)) {
+                mergedReviews.push(review);
+                addedDynamic++;
+            }
+        });
+        
+        if (addedDynamic > 0) {
+            console.log(`✅ Merged: ${rootReviews.length} from root (Git) + ${addedDynamic} dynamic = ${mergedReviews.length} total`);
+        } else if (rootReviews.length > 0) {
+            console.log(`✅ Using ${rootReviews.length} reviews from root (Git)`);
+        }
+        
+        // Удаляем дубликаты и сохраняем синхронизированную версию
+        const uniqueReviews = removeDuplicateReviews(mergedReviews);
+        
+        // Сохраняем синхронизированную версию в data/reviews.json
+        if (mergedReviews.length > 0 || !fs.existsSync(reviewsJsonPath)) {
+            writeReviewsToJSON(uniqueReviews);
+            if (addedDynamic > 0 || rootReviews.length !== existingReviews.length) {
+                console.log(`✅ Synced reviews to data/reviews.json (${uniqueReviews.length} total, ${rootReviews.length} from Git)`);
+            }
+        }
+        
+        return uniqueReviews;
     } catch (error) {
         console.error('❌ Error reading reviews.json:', error);
         return [];

@@ -113,11 +113,13 @@
                     // Determine API URL - try current origin first, then localhost
                     // For all reviews page, sort DESC (newest first, oldest last)
                     let apiUrl;
+                    // Запрашиваем ВСЕ отзывы без лимита для страницы всех отзывов
                     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
                         apiUrl = 'http://localhost:3000/api/reviews?sort=DESC';
                     } else {
                         apiUrl = `${window.location.origin}/api/reviews?sort=DESC`;
                     }
+                    console.log('🔗 Fetching reviews from:', apiUrl);
                     
                     const response = await fetch(apiUrl);
                     const data = await response.json();
