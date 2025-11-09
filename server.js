@@ -1206,122 +1206,25 @@ function migrateReviewsFromDatabase() {
 // Helper function to read reviews from JSON file
 function readReviewsFromJSON() {
     try {
-        // Создаем директорию data/ если её нет
-        const dataDir = path.dirname(reviewsJsonPath);
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-            console.log(`✅ Created data directory: ${dataDir}`);
-        }
-        
-        // КРИТИЧЕСКИ ВАЖНО: Всегда синхронизируем с корневым файлом (Git) - это источник правды!
-        // Читаем корневой файл (Git) - приоритетные версии
-        let rootReviews = [];
+        // КРИТИЧЕСКИ ВАЖНО: Все отзывы теперь в одном месте - в корневом reviews.json (Git версия)!
+        // Пользователь хочет, чтобы ВСЕ отзывы были в одном месте - в корневом reviews.json
+        // Читаем ТОЛЬКО из корневого reviews.json (Git версия)
+        let allReviews = [];
         if (fs.existsSync(reviewsJsonPathGit)) {
             try {
                 const rootData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
-                rootReviews = JSON.parse(rootData);
-                console.log(`📋 Read ${rootReviews.length} reviews from root reviews.json (Git)`);
+                allReviews = JSON.parse(rootData);
+                console.log(`📋 Read ${allReviews.length} reviews from root reviews.json (Git) - ALL reviews in one place!`);
             } catch (error) {
                 console.warn('⚠️ Error reading root reviews.json:', error.message);
             }
         }
         
-        // Читаем существующие отзывы из data/reviews.json (для динамических отзывов)
-        let existingReviews = [];
-        if (fs.existsSync(reviewsJsonPath)) {
-            try {
-                const existingData = fs.readFileSync(reviewsJsonPath, 'utf8');
-                existingReviews = JSON.parse(existingData);
-                console.log(`📋 Read ${existingReviews.length} reviews from data/reviews.json`);
-            } catch (error) {
-                console.warn('⚠️ Error reading data/reviews.json:', error.message);
-            }
-        }
+        // Удаляем дубликаты перед возвратом
+        const uniqueReviews = removeDuplicateReviews(allReviews);
         
-        // КРИТИЧЕСКИ ВАЖНО: Проверяем дубликаты по email + order_id, НЕ только по имени!
-        // Разные люди могут иметь одинаковые имена, поэтому нужно проверять уникальность по email + order_id
-        // Создаем Set ключей из корневого файла для проверки дубликатов
-        const rootReviewKeys = new Set();
-        rootReviews.forEach(review => {
-            const email = (review.customer_email || '').toLowerCase().trim();
-            const orderId = review.order_id || 'null';
-            const name = (review.customer_name || '').trim();
-            const text = (review.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ').trim();
-            
-            // Key 1: email + order_id (самый точный)
-            const key1 = `email_order:${email}_${orderId}`;
-            rootReviewKeys.add(key1);
-            
-            // Key 2: email + name + text (для случаев, когда order_id может отличаться)
-            if (text.length > 20) {
-                const key2 = `name_email_text:${name.toLowerCase()}_${email}_${text.substring(0, 200)}`;
-                rootReviewKeys.add(key2);
-            }
-        });
-        
-        // Объединяем: сначала все из корневого файла (приоритет!), затем динамические из data/
-        const mergedReviews = [...rootReviews];
-        let addedDynamic = 0;
-        
-        existingReviews.forEach(review => {
-            const email = (review.customer_email || '').toLowerCase().trim();
-            const orderId = review.order_id || 'null';
-            const name = (review.customer_name || '').trim();
-            const text = (review.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ').trim();
-            
-            if (!name) return; // Пропускаем отзывы без имени
-            
-            // Key 1: email + order_id
-            const key1 = `email_order:${email}_${orderId}`;
-            // Key 2: email + name + text
-            const key2 = text.length > 20 ? `name_email_text:${name.toLowerCase()}_${email}_${text.substring(0, 200)}` : null;
-            
-            // Добавляем только те отзывы, которых НЕТ в корневом файле (проверяем по ключам, не по имени!)
-            const existsInRoot = rootReviewKeys.has(key1) || (key2 && rootReviewKeys.has(key2));
-            
-            if (!existsInRoot) {
-                mergedReviews.push(review);
-                addedDynamic++;
-                console.log(`   ✅ Added dynamic review: ${name} (${email})`);
-            } else {
-                console.log(`   🗑️ Skipped duplicate dynamic review: ${name} (${email}) - already in root file`);
-            }
-        });
-        
-        if (addedDynamic > 0) {
-            console.log(`✅ Merged: ${rootReviews.length} from root (Git) + ${addedDynamic} dynamic = ${mergedReviews.length} total`);
-        } else if (rootReviews.length > 0) {
-            console.log(`✅ Using ${rootReviews.length} reviews from root (Git)`);
-        }
-        
-        // Удаляем дубликаты
-        const uniqueReviews = removeDuplicateReviews(mergedReviews);
-        
-        // КРИТИЧЕСКИ ВАЖНО: НЕ сохраняем все объединенные отзывы в data/reviews.json!
-        // uniqueReviews содержит ВСЕ отзывы (root + data), но мы должны сохранять ТОЛЬКО динамические!
-        // Если сохранить все, то при следующем чтении мы получим дубликаты (root + data, где data = все отзывы)
-        // Вместо этого сохраняем ТОЛЬКО динамические отзывы (те, которых нет в root)
-        
-        // Находим динамические отзывы (те, которых нет в корневом файле)
-        const dynamicReviewsToSave = uniqueReviews.filter(review => {
-            const email = (review.customer_email || '').toLowerCase().trim();
-            const orderId = review.order_id || 'null';
-            const name = (review.customer_name || '').trim();
-            const text = (review.review_text || '').trim().toLowerCase().replace(/\s+/g, ' ').trim();
-            
-            const key1 = `email_order:${email}_${orderId}`;
-            const key2 = text.length > 20 ? `name_email_text:${name.toLowerCase()}_${email}_${text.substring(0, 200)}` : null;
-            
-            // Сохраняем только те, которых НЕТ в корневом файле
-            return !rootReviewKeys.has(key1) && !(key2 && rootReviewKeys.has(key2));
-        });
-        
-        // Сохраняем ТОЛЬКО динамические отзывы в data/reviews.json
-        if (dynamicReviewsToSave.length !== existingReviews.length || !fs.existsSync(reviewsJsonPath)) {
-            writeReviewsToJSON(dynamicReviewsToSave);
-            if (addedDynamic > 0 || dynamicReviewsToSave.length !== existingReviews.length) {
-                console.log(`✅ Saved ${dynamicReviewsToSave.length} dynamic reviews to data/reviews.json (${rootReviews.length} static in root)`);
-            }
+        if (uniqueReviews.length !== allReviews.length) {
+            console.log(`   Removed ${allReviews.length - uniqueReviews.length} duplicates`);
         }
         
         return uniqueReviews;
