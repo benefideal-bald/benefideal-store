@@ -15,13 +15,23 @@
     <header class="header">
         <div class="container">
             <div class="nav">
+                <!-- Гамбургер-меню (только для мобильных) -->
+                <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Меню">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <!-- Логотип (по центру на мобильных) -->
                 <a href="index.html" class="logo">Benefideal</a>
-                <nav class="nav-links">
-                    <a href="index.html">Главная</a>
-                    <a href="index.html#subscriptions">Подписки</a>
+                
+                <!-- Навигация (скрыта на мобильных) -->
+                <nav class="nav-links" id="navLinks">
+                    <a href="index.html#home">Главная</a>
+                    <a href="index.html#subscriptions">Товары</a>
                     <a href="index.html#about">О нас</a>
                     <a href="index.html#contact">Контакты</a>
                 </nav>
+                
+                <!-- Корзина -->
                 <div class="nav-actions">
                     <button class="cart-toggle" onclick="toggleCart()">
                         <i class="fas fa-shopping-cart"></i>
@@ -29,6 +39,16 @@
                     </button>
                 </div>
             </div>
+        </div>
+        
+        <!-- Мобильное меню (вертикальное) -->
+        <div class="mobile-menu" id="mobileMenu">
+            <nav class="mobile-nav-links">
+                <a href="index.html#home" onclick="closeMobileMenu()">Главная</a>
+                <a href="index.html#subscriptions" onclick="closeMobileMenu()">Товары</a>
+                <a href="index.html#about" onclick="closeMobileMenu()">О нас</a>
+                <a href="index.html#contact" onclick="closeMobileMenu()">Контакты</a>
+            </nav>
         </div>
     </header>
 
@@ -152,5 +172,57 @@
     </div>
 
     <script src="script.js?v=3.8"></script>
+    <script>
+        // Мобильное меню - открытие/закрытие
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            
+            if (mobileMenu && mobileMenuToggle) {
+                mobileMenu.classList.toggle('active');
+                const icon = mobileMenuToggle.querySelector('i');
+                if (mobileMenu.classList.contains('active')) {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                } else {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            }
+        }
+        
+        function closeMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            
+            if (mobileMenu && mobileMenuToggle) {
+                mobileMenu.classList.remove('active');
+                const icon = mobileMenuToggle.querySelector('i');
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        }
+        
+        // Инициализация мобильного меню
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            if (mobileMenuToggle) {
+                mobileMenuToggle.addEventListener('click', toggleMobileMenu);
+            }
+            
+            // Закрываем меню при клике вне его
+            document.addEventListener('click', function(event) {
+                const mobileMenu = document.getElementById('mobileMenu');
+                const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+                
+                if (mobileMenu && mobileMenuToggle && 
+                    !mobileMenu.contains(event.target) && 
+                    !mobileMenuToggle.contains(event.target) &&
+                    mobileMenu.classList.contains('active')) {
+                    closeMobileMenu();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
