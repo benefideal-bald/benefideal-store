@@ -1701,6 +1701,13 @@ body {
     min-height: 40px;
 }
 
+/* На мобильных гамбургер показывается - переопределяем базовый стиль */
+@media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: block !important;
+    }
+}
+
 .mobile-menu-toggle:hover {
     color: var(--primary);
     background: var(--gray-100);
