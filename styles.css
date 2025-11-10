@@ -1682,8 +1682,8 @@ body {
    RESPONSIVE
    ======================================== */
 
-/* Мобильное меню - гамбургер (только для мобильных) */
-.mobile-menu-toggle {
+/* Стрелка назад (только для мобильных) */
+.back-button {
     display: none; /* Скрыто на десктопе */
     background: none;
     border: none;
@@ -1699,13 +1699,15 @@ body {
     height: auto;
     min-width: 40px;
     min-height: 40px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* На мобильных гамбургер показывается - переопределяем базовый стиль */
-@media (max-width: 768px) {
-    .mobile-menu-toggle {
-        display: block !important;
-    }
+.back-button:hover {
+    color: var(--primary);
+    background: var(--gray-100);
 }
 
 .mobile-menu-toggle:hover {
@@ -1754,16 +1756,15 @@ body {
 }
 
 @media (max-width: 768px) {
-    /* Показываем гамбургер на мобильных - ПРИНУДИТЕЛЬНО */
-    .mobile-menu-toggle,
-    .header .mobile-menu-toggle,
-    .header .nav .mobile-menu-toggle,
-    button.mobile-menu-toggle,
-    button#mobileMenuToggle {
-        display: block !important;
+    /* Показываем стрелку назад на мобильных */
+    .back-button,
+    .header .back-button,
+    .header .nav .back-button,
+    a.back-button {
+        display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
-        order: 1 !important; /* Гамбургер первым (слева) */
+        order: 1 !important; /* Стрелка назад первым (слева) */
         flex: 0 0 auto !important;
         margin-right: auto !important;
         width: 40px !important;
@@ -1772,14 +1773,15 @@ body {
         min-height: 40px !important;
         position: relative !important;
         z-index: 1001 !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
-    /* Убеждаемся, что иконка внутри гамбургера видна */
-    .mobile-menu-toggle i,
-    .header .mobile-menu-toggle i,
-    .header .nav .mobile-menu-toggle i,
-    button.mobile-menu-toggle i,
-    button#mobileMenuToggle i {
+    /* Убеждаемся, что иконка внутри стрелки видна */
+    .back-button i,
+    .header .back-button i,
+    .header .nav .back-button i,
+    a.back-button i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
