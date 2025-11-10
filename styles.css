@@ -1773,6 +1773,28 @@ body {
         font-size: 0.875rem;
     }
     
+    /* Hero description - чтобы весь текст был виден */
+    .hero-description {
+        font-size: clamp(0.9rem, 2vw, 1.1rem);
+        padding: 0 var(--space-2);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    /* Footer - контакты и социальные сети вертикально */
+    .footer-links {
+        grid-template-columns: 1fr; /* Одна колонка вместо двух */
+        gap: var(--space-8);
+    }
+    
+    /* Footer brand - текст "Подписки на популярные сервисы..." виден весь */
+    .footer-brand p {
+        font-size: 0.9rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        padding-right: var(--space-2);
+    }
+    
     .hero {
         min-height: 70vh;
         padding: var(--space-16) 0;
