@@ -1945,6 +1945,7 @@ body {
     
     /* Стрелка назад слева на мобильных (страницы товаров) */
     .header .nav .nav-actions:first-of-type {
+        display: flex !important; /* ВИДНА как корзина */
         order: 1 !important; /* Стрелка первой (слева) */
         z-index: 2 !important;
         flex: 0 0 auto !important;
@@ -1954,6 +1955,7 @@ body {
     
     /* Корзина справа на мобильных */
     .header .nav .nav-actions:last-of-type {
+        display: flex !important; /* ВИДНА как всегда */
         order: 3 !important; /* Корзина последней (справа) */
         z-index: 2 !important;
         flex: 0 0 auto !important;
