@@ -1743,48 +1743,54 @@ body {
 }
 
 @media (max-width: 768px) {
-    /* Показываем гамбургер на мобильных */
-    .mobile-menu-toggle {
+    /* Показываем гамбургер на мобильных - ПРИНУДИТЕЛЬНО */
+    .header .nav .mobile-menu-toggle {
         display: block !important;
-        order: 1; /* Гамбургер первым (слева) */
+        visibility: visible !important;
+        opacity: 1 !important;
+        order: 1 !important; /* Гамбургер первым (слева) */
+        flex: 0 0 auto !important;
+        margin-right: auto !important;
     }
     
     /* Скрываем обычное меню на мобильных */
-    .nav-links {
+    .header .nav .nav-links {
         display: none !important;
+        visibility: hidden !important;
     }
     
     /* Логотип по центру на мобильных */
-    .nav {
-        padding: var(--space-3) var(--space-4);
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+    .header .nav {
+        padding: var(--space-3) var(--space-4) !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: nowrap !important;
     }
     
-    .logo {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        order: 2; /* Логотип по центру */
-        z-index: 1;
+    .header .nav .logo {
+        position: absolute !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        order: 2 !important; /* Логотип по центру */
+        z-index: 1 !important;
+        flex: 0 0 auto !important;
+        margin: 0 auto !important;
     }
     
     /* Корзина справа на мобильных */
-    .nav-actions {
-        order: 3; /* Корзина последней (справа) */
-        z-index: 2;
+    .header .nav .nav-actions {
+        order: 3 !important; /* Корзина последней (справа) */
+        z-index: 2 !important;
+        flex: 0 0 auto !important;
+        margin-left: auto !important;
     }
     
     /* Показываем мобильное меню при активации */
-    .mobile-menu.active {
+    .header .mobile-menu.active {
         display: block !important;
-    }
-    
-    .nav-links {
-        gap: var(--space-4);
-        font-size: 0.875rem;
+        visibility: visible !important;
     }
     
     /* Hero description - чтобы весь текст был виден */
