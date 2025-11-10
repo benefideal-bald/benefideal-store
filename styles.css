@@ -1719,12 +1719,11 @@ body {
     transition: all var(--transition-base);
     z-index: 1001;
     position: relative;
-    width: auto;
-    height: auto;
+    width: 40px;
+    height: 40px;
     min-width: 40px;
     min-height: 40px;
     text-decoration: none;
-    display: flex;
     align-items: center;
     justify-content: center;
 }
@@ -1812,17 +1811,21 @@ body {
     .back-button,
     .header .back-button,
     .header .nav .back-button,
-    a.back-button {
+    a.back-button,
+    .nav .back-button {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
         order: 1 !important; /* Стрелка назад первым (слева) */
         flex: 0 0 auto !important;
+        flex-shrink: 0 !important;
         margin-right: auto !important;
         width: 40px !important;
         height: 40px !important;
         min-width: 40px !important;
         min-height: 40px !important;
+        max-width: 40px !important;
+        max-height: 40px !important;
         position: relative !important;
         z-index: 1001 !important;
         align-items: center !important;
