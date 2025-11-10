@@ -1708,7 +1708,7 @@ body {
 
 /* Стрелка назад (только для мобильных, на страницах товаров) */
 .back-button {
-    display: none; /* Скрыто на десктопе */
+    display: none; /* Скрыто на десктопе по умолчанию */
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -1727,20 +1727,6 @@ body {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-}
-
-/* На десктопе стрелка назад скрыта */
-@media (min-width: 769px) {
-    .back-button {
-        display: none !important;
-    }
-}
-
-/* На мобильных стрелка назад показывается - переопределяем базовый стиль */
-@media (max-width: 768px) {
-    .back-button {
-        display: flex !important;
-    }
 }
 
 .back-button:hover {
