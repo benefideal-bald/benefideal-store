@@ -1907,7 +1907,8 @@ body {
     }
     
     /* Логотип по центру на мобильных */
-    .header .nav {
+    .header .nav,
+    .nav {
         padding: var(--space-3) var(--space-4) !important;
         position: relative !important;
         display: flex !important;

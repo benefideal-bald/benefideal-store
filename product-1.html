@@ -164,31 +164,47 @@
     <script src="script.js?v=3.8"></script>
     <script>
         // Принудительно показываем стрелку назад на мобильных
-        document.addEventListener('DOMContentLoaded', function() {
+        function showBackButton() {
             const backButton = document.getElementById('backButton');
-            if (backButton && window.innerWidth <= 768) {
-                backButton.style.display = 'flex';
-                backButton.style.visibility = 'visible';
-                backButton.style.opacity = '1';
-                backButton.style.width = '40px';
-                backButton.style.height = '40px';
-                backButton.style.order = '1';
-                backButton.style.marginRight = 'auto';
-                backButton.style.alignItems = 'center';
-                backButton.style.justifyContent = 'center';
-                backButton.style.position = 'relative';
-                backButton.style.zIndex = '1001';
-                
-                const icon = backButton.querySelector('i');
-                if (icon) {
-                    icon.style.display = 'inline-block';
-                    icon.style.visibility = 'visible';
-                    icon.style.opacity = '1';
-                    icon.style.fontSize = '1.5rem';
-                    icon.style.color = '#374151';
+            if (backButton) {
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile) {
+                    backButton.style.display = 'flex';
+                    backButton.style.visibility = 'visible';
+                    backButton.style.opacity = '1';
+                    backButton.style.width = '40px';
+                    backButton.style.height = '40px';
+                    backButton.style.minWidth = '40px';
+                    backButton.style.minHeight = '40px';
+                    backButton.style.order = '1';
+                    backButton.style.marginRight = 'auto';
+                    backButton.style.marginLeft = '0';
+                    backButton.style.alignItems = 'center';
+                    backButton.style.justifyContent = 'center';
+                    backButton.style.position = 'relative';
+                    backButton.style.zIndex = '1001';
+                    backButton.style.flexShrink = '0';
+                    
+                    const icon = backButton.querySelector('i');
+                    if (icon) {
+                        icon.style.display = 'inline-block';
+                        icon.style.visibility = 'visible';
+                        icon.style.opacity = '1';
+                        icon.style.fontSize = '1.5rem';
+                        icon.style.color = '#374151';
+                    }
+                    console.log('✅ Back button shown on mobile');
+                } else {
+                    backButton.style.display = 'none';
+                    console.log('❌ Back button hidden on desktop');
                 }
+            } else {
+                console.error('❌ Back button element not found!');
             }
-        });
+        }
+        
+        document.addEventListener('DOMContentLoaded', showBackButton);
+        window.addEventListener('resize', showBackButton);
     </script>
 </body>
 </html>
