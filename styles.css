@@ -1748,7 +1748,11 @@ body {
 
 @media (max-width: 768px) {
     /* Показываем гамбургер на мобильных - ПРИНУДИТЕЛЬНО */
-    .header .nav .mobile-menu-toggle {
+    .mobile-menu-toggle,
+    .header .mobile-menu-toggle,
+    .header .nav .mobile-menu-toggle,
+    button.mobile-menu-toggle,
+    button#mobileMenuToggle {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -1759,14 +1763,21 @@ body {
         height: 40px !important;
         min-width: 40px !important;
         min-height: 40px !important;
+        position: relative !important;
+        z-index: 1001 !important;
     }
     
     /* Убеждаемся, что иконка внутри гамбургера видна */
-    .header .nav .mobile-menu-toggle i {
+    .mobile-menu-toggle i,
+    .header .mobile-menu-toggle i,
+    .header .nav .mobile-menu-toggle i,
+    button.mobile-menu-toggle i,
+    button#mobileMenuToggle i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
         font-size: 1.5rem !important;
+        color: var(--gray-700) !important;
     }
     
     /* Скрываем обычное меню на мобильных */
