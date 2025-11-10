@@ -1943,12 +1943,16 @@ body {
         margin: 0 auto !important;
     }
     
-    /* Корзина справа на мобильных (ВСЕГДА на всех страницах) */
+    /* Корзина справа на мобильных (ВСЕГДА на всех страницах одинаково) */
     .header .nav .nav-actions {
         display: flex !important;
         z-index: 2 !important;
         flex: 0 0 auto !important;
-        margin-left: auto !important; /* Корзина справа ВСЕГДА */
+    }
+    
+    /* На главной странице: корзина справа (одна .nav-actions) */
+    .header .nav .nav-actions:only-child {
+        margin-left: auto !important; /* Корзина справа на главной */
     }
     
     /* На страницах товаров: стрелка слева (первая .nav-actions) */
@@ -1958,8 +1962,8 @@ body {
         margin-left: 0 !important;
     }
     
-    /* На страницах товаров: корзина справа (последняя .nav-actions) - как на главной */
-    .header .nav .nav-actions:last-of-type {
+    /* На страницах товаров: корзина справа (последняя .nav-actions) - ТОЧНО как на главной */
+    .header .nav .nav-actions:last-of-type:not(:only-child) {
         order: 3 !important; /* Корзина последней (справа) */
         margin-left: auto !important; /* Корзина справа как на главной */
     }
