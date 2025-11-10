@@ -1708,7 +1708,7 @@ body {
 
 /* Стрелка назад (только для мобильных, на страницах товаров) */
 .back-button {
-    display: flex; /* Показываем по умолчанию */
+    display: flex;
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -1835,11 +1835,13 @@ body {
     .header .mobile-menu-toggle,
     .header .nav .mobile-menu-toggle,
     button.mobile-menu-toggle,
-    button#mobileMenuToggle {
-        display: block !important;
+    button#mobileMenuToggle,
+    a.mobile-menu-toggle,
+    a#backButton {
+        display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
-        order: 1 !important; /* Гамбургер первым (слева) */
+        order: 1 !important; /* Гамбургер/стрелка первым (слева) */
         flex: 0 0 auto !important;
         margin-right: auto !important;
         width: 40px !important;
@@ -1848,6 +1850,8 @@ body {
         min-height: 40px !important;
         position: relative !important;
         z-index: 1001 !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
     /* Убеждаемся, что иконка внутри гамбургера видна */

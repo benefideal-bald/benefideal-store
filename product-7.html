@@ -12,35 +12,35 @@
 </head>
 <body>
     <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="nav">
-                <!-- Стрелка назад (только для мобильных) -->
-                <a href="index.html" class="back-button" id="backButton" aria-label="Назад">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                
-                <!-- Логотип (по центру на мобильных) -->
-                <a href="index.html" class="logo">Benefideal</a>
-                
-                <!-- Навигация (скрыта на мобильных) -->
-                <nav class="nav-links" id="navLinks">
-                    <a href="index.html#home">Главная</a>
-                    <a href="index.html#subscriptions">Товары</a>
-                    <a href="index.html#about">О нас</a>
-                    <a href="index.html#contact">Контакты</a>
-                </nav>
-                
-                <!-- Корзина -->
-                <div class="nav-actions">
-                    <button class="cart-toggle" onclick="toggleCart()">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span class="cart-count" id="cartCount">0</span>
-                    </button>
+        <header class="header">
+            <div class="container">
+                <div class="nav">
+                    <!-- Стрелка назад (только для мобильных) -->
+                    <a href="index.html" class="mobile-menu-toggle" id="backButton" aria-label="Назад">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    
+                    <!-- Логотип (по центру на мобильных) -->
+                    <a href="index.html" class="logo">Benefideal</a>
+                    
+                    <!-- Навигация (скрыта на мобильных) -->
+                    <nav class="nav-links" id="navLinks">
+                        <a href="index.html#home">Главная</a>
+                        <a href="index.html#subscriptions">Товары</a>
+                        <a href="index.html#about">О нас</a>
+                        <a href="index.html#contact">Контакты</a>
+                    </nav>
+                    
+                    <!-- Корзина -->
+                    <div class="nav-actions">
+                        <button class="cart-toggle" onclick="toggleCart()">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="cart-count" id="cartCount">0</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </header>
+        </header>
 
     <!-- Product Page -->
     <main class="product-page">
@@ -162,38 +162,5 @@
     </div>
 
     <script src="script.js?v=3.8"></script>
-    <script>
-        // Принудительно показываем стрелку назад на мобильных - МАКСИМАЛЬНО ПРОСТО
-        (function() {
-            function forceShowBackButton() {
-                const backButton = document.getElementById('backButton');
-                if (!backButton) {
-                    console.error('❌ Back button not found!');
-                    return;
-                }
-                
-                const isMobile = window.innerWidth <= 768;
-                if (isMobile) {
-                    // Принудительно применяем ВСЕ стили
-                    backButton.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important; width: 40px !important; height: 40px !important; min-width: 40px !important; min-height: 40px !important; order: 1 !important; margin-right: auto !important; margin-left: 0 !important; align-items: center !important; justify-content: center !important; position: relative !important; z-index: 1001 !important; flex-shrink: 0 !important;';
-                    
-                    const icon = backButton.querySelector('i');
-                    if (icon) {
-                        icon.style.cssText = 'display: inline-block !important; visibility: visible !important; opacity: 1 !important; font-size: 1.5rem !important; color: #374151 !important;';
-                    }
-                    console.log('✅ Back button FORCED to show');
-                } else {
-                    backButton.style.display = 'none';
-                }
-            }
-            
-            // Запускаем сразу и после загрузки
-            forceShowBackButton();
-            document.addEventListener('DOMContentLoaded', forceShowBackButton);
-            window.addEventListener('resize', forceShowBackButton);
-            setTimeout(forceShowBackButton, 100);
-            setTimeout(forceShowBackButton, 500);
-        })();
-    </script>
 </body>
 </html>
