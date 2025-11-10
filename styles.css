@@ -1704,6 +1704,17 @@ body {
     justify-content: center;
 }
 
+/* КРИТИЧЕСКИ ВАЖНО: Показываем стрелку/гамбургер на мобильных ДО медиа-запроса */
+/* Это гарантирует, что элемент будет виден */
+@media (max-width: 768px) {
+    .mobile-menu-toggle,
+    button.mobile-menu-toggle,
+    button#mobileMenuToggle,
+    button#backButton {
+        display: flex !important;
+    }
+}
+
 .mobile-menu-toggle:hover {
     color: var(--primary);
     background: var(--gray-100);
