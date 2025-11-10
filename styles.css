@@ -1699,6 +1699,9 @@ body {
     height: auto;
     min-width: 40px;
     min-height: 40px;
+    text-decoration: none;
+    align-items: center;
+    justify-content: center;
 }
 
 .mobile-menu-toggle:hover {
