@@ -1859,7 +1859,9 @@ body {
     .header .mobile-menu-toggle i,
     .header .nav .mobile-menu-toggle i,
     button.mobile-menu-toggle i,
-    button#mobileMenuToggle i {
+    button#mobileMenuToggle i,
+    a.mobile-menu-toggle i,
+    a#backButton i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
