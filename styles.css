@@ -1943,8 +1943,17 @@ body {
         margin: 0 auto !important;
     }
     
+    /* Стрелка назад слева на мобильных (страницы товаров) */
+    .header .nav .nav-actions:first-of-type {
+        order: 1 !important; /* Стрелка первой (слева) */
+        z-index: 2 !important;
+        flex: 0 0 auto !important;
+        margin-right: auto !important;
+        margin-left: 0 !important;
+    }
+    
     /* Корзина справа на мобильных */
-    .header .nav .nav-actions {
+    .header .nav .nav-actions:last-of-type {
         order: 3 !important; /* Корзина последней (справа) */
         z-index: 2 !important;
         flex: 0 0 auto !important;
