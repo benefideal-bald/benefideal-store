@@ -1833,21 +1833,31 @@ body {
 }
 
 @media (max-width: 768px) {
-    /* Показываем гамбургер на мобильных (главная страница) */
+    /* КРИТИЧЕСКИ ВАЖНО: Показываем гамбургер/стрелку на мобильных */
+    /* Используем максимально специфичные селекторы для гарантии */
     .mobile-menu-toggle,
     .header .mobile-menu-toggle,
     .header .nav .mobile-menu-toggle,
     .header .container .nav .mobile-menu-toggle,
+    .header .container .nav .mobile-menu-toggle#backButton,
     button.mobile-menu-toggle,
     button#mobileMenuToggle,
     a.mobile-menu-toggle,
+    a.mobile-menu-toggle#backButton,
     a#backButton,
+    a#backButton.mobile-menu-toggle,
     .header a.mobile-menu-toggle,
     .header a#backButton,
+    .header a.mobile-menu-toggle#backButton,
     .header .nav a.mobile-menu-toggle,
     .header .nav a#backButton,
+    .header .nav a.mobile-menu-toggle#backButton,
+    .header .container .nav a.mobile-menu-toggle,
+    .header .container .nav a#backButton,
+    .header .container .nav a.mobile-menu-toggle#backButton,
     .nav a.mobile-menu-toggle,
-    .nav a#backButton {
+    .nav a#backButton,
+    .nav a.mobile-menu-toggle#backButton {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -1869,28 +1879,39 @@ body {
         background: transparent !important;
         border: none !important;
         padding: 0 !important;
+        cursor: pointer !important;
+        text-decoration: none !important;
     }
     
-    /* Убеждаемся, что иконка внутри гамбургера видна */
+    /* КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что иконка внутри гамбургера/стрелки видна */
     .mobile-menu-toggle i,
     .header .mobile-menu-toggle i,
     .header .nav .mobile-menu-toggle i,
     .header .container .nav .mobile-menu-toggle i,
+    .header .container .nav .mobile-menu-toggle#backButton i,
     button.mobile-menu-toggle i,
     button#mobileMenuToggle i,
     a.mobile-menu-toggle i,
+    a.mobile-menu-toggle#backButton i,
     a#backButton i,
+    a#backButton.mobile-menu-toggle i,
     .header a.mobile-menu-toggle i,
     .header a#backButton i,
+    .header a.mobile-menu-toggle#backButton i,
     .header .nav a.mobile-menu-toggle i,
     .header .nav a#backButton i,
+    .header .nav a.mobile-menu-toggle#backButton i,
+    .header .container .nav a.mobile-menu-toggle i,
+    .header .container .nav a#backButton i,
+    .header .container .nav a.mobile-menu-toggle#backButton i,
     .nav a.mobile-menu-toggle i,
-    .nav a#backButton i {
+    .nav a#backButton i,
+    .nav a.mobile-menu-toggle#backButton i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
         font-size: 1.5rem !important;
-        color: #374151 !important;
+        color: #1f2937 !important;
         width: auto !important;
         height: auto !important;
         line-height: 1 !important;
