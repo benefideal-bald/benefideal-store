@@ -1808,29 +1808,24 @@ body {
         padding-right: var(--space-2);
     }
     
-    /* Рамка вокруг фото - исправление для мобильных */
-    /* Рамка должна быть точно такого же размера, как фото */
+    /* Рамка вокруг фото - точно как на десктопе, просто для мобильных */
     .product-image {
-        width: auto !important;
-        max-width: 100% !important;
-        display: inline-block !important;
-        background: transparent !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gray-900);
         border-radius: var(--radius-2xl);
-        padding: 0 !important; /* Без отступов - рамка точно по размеру фото */
+        padding: 0;
         box-shadow: var(--shadow-xl);
-        overflow: visible !important;
-        margin: 0 auto;
+        overflow: hidden;
     }
     
     .product-image img {
-        width: 100% !important;
-        height: auto !important;
-        display: block !important;
+        width: 100%;
+        height: auto;
+        display: block;
         border-radius: var(--radius-2xl);
         transition: all var(--transition-base);
-        margin: 0;
-        padding: 0;
-        /* Фото заполняет всю рамку без отступов - рамка точно по размеру фото */
     }
     
     .hero {
