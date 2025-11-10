@@ -1943,25 +1943,33 @@ body {
         margin: 0 auto !important;
     }
     
-    /* Корзина справа на мобильных (ВСЕГДА на всех страницах одинаково, как на фото) */
-    .header .nav .nav-actions {
+    /* Корзина справа на мобильных (ВСЕГДА на всех страницах в ОДНОМ месте, как гамбургер слева) */
+    /* На главной странице: корзина справа (одна .nav-actions) */
+    .header .nav .nav-actions:only-child {
         display: flex !important;
         z-index: 2 !important;
         flex: 0 0 auto !important;
-        margin-left: auto !important; /* Корзина ВСЕГДА справа, как на фото */
+        margin-left: auto !important; /* Корзина справа на главной */
+        order: 3 !important; /* Корзина справа */
     }
     
     /* На страницах товаров: стрелка слева (первая .nav-actions) */
     .header .nav .nav-actions:first-of-type {
+        display: flex !important;
         order: 1 !important; /* Стрелка первой (слева) */
         margin-right: auto !important;
         margin-left: 0 !important; /* Стрелка слева, без margin-left: auto */
+        flex: 0 0 auto !important;
+        z-index: 2 !important;
     }
     
-    /* На страницах товаров: корзина справа (последняя .nav-actions) - ТОЧНО как на главной */
-    .header .nav .nav-actions:last-of-type {
+    /* На страницах товаров: корзина справа (последняя .nav-actions) - ТОЧНО в том же месте, что на главной */
+    .header .nav .nav-actions:last-of-type:not(:only-child) {
+        display: flex !important;
         order: 3 !important; /* Корзина последней (справа) */
-        margin-left: auto !important; /* Корзина справа, как на фото */
+        margin-left: auto !important; /* Корзина справа, в том же месте что на главной */
+        flex: 0 0 auto !important;
+        z-index: 2 !important;
     }
     
     /* Показываем мобильное меню при активации */
