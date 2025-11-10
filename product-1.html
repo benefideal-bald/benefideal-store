@@ -16,7 +16,7 @@
         <div class="container">
             <div class="nav">
                 <!-- Стрелка назад (только для мобильных) -->
-                <a href="index.html" class="back-button" aria-label="Назад">
+                <a href="index.html" class="back-button" id="backButton" aria-label="Назад">
                     <i class="fas fa-arrow-left"></i>
                 </a>
                 
@@ -162,5 +162,33 @@
     </div>
 
     <script src="script.js?v=3.8"></script>
+    <script>
+        // Принудительно показываем стрелку назад на мобильных
+        document.addEventListener('DOMContentLoaded', function() {
+            const backButton = document.getElementById('backButton');
+            if (backButton && window.innerWidth <= 768) {
+                backButton.style.display = 'flex';
+                backButton.style.visibility = 'visible';
+                backButton.style.opacity = '1';
+                backButton.style.width = '40px';
+                backButton.style.height = '40px';
+                backButton.style.order = '1';
+                backButton.style.marginRight = 'auto';
+                backButton.style.alignItems = 'center';
+                backButton.style.justifyContent = 'center';
+                backButton.style.position = 'relative';
+                backButton.style.zIndex = '1001';
+                
+                const icon = backButton.querySelector('i');
+                if (icon) {
+                    icon.style.display = 'inline-block';
+                    icon.style.visibility = 'visible';
+                    icon.style.opacity = '1';
+                    icon.style.fontSize = '1.5rem';
+                    icon.style.color = '#374151';
+                }
+            }
+        });
+    </script>
 </body>
 </html>

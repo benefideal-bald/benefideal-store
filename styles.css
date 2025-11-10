@@ -1733,9 +1733,12 @@ body {
 @media screen and (max-width: 768px) {
     .back-button,
     a.back-button,
+    #backButton,
     .header .back-button,
     .header .nav .back-button,
-    .nav .back-button {
+    .header .nav #backButton,
+    .nav .back-button,
+    .nav #backButton {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -1743,20 +1746,32 @@ body {
         height: 40px !important;
         min-width: 40px !important;
         min-height: 40px !important;
+        max-width: 40px !important;
+        max-height: 40px !important;
         order: 1 !important;
         flex: 0 0 auto !important;
+        flex-shrink: 0 !important;
         margin-right: auto !important;
+        margin-left: 0 !important;
         align-items: center !important;
         justify-content: center !important;
+        position: relative !important;
+        z-index: 1001 !important;
     }
     
     .back-button i,
-    a.back-button i {
+    a.back-button i,
+    #backButton i,
+    .header .back-button i,
+    .header .nav .back-button i,
+    .header .nav #backButton i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
         font-size: 1.5rem !important;
         color: #374151 !important;
+        width: auto !important;
+        height: auto !important;
     }
 }
 
