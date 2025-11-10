@@ -1710,11 +1710,6 @@ body {
     background: var(--gray-100);
 }
 
-.mobile-menu-toggle:hover {
-    color: var(--primary);
-    background: var(--gray-100);
-}
-
 .mobile-menu {
     display: none; /* Скрыто по умолчанию */
     position: fixed;
