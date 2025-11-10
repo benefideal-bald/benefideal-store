@@ -1729,6 +1729,13 @@ body {
     flex-shrink: 0;
 }
 
+/* На десктопе стрелка скрыта */
+@media screen and (min-width: 769px) {
+    .back-button {
+        display: none !important;
+    }
+}
+
 /* На мобильных стрелка назад показывается - отдельный медиа-запрос */
 @media screen and (max-width: 768px) {
     .back-button,
