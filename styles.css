@@ -1731,8 +1731,32 @@ body {
 
 /* На мобильных стрелка назад показывается - отдельный медиа-запрос */
 @media screen and (max-width: 768px) {
-    .back-button {
+    .back-button,
+    a.back-button,
+    .header .back-button,
+    .header .nav .back-button,
+    .nav .back-button {
         display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        order: 1 !important;
+        flex: 0 0 auto !important;
+        margin-right: auto !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .back-button i,
+    a.back-button i {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        font-size: 1.5rem !important;
+        color: #374151 !important;
     }
 }
 
