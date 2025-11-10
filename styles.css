@@ -1943,24 +1943,24 @@ body {
         margin: 0 auto !important;
     }
     
-    /* Корзина справа на мобильных (всегда) */
+    /* Корзина справа на мобильных (главная страница) */
     .header .nav .nav-actions {
-        display: flex !important; /* ВИДНА как всегда */
+        display: flex !important;
         z-index: 2 !important;
         flex: 0 0 auto !important;
         margin-left: auto !important; /* Корзина справа на главной странице */
     }
     
-    /* На страницах товаров: стрелка слева, корзина справа */
+    /* На страницах товаров: стрелка слева (первая .nav-actions) */
     .header .nav .nav-actions:first-of-type {
-        order: 1 !important; /* Стрелка первой (слева) на страницах товаров */
+        order: 1 !important; /* Стрелка первой (слева) */
         margin-right: auto !important;
         margin-left: 0 !important;
     }
     
-    /* На страницах товаров: корзина справа */
+    /* На страницах товаров: корзина справа (последняя .nav-actions) */
     .header .nav .nav-actions:last-of-type {
-        order: 3 !important; /* Корзина последней (справа) на страницах товаров */
+        order: 3 !important; /* Корзина последней (справа) */
         margin-left: auto !important;
     }
     
