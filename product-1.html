@@ -162,38 +162,5 @@
     </div>
 
     <script src="script.js?v=3.8"></script>
-    <script>
-        // Принудительно показываем стрелку назад на мобильных - МАКСИМАЛЬНО ПРОСТО
-        (function() {
-            function forceShowBackButton() {
-                const backButton = document.getElementById('backButton');
-                if (!backButton) {
-                    console.error('❌ Back button not found!');
-                    return;
-                }
-                
-                const isMobile = window.innerWidth <= 768;
-                if (isMobile) {
-                    // Принудительно применяем ВСЕ стили
-                    backButton.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important; width: 40px !important; height: 40px !important; min-width: 40px !important; min-height: 40px !important; order: 1 !important; margin-right: auto !important; margin-left: 0 !important; align-items: center !important; justify-content: center !important; position: relative !important; z-index: 1001 !important; flex-shrink: 0 !important;';
-                    
-                    const icon = backButton.querySelector('i');
-                    if (icon) {
-                        icon.style.cssText = 'display: inline-block !important; visibility: visible !important; opacity: 1 !important; font-size: 1.5rem !important; color: #374151 !important;';
-                    }
-                    console.log('✅ Back button FORCED to show');
-                } else {
-                    backButton.style.display = 'none';
-                }
-            }
-            
-            // Запускаем сразу и после загрузки
-            forceShowBackButton();
-            document.addEventListener('DOMContentLoaded', forceShowBackButton);
-            window.addEventListener('resize', forceShowBackButton);
-            setTimeout(forceShowBackButton, 100);
-            setTimeout(forceShowBackButton, 500);
-        })();
-    </script>
 </body>
 </html>
