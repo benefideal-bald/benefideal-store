@@ -1695,6 +1695,10 @@ body {
     transition: all var(--transition-base);
     z-index: 1001;
     position: relative;
+    width: auto;
+    height: auto;
+    min-width: 40px;
+    min-height: 40px;
 }
 
 .mobile-menu-toggle:hover {
@@ -1751,6 +1755,18 @@ body {
         order: 1 !important; /* Гамбургер первым (слева) */
         flex: 0 0 auto !important;
         margin-right: auto !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+    }
+    
+    /* Убеждаемся, что иконка внутри гамбургера видна */
+    .header .nav .mobile-menu-toggle i {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        font-size: 1.5rem !important;
     }
     
     /* Скрываем обычное меню на мобильных */
