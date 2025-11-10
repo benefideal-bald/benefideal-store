@@ -1708,7 +1708,7 @@ body {
 
 /* Стрелка назад (только для мобильных, на страницах товаров) */
 .back-button {
-    display: none; /* Скрыто на десктопе по умолчанию */
+    display: flex; /* Показываем по умолчанию */
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -1727,6 +1727,8 @@ body {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    order: 1;
+    margin-right: auto;
 }
 
 /* На десктопе стрелка скрыта */
