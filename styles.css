@@ -1682,7 +1682,31 @@ body {
    RESPONSIVE
    ======================================== */
 
-/* Стрелка назад (только для мобильных) */
+/* Мобильное меню - гамбургер (только для мобильных, на главной странице) */
+.mobile-menu-toggle {
+    display: none; /* Скрыто на десктопе */
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--gray-700);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+    z-index: 1001;
+    position: relative;
+    width: auto;
+    height: auto;
+    min-width: 40px;
+    min-height: 40px;
+}
+
+.mobile-menu-toggle:hover {
+    color: var(--primary);
+    background: var(--gray-100);
+}
+
+/* Стрелка назад (только для мобильных, на страницах товаров) */
 .back-button {
     display: none; /* Скрыто на десктопе */
     background: none;
@@ -1751,7 +1775,40 @@ body {
 }
 
 @media (max-width: 768px) {
-    /* Показываем стрелку назад на мобильных */
+    /* Показываем гамбургер на мобильных (главная страница) */
+    .mobile-menu-toggle,
+    .header .mobile-menu-toggle,
+    .header .nav .mobile-menu-toggle,
+    button.mobile-menu-toggle,
+    button#mobileMenuToggle {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        order: 1 !important; /* Гамбургер первым (слева) */
+        flex: 0 0 auto !important;
+        margin-right: auto !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        position: relative !important;
+        z-index: 1001 !important;
+    }
+    
+    /* Убеждаемся, что иконка внутри гамбургера видна */
+    .mobile-menu-toggle i,
+    .header .mobile-menu-toggle i,
+    .header .nav .mobile-menu-toggle i,
+    button.mobile-menu-toggle i,
+    button#mobileMenuToggle i {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        font-size: 1.5rem !important;
+        color: var(--gray-700) !important;
+    }
+    
+    /* Показываем стрелку назад на мобильных (страницы товаров) */
     .back-button,
     .header .back-button,
     .header .nav .back-button,
