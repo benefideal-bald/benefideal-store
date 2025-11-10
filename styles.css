@@ -1684,7 +1684,8 @@ body {
 
 /* Мобильное меню - гамбургер (только для мобильных, на главной странице) */
 .mobile-menu-toggle {
-    display: none; /* Скрыто на десктопе */
+    /* НЕ используем display: none - элемент будет виден на мобильных */
+    display: flex; /* Виден по умолчанию, как корзина */
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -1704,14 +1705,10 @@ body {
     justify-content: center;
 }
 
-/* КРИТИЧЕСКИ ВАЖНО: Показываем стрелку/гамбургер на мобильных ДО медиа-запроса */
-/* Это гарантирует, что элемент будет виден */
-@media (max-width: 768px) {
-    .mobile-menu-toggle,
-    button.mobile-menu-toggle,
-    button#mobileMenuToggle,
-    button#backButton {
-        display: flex !important;
+/* Скрываем на десктопе */
+@media (min-width: 769px) {
+    .mobile-menu-toggle {
+        display: none !important; /* Скрыто на десктопе */
     }
 }
 
