@@ -1693,6 +1693,8 @@ body {
     padding: var(--space-2);
     border-radius: var(--radius-md);
     transition: all var(--transition-base);
+    z-index: 1001;
+    position: relative;
 }
 
 .mobile-menu-toggle:hover {
@@ -1743,29 +1745,41 @@ body {
 @media (max-width: 768px) {
     /* Показываем гамбургер на мобильных */
     .mobile-menu-toggle {
-        display: block;
+        display: block !important;
+        order: 1; /* Гамбургер первым (слева) */
     }
     
     /* Скрываем обычное меню на мобильных */
     .nav-links {
-        display: none;
+        display: none !important;
     }
     
     /* Логотип по центру на мобильных */
     .nav {
         padding: var(--space-3) var(--space-4);
         position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
     
     .logo {
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
+        order: 2; /* Логотип по центру */
+        z-index: 1;
+    }
+    
+    /* Корзина справа на мобильных */
+    .nav-actions {
+        order: 3; /* Корзина последней (справа) */
+        z-index: 2;
     }
     
     /* Показываем мобильное меню при активации */
     .mobile-menu.active {
-        display: block;
+        display: block !important;
     }
     
     .nav-links {
@@ -1797,25 +1811,26 @@ body {
     /* Рамка вокруг фото - исправление для мобильных */
     /* Рамка должна быть точно такого же размера, как фото */
     .product-image {
-        width: 100%;
-        max-width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--gray-900);
+        width: auto !important;
+        max-width: 100% !important;
+        display: inline-block !important;
+        background: transparent !important;
         border-radius: var(--radius-2xl);
-        padding: 0; /* Без отступов - рамка точно по размеру фото */
+        padding: 0 !important; /* Без отступов - рамка точно по размеру фото */
         box-shadow: var(--shadow-xl);
-        overflow: hidden;
+        overflow: visible !important;
+        margin: 0 auto;
     }
     
     .product-image img {
-        width: 100%;
-        height: auto;
-        display: block;
+        width: 100% !important;
+        height: auto !important;
+        display: block !important;
         border-radius: var(--radius-2xl);
         transition: all var(--transition-base);
-        /* Фото заполняет всю рамку без отступов */
+        margin: 0;
+        padding: 0;
+        /* Фото заполняет всю рамку без отступов - рамка точно по размеру фото */
     }
     
     .hero {
