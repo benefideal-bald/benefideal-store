@@ -1834,43 +1834,9 @@ body {
 
 @media (max-width: 768px) {
     /* КРИТИЧЕСКИ ВАЖНО: Показываем гамбургер/стрелку на мобильных */
-    a#backButton,
-    a.mobile-menu-toggle#backButton {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        order: 1 !important;
-        flex-shrink: 0 !important;
-        margin-right: auto !important;
-        margin-left: 0 !important;
-        width: 40px !important;
-        height: 40px !important;
-        min-width: 40px !important;
-        min-height: 40px !important;
-        position: relative !important;
-        z-index: 1001 !important;
-        align-items: center !important;
-        justify-content: center !important;
-        background: transparent !important;
-        border: none !important;
-        padding: 0 !important;
-        cursor: pointer !important;
-        text-decoration: none !important;
-    }
-    
-    /* КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что иконка внутри стрелки видна */
-    a#backButton i,
-    a.mobile-menu-toggle#backButton i {
-        display: inline-block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        font-size: 1.5rem !important;
-        color: #1f2937 !important;
-        line-height: 1 !important;
-    }
-    
-    /* Гамбургер на главной странице */
+    /* Используем ТОТ ЖЕ селектор, что работает на главной странице */
     button#mobileMenuToggle,
+    button#backButton,
     button.mobile-menu-toggle {
         display: flex !important;
         visibility: visible !important;
@@ -1893,7 +1859,9 @@ body {
         cursor: pointer !important;
     }
     
+    /* КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что иконка внутри видна */
     button#mobileMenuToggle i,
+    button#backButton i,
     button.mobile-menu-toggle i {
         display: inline-block !important;
         visibility: visible !important;
