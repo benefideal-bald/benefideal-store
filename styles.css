@@ -1682,9 +1682,90 @@ body {
    RESPONSIVE
    ======================================== */
 
+/* Мобильное меню - гамбургер (только для мобильных) */
+.mobile-menu-toggle {
+    display: none; /* Скрыто на десктопе */
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--gray-700);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+}
+
+.mobile-menu-toggle:hover {
+    color: var(--primary);
+    background: var(--gray-100);
+}
+
+.mobile-menu {
+    display: none; /* Скрыто по умолчанию */
+    position: fixed;
+    top: 70px; /* Высота хедера */
+    left: 0;
+    right: 0;
+    background: var(--white);
+    box-shadow: var(--shadow-lg);
+    z-index: 999;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--transition-base);
+}
+
+.mobile-menu.active {
+    max-height: 400px;
+}
+
+.mobile-nav-links {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-4);
+    gap: var(--space-2);
+}
+
+.mobile-nav-links a {
+    color: var(--gray-700);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1rem;
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.mobile-nav-links a:hover {
+    color: var(--primary);
+    background: var(--gray-100);
+}
+
 @media (max-width: 768px) {
+    /* Показываем гамбургер на мобильных */
+    .mobile-menu-toggle {
+        display: block;
+    }
+    
+    /* Скрываем обычное меню на мобильных */
+    .nav-links {
+        display: none;
+    }
+    
+    /* Логотип по центру на мобильных */
     .nav {
         padding: var(--space-3) var(--space-4);
+        position: relative;
+    }
+    
+    .logo {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    /* Показываем мобильное меню при активации */
+    .mobile-menu.active {
+        display: block;
     }
     
     .nav-links {
