@@ -1837,39 +1837,63 @@ body {
     .mobile-menu-toggle,
     .header .mobile-menu-toggle,
     .header .nav .mobile-menu-toggle,
+    .header .container .nav .mobile-menu-toggle,
     button.mobile-menu-toggle,
     button#mobileMenuToggle,
     a.mobile-menu-toggle,
-    a#backButton {
+    a#backButton,
+    .header a.mobile-menu-toggle,
+    .header a#backButton,
+    .header .nav a.mobile-menu-toggle,
+    .header .nav a#backButton,
+    .nav a.mobile-menu-toggle,
+    .nav a#backButton {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
         order: 1 !important; /* Гамбургер/стрелка первым (слева) */
         flex: 0 0 auto !important;
+        flex-shrink: 0 !important;
         margin-right: auto !important;
+        margin-left: 0 !important;
         width: 40px !important;
         height: 40px !important;
         min-width: 40px !important;
         min-height: 40px !important;
+        max-width: 40px !important;
+        max-height: 40px !important;
         position: relative !important;
         z-index: 1001 !important;
         align-items: center !important;
         justify-content: center !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
     }
     
     /* Убеждаемся, что иконка внутри гамбургера видна */
     .mobile-menu-toggle i,
     .header .mobile-menu-toggle i,
     .header .nav .mobile-menu-toggle i,
+    .header .container .nav .mobile-menu-toggle i,
     button.mobile-menu-toggle i,
     button#mobileMenuToggle i,
     a.mobile-menu-toggle i,
-    a#backButton i {
+    a#backButton i,
+    .header a.mobile-menu-toggle i,
+    .header a#backButton i,
+    .header .nav a.mobile-menu-toggle i,
+    .header .nav a#backButton i,
+    .nav a.mobile-menu-toggle i,
+    .nav a#backButton i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
         font-size: 1.5rem !important;
-        color: var(--gray-700) !important;
+        color: #374151 !important;
+        width: auto !important;
+        height: auto !important;
+        line-height: 1 !important;
     }
     
     /* Показываем стрелку назад на мобильных (страницы товаров) */
