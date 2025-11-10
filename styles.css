@@ -1726,6 +1726,14 @@ body {
     text-decoration: none;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+}
+
+/* На мобильных стрелка назад показывается - переопределяем базовый стиль */
+@media (max-width: 768px) {
+    .back-button {
+        display: flex !important;
+    }
 }
 
 .back-button:hover {
