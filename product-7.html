@@ -163,48 +163,37 @@
 
     <script src="script.js?v=3.8"></script>
     <script>
-        // Принудительно показываем стрелку назад на мобильных
-        function showBackButton() {
-            const backButton = document.getElementById('backButton');
-            if (backButton) {
+        // Принудительно показываем стрелку назад на мобильных - МАКСИМАЛЬНО ПРОСТО
+        (function() {
+            function forceShowBackButton() {
+                const backButton = document.getElementById('backButton');
+                if (!backButton) {
+                    console.error('❌ Back button not found!');
+                    return;
+                }
+                
                 const isMobile = window.innerWidth <= 768;
                 if (isMobile) {
-                    backButton.style.display = 'flex';
-                    backButton.style.visibility = 'visible';
-                    backButton.style.opacity = '1';
-                    backButton.style.width = '40px';
-                    backButton.style.height = '40px';
-                    backButton.style.minWidth = '40px';
-                    backButton.style.minHeight = '40px';
-                    backButton.style.order = '1';
-                    backButton.style.marginRight = 'auto';
-                    backButton.style.marginLeft = '0';
-                    backButton.style.alignItems = 'center';
-                    backButton.style.justifyContent = 'center';
-                    backButton.style.position = 'relative';
-                    backButton.style.zIndex = '1001';
-                    backButton.style.flexShrink = '0';
+                    // Принудительно применяем ВСЕ стили
+                    backButton.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important; width: 40px !important; height: 40px !important; min-width: 40px !important; min-height: 40px !important; order: 1 !important; margin-right: auto !important; margin-left: 0 !important; align-items: center !important; justify-content: center !important; position: relative !important; z-index: 1001 !important; flex-shrink: 0 !important;';
                     
                     const icon = backButton.querySelector('i');
                     if (icon) {
-                        icon.style.display = 'inline-block';
-                        icon.style.visibility = 'visible';
-                        icon.style.opacity = '1';
-                        icon.style.fontSize = '1.5rem';
-                        icon.style.color = '#374151';
+                        icon.style.cssText = 'display: inline-block !important; visibility: visible !important; opacity: 1 !important; font-size: 1.5rem !important; color: #374151 !important;';
                     }
-                    console.log('✅ Back button shown on mobile');
+                    console.log('✅ Back button FORCED to show');
                 } else {
                     backButton.style.display = 'none';
-                    console.log('❌ Back button hidden on desktop');
                 }
-            } else {
-                console.error('❌ Back button element not found!');
             }
-        }
-        
-        document.addEventListener('DOMContentLoaded', showBackButton);
-        window.addEventListener('resize', showBackButton);
+            
+            // Запускаем сразу и после загрузки
+            forceShowBackButton();
+            document.addEventListener('DOMContentLoaded', forceShowBackButton);
+            window.addEventListener('resize', forceShowBackButton);
+            setTimeout(forceShowBackButton, 100);
+            setTimeout(forceShowBackButton, 500);
+        })();
     </script>
 </body>
 </html>
