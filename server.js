@@ -885,37 +885,17 @@ app.post('/api/review', (req, res) => {
                 // Удаляем дубликаты перед сохранением
                 const uniqueReviews = removeDuplicateReviews(allReviewsInRoot);
                 
-                // Сохраняем ВСЕ отзывы в корневой reviews.json (Git версия)
+                // КРИТИЧЕСКИ ВАЖНО: Сохраняем ВСЕ отзывы в корневой reviews.json (Git версия)!
+                // Все отзывы в одном месте - в корневом reviews.json, как статические отзывы
                 fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(uniqueReviews, null, 2), 'utf8');
                 console.log(`✅ Saved review to root reviews.json (Git) - total: ${uniqueReviews.length} reviews`);
-            }
-            
-            // Также сохраняем в data/reviews.json для резервного копирования
-            let dynamicReviews = [];
-            if (fs.existsSync(reviewsJsonPath)) {
-                try {
-                    const data = fs.readFileSync(reviewsJsonPath, 'utf8');
-                    dynamicReviews = JSON.parse(data);
-                } catch (error) {
-                    console.warn('⚠️ Error reading data/reviews.json:', error.message);
-                }
-            }
-            
-            // Проверяем, нет ли уже такого отзыва в data/reviews.json
-            const existsInData = dynamicReviews.some(r => {
-                const rEmail = (r.customer_email || '').toLowerCase().trim();
-                const rOrderId = r.order_id || 'null';
-                return rEmail === email && rOrderId === orderId;
-            });
-            
-            if (!existsInData) {
-                dynamicReviews.push(newReview);
-                const saved = writeReviewsToJSON(dynamicReviews);
-                
-                if (!saved) {
-                    console.error(`❌ Error saving review to JSON for ${name}`);
-                    return res.status(500).json({ error: 'Error saving review', details: 'Failed to write to reviews.json' });
-                }
+                console.log(`   Все отзывы теперь в одном месте - в корневом reviews.json (Git версия)!`);
+            } else {
+                console.log(`⚠️ Review already exists in root reviews.json (skipped)`);
+                return res.status(400).json({ 
+                    success: false,
+                    error: 'Вы уже оставили отзыв для вашего последнего заказа.' 
+                });
             }
             
             console.log(`✅ ========== REVIEW SAVED TO JSON ==========`);
