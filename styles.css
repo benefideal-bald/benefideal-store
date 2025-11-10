@@ -1948,18 +1948,19 @@ body {
         display: flex !important; /* ВИДНА как всегда */
         z-index: 2 !important;
         flex: 0 0 auto !important;
+        margin-left: auto !important; /* Корзина справа на главной странице */
     }
     
-    /* Стрелка назад слева на мобильных (ТОЛЬКО на страницах товаров) */
+    /* На страницах товаров: стрелка слева, корзина справа */
     .header .nav .nav-actions:first-of-type {
-        order: 1 !important; /* Стрелка первой (слева) */
+        order: 1 !important; /* Стрелка первой (слева) на страницах товаров */
         margin-right: auto !important;
         margin-left: 0 !important;
     }
     
-    /* Корзина справа на мобильных (всегда) */
+    /* На страницах товаров: корзина справа */
     .header .nav .nav-actions:last-of-type {
-        order: 3 !important; /* Корзина последней (справа) */
+        order: 3 !important; /* Корзина последней (справа) на страницах товаров */
         margin-left: auto !important;
     }
     
