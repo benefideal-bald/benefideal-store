@@ -1729,6 +1729,13 @@ body {
     flex-shrink: 0;
 }
 
+/* На мобильных стрелка назад показывается - отдельный медиа-запрос */
+@media screen and (max-width: 768px) {
+    .back-button {
+        display: flex !important;
+    }
+}
+
 .back-button:hover {
     color: var(--primary);
     background: var(--gray-100);
