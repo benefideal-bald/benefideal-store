@@ -1929,8 +1929,17 @@ body {
     .header .nav button#backButton,
     .header .nav button.back-button,
     .header .nav .back-button,
+    .header .nav button.mobile-menu-toggle.back-button,
     .nav .back-button,
-    .nav button#backButton {
+    .nav button#backButton,
+    .nav button.back-button,
+    .nav button.mobile-menu-toggle.back-button,
+    /* Специфично для страниц товаров - добавляем селекторы с body:has() */
+    body:has(.product-page) button#backButton,
+    body:has(.product-page) button.back-button,
+    body:has(.product-page) .back-button,
+    body:has(.product-page) .header .nav button#backButton,
+    body:has(.product-page) .header .nav .back-button {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
