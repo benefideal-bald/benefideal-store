@@ -1750,12 +1750,10 @@ body {
     margin-right: auto;
 }
 
-/* На десктопе стрелка скрыта (только если это не button#backButton) */
+/* На десктопе стрелка скрыта - НЕ МЕНЯЕМ КОМП ВЕРСИЮ */
 @media screen and (min-width: 769px) {
-    .back-button:not(button#backButton) {
-        display: none !important;
-    }
-    button#backButton {
+    button#backButton,
+    button.back-button {
         display: none !important; /* На десктопе стрелка скрыта */
     }
 }
