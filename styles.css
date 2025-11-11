@@ -1789,13 +1789,24 @@ body {
 /* КРИТИЧЕСКИ ВАЖНО: На мобильных стрелка ВСЕГДА видна, даже если есть inline стили */
 /* Это правило должно быть ПЕРВЫМ для мобильных */
 @media screen and (max-width: 768px) {
-    /* Стрелка назад - ВСЕГДА видна на мобильных */
+    /* Стрелка назад - ВСЕГДА видна на мобильных (для ВСЕХ страниц, включая товары и отзывы) */
     button#backButton,
     button.back-button,
     button.mobile-menu-toggle.back-button,
     .back-button,
     .header .nav button#backButton,
-    .header .nav .back-button {
+    .header .nav button.back-button,
+    .header .nav .back-button,
+    .header .nav button.mobile-menu-toggle.back-button,
+    .nav button#backButton,
+    .nav button.back-button,
+    .nav .back-button,
+    /* Специфично для страниц товаров - добавляем все возможные селекторы */
+    body:has(.product-page) button#backButton,
+    body:has(.product-page) button.back-button,
+    body:has(.product-page) .back-button,
+    body:has(.product-page) .header .nav button#backButton,
+    body:has(.product-page) .header .nav .back-button {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -1805,14 +1816,28 @@ body {
         min-height: 40px !important;
         position: relative !important;
         z-index: 1001 !important;
+        align-items: center !important;
+        justify-content: center !important;
+        order: 1 !important;
+        margin-right: auto !important;
+        margin-left: 0 !important;
     }
-    /* Иконка стрелки - ВСЕГДА видна */
+    /* Иконка стрелки - ВСЕГДА видна (для ВСЕХ страниц) */
     button#backButton i,
     button.back-button i,
     button.mobile-menu-toggle.back-button i,
     .back-button i,
     .header .nav button#backButton i,
-    .header .nav .back-button i {
+    .header .nav button.back-button i,
+    .header .nav .back-button i,
+    .nav button#backButton i,
+    .nav button.back-button i,
+    /* Специфично для страниц товаров */
+    body:has(.product-page) button#backButton i,
+    body:has(.product-page) button.back-button i,
+    body:has(.product-page) .back-button i,
+    body:has(.product-page) .header .nav button#backButton i,
+    body:has(.product-page) .header .nav .back-button i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
