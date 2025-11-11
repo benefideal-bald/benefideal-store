@@ -1753,7 +1753,8 @@ body {
 /* На десктопе стрелка скрыта - НЕ МЕНЯЕМ КОМП ВЕРСИЮ */
 @media screen and (min-width: 769px) {
     button#backButton,
-    button.back-button {
+    button.back-button,
+    .back-button {
         display: none !important; /* На десктопе стрелка скрыта */
     }
 }
