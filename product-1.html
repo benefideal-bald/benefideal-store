@@ -232,23 +232,46 @@
         })();
         
         // Индикатор ширины экрана для отладки
-        (function() {
+        function createWidthIndicator() {
+            // Удаляем старый индикатор если есть
+            const oldIndicator = document.getElementById('screenWidthIndicator');
+            if (oldIndicator) {
+                oldIndicator.remove();
+            }
+            
             const indicator = document.createElement('div');
             indicator.id = 'screenWidthIndicator';
-            indicator.style.cssText = 'position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; z-index: 9999; font-size: 12px; font-family: monospace;';
+            indicator.style.cssText = 'position: fixed !important; bottom: 10px !important; left: 10px !important; background: rgba(0,0,0,0.9) !important; color: white !important; padding: 10px !important; border-radius: 5px !important; z-index: 99999 !important; font-size: 12px !important; font-family: monospace !important; box-shadow: 0 2px 10px rgba(0,0,0,0.5) !important;';
             document.body.appendChild(indicator);
             
             function updateIndicator() {
                 const width = window.innerWidth;
                 const backButton = document.getElementById('backButton');
-                const isVisible = backButton && window.getComputedStyle(backButton).display !== 'none';
-                indicator.innerHTML = `Ширина: ${width}px<br>Стрелка: ${isVisible ? 'ВИДНА' : 'СКРЫТА'}<br>Мобильный: ${width <= 768 ? 'ДА' : 'НЕТ'}`;
+                let isVisible = false;
+                let computedDisplay = 'none';
+                
+                if (backButton) {
+                    const computed = window.getComputedStyle(backButton);
+                    computedDisplay = computed.display;
+                    isVisible = computedDisplay !== 'none' && computed.visibility !== 'hidden' && computed.opacity !== '0';
+                }
+                
+                indicator.innerHTML = `Ширина: ${width}px<br>Стрелка: ${isVisible ? '✅ ВИДНА' : '❌ СКРЫТА'}<br>Display: ${computedDisplay}<br>Мобильный: ${width <= 768 ? '✅ ДА' : '❌ НЕТ'}`;
             }
             
             updateIndicator();
             window.addEventListener('resize', updateIndicator);
             setInterval(updateIndicator, 500);
-        })();
+        }
+        
+        // Создаем индикатор после загрузки
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', createWidthIndicator);
+        } else {
+            createWidthIndicator();
+        }
+        setTimeout(createWidthIndicator, 100);
+        setTimeout(createWidthIndicator, 500);
     </script>
 </body>
 </html>
