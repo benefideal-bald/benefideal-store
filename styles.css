@@ -1760,6 +1760,9 @@ body {
 
 /* На мобильных стрелка назад показывается - отдельный медиа-запрос */
 @media screen and (max-width: 768px) {
+    /* КРИТИЧЕСКИ ВАЖНО: Стрелка должна быть видна на мобильных */
+    button#backButton,
+    button.back-button,
     .back-button,
     a.back-button,
     #backButton,
@@ -1788,6 +1791,8 @@ body {
         z-index: 1001 !important;
     }
     
+    button#backButton i,
+    button.back-button i,
     .back-button i,
     a.back-button i,
     #backButton i,
