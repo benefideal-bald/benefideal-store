@@ -1757,7 +1757,7 @@ body {
 }
 
 /* На десктопе стрелка скрыта - НЕ МЕНЯЕМ КОМП ВЕРСИЮ */
-/* Перекрываем inline стили на десктопе */
+/* Перекрываем inline стили на десктопе ТОЛЬКО если экран больше 768px */
 @media screen and (min-width: 769px) {
     button#backButton,
     button.back-button,
@@ -1771,6 +1771,22 @@ body {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
+    }
+}
+
+/* КРИТИЧЕСКИ ВАЖНО: На мобильных стрелка ВСЕГДА видна, даже если есть inline стили */
+@media screen and (max-width: 768px) {
+    button#backButton,
+    button.back-button.mobile-menu-toggle {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    button#backButton i,
+    button.back-button.mobile-menu-toggle i {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
 }
 
