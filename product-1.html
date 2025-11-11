@@ -230,6 +230,25 @@
             setTimeout(forceShowBackArrow, 500);
             setTimeout(forceShowBackArrow, 1000);
         })();
+        
+        // Индикатор ширины экрана для отладки
+        (function() {
+            const indicator = document.createElement('div');
+            indicator.id = 'screenWidthIndicator';
+            indicator.style.cssText = 'position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; z-index: 9999; font-size: 12px; font-family: monospace;';
+            document.body.appendChild(indicator);
+            
+            function updateIndicator() {
+                const width = window.innerWidth;
+                const backButton = document.getElementById('backButton');
+                const isVisible = backButton && window.getComputedStyle(backButton).display !== 'none';
+                indicator.innerHTML = `Ширина: ${width}px<br>Стрелка: ${isVisible ? 'ВИДНА' : 'СКРЫТА'}<br>Мобильный: ${width <= 768 ? 'ДА' : 'НЕТ'}`;
+            }
+            
+            updateIndicator();
+            window.addEventListener('resize', updateIndicator);
+            setInterval(updateIndicator, 500);
+        })();
     </script>
 </body>
 </html>
