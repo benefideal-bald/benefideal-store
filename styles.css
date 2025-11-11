@@ -1908,9 +1908,36 @@ body {
 @media (max-width: 768px) {
     /* КРИТИЧЕСКИ ВАЖНО: Показываем гамбургер/стрелку на мобильных */
     /* Используем ТОТ ЖЕ селектор, что работает на главной странице */
-    button#mobileMenuToggle,
+    /* СТРЕЛКА ВСЕГДА ПЕРВОЙ - максимальный приоритет */
     button#backButton,
-    button.mobile-menu-toggle {
+    button.back-button,
+    button.mobile-menu-toggle.back-button,
+    .header .nav button#backButton,
+    .header .nav button.back-button {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        order: 1 !important;
+        flex-shrink: 0 !important;
+        margin-right: auto !important;
+        margin-left: 0 !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        position: relative !important;
+        z-index: 1001 !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        cursor: pointer !important;
+    }
+    
+    /* Гамбургер на главной странице */
+    button#mobileMenuToggle,
+    button.mobile-menu-toggle:not(.back-button) {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
