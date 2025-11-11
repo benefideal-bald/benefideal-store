@@ -21,13 +21,23 @@
     <header class="header">
         <div class="container">
             <div class="nav">
+                <!-- Гамбургер-меню (только для мобильных) -->
+                <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Меню">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <!-- Логотип (по центру на мобильных) -->
                 <a href="index.html" class="logo">Benefideal</a>
-                <nav class="nav-links">
-                    <a href="index.html">Главная</a>
-                    <a href="index.html#subscriptions">Подписки</a>
+                
+                <!-- Навигация (скрыта на мобильных) -->
+                <nav class="nav-links" id="navLinks">
+                    <a href="index.html#home">Главная</a>
+                    <a href="index.html#subscriptions">Товары</a>
                     <a href="index.html#about">О нас</a>
                     <a href="index.html#contact">Контакты</a>
                 </nav>
+                
+                <!-- Корзина -->
                 <div class="nav-actions">
                     <button class="cart-toggle" onclick="toggleCart()">
                         <i class="fas fa-shopping-cart"></i>
@@ -35,6 +45,16 @@
                     </button>
                 </div>
             </div>
+        </div>
+        
+        <!-- Мобильное меню (вертикальное) -->
+        <div class="mobile-menu" id="mobileMenu">
+            <nav class="mobile-nav-links">
+                <a href="index.html#home" onclick="closeMobileMenu()">Главная</a>
+                <a href="index.html#subscriptions" onclick="closeMobileMenu()">Товары</a>
+                <a href="index.html#about" onclick="closeMobileMenu()">О нас</a>
+                <a href="index.html#contact" onclick="closeMobileMenu()">Контакты</a>
+            </nav>
         </div>
     </header>
 
