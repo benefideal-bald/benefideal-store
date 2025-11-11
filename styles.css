@@ -1957,15 +1957,39 @@ body {
         order: 3 !important;
     }
     
-    /* СТРЕЛКА ВСЕГДА СЛЕВА на страницах товаров */
+    /* СТРЕЛКА ВСЕГДА СЛЕВА на страницах товаров и отзывов */
     .header .nav .nav-actions.back-arrow {
         display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
         order: 1 !important; /* Стрелка первой (слева) */
         margin-right: auto !important;
         margin-left: 0 !important;
         flex: 0 0 auto !important;
         z-index: 2 !important;
         position: relative !important;
+    }
+    
+    /* Кнопка стрелки внутри .nav-actions.back-arrow */
+    .header .nav .nav-actions.back-arrow .back-button {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    /* Иконка стрелки */
+    .header .nav .nav-actions.back-arrow .back-button i {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        font-size: 1.5rem !important;
+        color: var(--gray-700) !important;
     }
     
     /* Показываем мобильное меню при активации */

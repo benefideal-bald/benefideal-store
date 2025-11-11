@@ -21,10 +21,12 @@
     <header class="header">
         <div class="container">
             <div class="nav">
-                <!-- Гамбургер-меню (только для мобильных) -->
-                <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Меню">
-                    <i class="fas fa-bars"></i>
-                </button>
+                <!-- Стрелка назад (слева) -->
+                <div class="nav-actions back-arrow">
+                    <button class="back-button" onclick="window.location.href='index.html'">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                </div>
                 
                 <!-- Логотип (по центру на мобильных) -->
                 <a href="index.html" class="logo">Benefideal</a>
@@ -47,15 +49,7 @@
             </div>
         </div>
         
-        <!-- Мобильное меню (вертикальное) -->
-        <div class="mobile-menu" id="mobileMenu">
-            <nav class="mobile-nav-links">
-                <a href="index.html#home" onclick="closeMobileMenu()">Главная</a>
-                <a href="index.html#subscriptions" onclick="closeMobileMenu()">Товары</a>
-                <a href="index.html#about" onclick="closeMobileMenu()">О нас</a>
-                <a href="index.html#contact" onclick="closeMobileMenu()">Контакты</a>
-            </nav>
-        </div>
+        <!-- Мобильное меню (скрыто на странице отзывов) -->
     </header>
 
     <!-- All Reviews Page -->
