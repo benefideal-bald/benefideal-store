@@ -1733,8 +1733,9 @@ body {
 
 /* Стрелка назад (только для мобильных, на страницах товаров) */
 /* ПО УМОЛЧАНИЮ СКРЫТА - показывается только на мобильных */
+/* НО: на мобильных показывается через медиа-запрос ниже */
 .back-button {
-    display: none; /* Скрыта по умолчанию */
+    display: none; /* Скрыта по умолчанию (десктоп) */
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -1921,11 +1922,16 @@ body {
     /* КРИТИЧЕСКИ ВАЖНО: Показываем гамбургер/стрелку на мобильных */
     /* Используем ТОТ ЖЕ селектор, что работает на главной странице */
     /* СТРЕЛКА ВСЕГДА ПЕРВОЙ - максимальный приоритет */
+    /* Перекрываем базовое правило .back-button { display: none; } */
     button#backButton,
     button.back-button,
     button.mobile-menu-toggle.back-button,
+    .back-button,
     .header .nav button#backButton,
-    .header .nav button.back-button {
+    .header .nav button.back-button,
+    .header .nav .back-button,
+    .nav .back-button,
+    .nav button#backButton {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
