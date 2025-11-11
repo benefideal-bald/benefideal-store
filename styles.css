@@ -2006,11 +2006,23 @@ body {
     }
     
     /* Показываем стрелку назад на мобильных (страницы товаров) */
+    /* КРИТИЧЕСКИ ВАЖНО: Добавляем все возможные селекторы для страниц товаров */
     .back-button,
+    button.back-button,
+    button#backButton,
+    button.mobile-menu-toggle.back-button,
     .header .back-button,
     .header .nav .back-button,
+    .header .nav button#backButton,
+    .header .nav button.back-button,
+    .nav .back-button,
+    .nav button#backButton,
     a.back-button,
-    .nav .back-button {
+    /* Специфично для страниц товаров */
+    .product-page ~ .header .back-button,
+    .product-page ~ .header .nav .back-button,
+    body:has(.product-page) .back-button,
+    body:has(.product-page) button#backButton {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
