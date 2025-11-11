@@ -1732,8 +1732,9 @@ body {
 }
 
 /* Стрелка назад (только для мобильных, на страницах товаров) */
+/* ПО УМОЛЧАНИЮ СКРЫТА - показывается только на мобильных */
 .back-button {
-    display: flex;
+    display: none; /* Скрыта по умолчанию */
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -1757,17 +1758,28 @@ body {
 }
 
 /* На десктопе стрелка скрыта - НЕ МЕНЯЕМ КОМП ВЕРСИЮ */
-/* Перекрываем inline стили на десктопе ТОЛЬКО если экран больше 768px */
+/* На десктопе стрелка ВСЕГДА скрыта */
 @media screen and (min-width: 769px) {
     button#backButton,
     button.back-button,
-    .back-button {
+    button.mobile-menu-toggle.back-button,
+    .back-button,
+    .header .nav button#backButton,
+    .header .nav .back-button {
         display: none !important; /* На десктопе стрелка скрыта */
         visibility: hidden !important;
         opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
     button#backButton i,
-    button.back-button i {
+    button.back-button i,
+    button.mobile-menu-toggle.back-button i,
+    .back-button i,
+    .header .nav button#backButton i,
+    .header .nav .back-button i {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
