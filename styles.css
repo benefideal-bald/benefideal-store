@@ -1775,18 +1775,37 @@ body {
 }
 
 /* КРИТИЧЕСКИ ВАЖНО: На мобильных стрелка ВСЕГДА видна, даже если есть inline стили */
+/* Это правило должно быть ПЕРВЫМ для мобильных */
 @media screen and (max-width: 768px) {
+    /* Стрелка назад - ВСЕГДА видна на мобильных */
     button#backButton,
-    button.back-button.mobile-menu-toggle {
+    button.back-button,
+    button.mobile-menu-toggle.back-button,
+    .back-button,
+    .header .nav button#backButton,
+    .header .nav .back-button {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        position: relative !important;
+        z-index: 1001 !important;
     }
+    /* Иконка стрелки - ВСЕГДА видна */
     button#backButton i,
-    button.back-button.mobile-menu-toggle i {
+    button.back-button i,
+    button.mobile-menu-toggle.back-button i,
+    .back-button i,
+    .header .nav button#backButton i,
+    .header .nav .back-button i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
+        font-size: 1.5rem !important;
+        color: #1f2937 !important;
     }
 }
 
