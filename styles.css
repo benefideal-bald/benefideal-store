@@ -1974,6 +1974,8 @@ body {
     /* КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что иконка внутри видна */
     button#mobileMenuToggle i,
     button#backButton i,
+    button.back-button i,
+    button.mobile-menu-toggle.back-button i,
     button.mobile-menu-toggle i {
         display: inline-block !important;
         visibility: visible !important;
@@ -1983,10 +1985,12 @@ body {
         line-height: 1 !important;
     }
     
-    /* Стрелка назад (иконка fa-arrow-left) - ОБЯЗАТЕЛЬНО ВИДНА */
+    /* Стрелка назад (иконка fa-arrow-left) - ОБЯЗАТЕЛЬНО ВИДНА на всех страницах товаров */
     button#backButton i.fa-arrow-left,
     button.back-button i.fa-arrow-left,
-    button.mobile-menu-toggle.back-button i.fa-arrow-left {
+    button.mobile-menu-toggle.back-button i.fa-arrow-left,
+    .header .nav button#backButton i.fa-arrow-left,
+    .header .nav .back-button i.fa-arrow-left {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
