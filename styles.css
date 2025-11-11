@@ -1757,11 +1757,20 @@ body {
 }
 
 /* На десктопе стрелка скрыта - НЕ МЕНЯЕМ КОМП ВЕРСИЮ */
+/* Перекрываем inline стили на десктопе */
 @media screen and (min-width: 769px) {
     button#backButton,
     button.back-button,
     .back-button {
         display: none !important; /* На десктопе стрелка скрыта */
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+    button#backButton i,
+    button.back-button i {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
     }
 }
 
