@@ -1879,6 +1879,16 @@ body {
         line-height: 1 !important;
     }
     
+    /* Стрелка назад (иконка fa-arrow-left) */
+    button#backButton i.fa-arrow-left,
+    button.back-button i.fa-arrow-left {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        font-size: 1.5rem !important;
+        color: #1f2937 !important;
+    }
+    
     /* Показываем стрелку назад на мобильных (страницы товаров) */
     .back-button,
     .header .back-button,

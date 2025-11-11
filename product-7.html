@@ -15,12 +15,10 @@
     <header class="header">
         <div class="container">
             <div class="nav">
-                <!-- Стрелка назад (слева) -->
-                <div class="nav-actions back-arrow">
-                    <button class="back-button" onclick="window.location.href='index.html'">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
-                </div>
+                <!-- Стрелка назад (слева, как гамбургер на главной) -->
+                <button class="mobile-menu-toggle back-button" id="backButton" onclick="window.location.href='index.html'" aria-label="Назад">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
                 
                 <!-- Логотип (по центру на мобильных) -->
                 <a href="index.html" class="logo">Benefideal</a>
