@@ -1713,10 +1713,13 @@ body {
     justify-content: center;
 }
 
-/* Скрываем на десктопе */
+/* Скрываем на десктопе (НО НЕ стрелку назад) */
 @media (min-width: 769px) {
-    .mobile-menu-toggle {
-        display: none !important; /* Скрыто на десктопе */
+    .mobile-menu-toggle:not(button#backButton) {
+        display: none !important; /* Скрыто на десктопе, кроме стрелки */
+    }
+    button#backButton {
+        display: none !important; /* Стрелка скрыта на десктопе отдельно */
     }
 }
 
