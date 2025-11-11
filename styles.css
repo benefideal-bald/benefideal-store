@@ -1715,11 +1715,14 @@ body {
 
 /* Скрываем на десктопе (НО НЕ стрелку назад) */
 @media (min-width: 769px) {
-    .mobile-menu-toggle:not(button#backButton) {
-        display: none !important; /* Скрыто на десктопе, кроме стрелки */
+    /* Гамбургер скрыт на десктопе */
+    button#mobileMenuToggle.mobile-menu-toggle {
+        display: none !important;
     }
-    button#backButton {
-        display: none !important; /* Стрелка скрыта на десктопе отдельно */
+    /* Стрелка назад скрыта на десктопе */
+    button#backButton,
+    button.back-button {
+        display: none !important;
     }
 }
 
@@ -1897,14 +1900,17 @@ body {
         line-height: 1 !important;
     }
     
-    /* Стрелка назад (иконка fa-arrow-left) */
+    /* Стрелка назад (иконка fa-arrow-left) - ОБЯЗАТЕЛЬНО ВИДНА */
     button#backButton i.fa-arrow-left,
-    button.back-button i.fa-arrow-left {
+    button.back-button i.fa-arrow-left,
+    button.mobile-menu-toggle.back-button i.fa-arrow-left {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
         font-size: 1.5rem !important;
         color: #1f2937 !important;
+        width: auto !important;
+        height: auto !important;
     }
     
     /* Показываем стрелку назад на мобильных (страницы товаров) */
