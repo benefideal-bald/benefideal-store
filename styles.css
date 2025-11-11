@@ -1312,6 +1312,14 @@ body {
     background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%);
 }
 
+/* Уменьшаем расстояние между хедером и контентом на мобильных */
+@media (max-width: 768px) {
+    .product-page {
+        padding: var(--space-4) 0 !important;
+        margin-top: 60px !important; /* Уменьшено с 80px */
+    }
+}
+
 .product-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -1742,10 +1750,13 @@ body {
     margin-right: auto;
 }
 
-/* На десктопе стрелка скрыта */
+/* На десктопе стрелка скрыта (только если это не button#backButton) */
 @media screen and (min-width: 769px) {
-    .back-button {
+    .back-button:not(button#backButton) {
         display: none !important;
+    }
+    button#backButton {
+        display: none !important; /* На десктопе стрелка скрыта */
     }
 }
 
