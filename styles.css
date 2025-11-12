@@ -1658,13 +1658,15 @@ body {
 }
 
 .subscription-btn:focus,
-.subscription-btn:active,
-.subscription-option input[type="radio"]:focus + .subscription-btn {
+.subscription-btn:active {
     outline: none;
-    border: 2px solid var(--primary);
 }
 
 .subscription-option input[type="radio"]:focus {
+    outline: none;
+}
+
+.subscription-option input[type="radio"]:focus + .subscription-btn {
     outline: none;
 }
 
