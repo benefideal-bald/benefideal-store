@@ -1512,6 +1512,20 @@ body {
     .product-description {
         order: 5;
         margin-top: var(--space-8);
+        text-align: center !important;
+        width: 100%;
+    }
+    
+    .product-description h2,
+    .product-description p,
+    .product-description ul,
+    .product-description li {
+        text-align: center !important;
+    }
+    
+    .product-description ul {
+        display: inline-block;
+        text-align: left;
     }
 }
 
