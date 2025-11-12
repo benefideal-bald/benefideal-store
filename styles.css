@@ -2389,6 +2389,57 @@ body {
         font-size: 1.5rem !important;
         color: #1f2937 !important;
     }
+    
+    /* КРИТИЧЕСКОЕ ПРАВИЛО: Для страниц с классом .product-page - стрелка ВСЕГДА видна */
+    /* Это правило специально для страниц товаров, где стрелка не показывалась */
+    body:has(.product-page) .header .nav button#backButton,
+    body:has(.product-page) .header .nav button.back-button,
+    body:has(.product-page) .header .nav .back-button,
+    body:has(.product-page) header .nav button#backButton,
+    body:has(.product-page) header .nav button.back-button,
+    body:has(.product-page) .nav button#backButton,
+    body:has(.product-page) .nav button.back-button,
+    body:has(.product-page) .nav .back-button,
+    /* Альтернативные селекторы без :has() для совместимости */
+    .product-page ~ .header .nav button#backButton,
+    .product-page ~ .header .nav button.back-button,
+    /* Еще более специфичные селекторы */
+    html body .header .nav button#backButton,
+    html body .header .nav button.back-button,
+    html body .header .nav .back-button {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        position: relative !important;
+        z-index: 1001 !important;
+        align-items: center !important;
+        justify-content: center !important;
+        order: 1 !important;
+        margin-right: auto !important;
+        margin-left: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        cursor: pointer !important;
+    }
+    
+    /* Иконка стрелки для страниц товаров */
+    body:has(.product-page) .header .nav button#backButton i,
+    body:has(.product-page) .header .nav button.back-button i,
+    body:has(.product-page) .header .nav .back-button i,
+    html body .header .nav button#backButton i,
+    html body .header .nav button.back-button i,
+    html body .header .nav .back-button i {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        font-size: 1.5rem !important;
+        color: #1f2937 !important;
+    }
 }
 
 /* ========================================
