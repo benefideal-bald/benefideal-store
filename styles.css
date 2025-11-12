@@ -2183,8 +2183,21 @@ label.subscription-btn:focus-visible {
     max-height: 0;
     overflow: hidden;
     transition: max-height var(--transition-base);
-    margin-top: 0;
-    padding-top: 0;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+@media (max-width: 768px) {
+    .mobile-menu {
+        top: 60px !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    
+    .mobile-nav-links {
+        margin-top: 0 !important;
+        padding-top: var(--space-4) !important;
+    }
 }
 
 .mobile-menu.active {
