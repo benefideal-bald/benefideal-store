@@ -1406,7 +1406,7 @@ body {
 @media (max-width: 968px) {
     .product-layout {
         grid-template-columns: 1fr;
-        gap: var(--space-12);
+        gap: var(--space-4);
         display: flex;
         flex-direction: column;
     }
@@ -1520,6 +1520,24 @@ body {
     font-size: 1.25rem;
     color: var(--gray-600);
     margin-bottom: var(--space-8);
+}
+
+@media (max-width: 968px) {
+    .product-title {
+        margin-bottom: var(--space-2);
+    }
+    
+    .product-subtitle {
+        margin-bottom: var(--space-4);
+    }
+    
+    .product-image {
+        margin-bottom: var(--space-4);
+    }
+    
+    .product-purchase {
+        margin-top: var(--space-4);
+    }
 }
 
 .product-description {
