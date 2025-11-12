@@ -442,13 +442,13 @@ body {
 
 .hero {
     position: relative;
-    min-height: calc(100vh - 80px);
-    height: calc(100vh - 80px);
+    min-height: 100vh;
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: var(--space-24) 0 0;
-    margin-top: 80px;
+    margin-top: 0;
     margin-bottom: 0;
     padding-bottom: 0;
     background: var(--gradient-hero);
@@ -2447,8 +2447,9 @@ body {
     }
     
     .hero {
-        min-height: 70vh;
-        padding: var(--space-16) 0;
+        min-height: 100vh;
+        padding: var(--space-16) 0 0;
+        margin-top: 0;
     }
     
     .subscriptions,
