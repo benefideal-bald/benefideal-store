@@ -2392,21 +2392,21 @@ body {
     
     /* КРИТИЧЕСКОЕ ПРАВИЛО: Для страниц с классом .product-page - стрелка ВСЕГДА видна */
     /* Это правило специально для страниц товаров, где стрелка не показывалась */
-    body:has(.product-page) .header .nav button#backButton,
-    body:has(.product-page) .header .nav button.back-button,
-    body:has(.product-page) .header .nav .back-button,
-    body:has(.product-page) header .nav button#backButton,
-    body:has(.product-page) header .nav button.back-button,
-    body:has(.product-page) .nav button#backButton,
-    body:has(.product-page) .nav button.back-button,
-    body:has(.product-page) .nav .back-button,
-    /* Альтернативные селекторы без :has() для совместимости */
-    .product-page ~ .header .nav button#backButton,
-    .product-page ~ .header .nav button.back-button,
-    /* Еще более специфичные селекторы */
+    /* Используем максимально специфичные селекторы для перекрытия всех правил */
     html body .header .nav button#backButton,
     html body .header .nav button.back-button,
-    html body .header .nav .back-button {
+    html body .header .nav .back-button,
+    html body header .nav button#backButton,
+    html body header .nav button.back-button,
+    html body .container .nav button#backButton,
+    html body .container .nav button.back-button,
+    html body .container .nav .back-button,
+    /* Еще более специфичные селекторы с body */
+    body .header .container .nav button#backButton,
+    body .header .container .nav button.back-button,
+    body .header .container .nav .back-button,
+    body header .container .nav button#backButton,
+    body header .container .nav button.back-button {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -2427,13 +2427,15 @@ body {
         cursor: pointer !important;
     }
     
-    /* Иконка стрелки для страниц товаров */
-    body:has(.product-page) .header .nav button#backButton i,
-    body:has(.product-page) .header .nav button.back-button i,
-    body:has(.product-page) .header .nav .back-button i,
+    /* Иконка стрелки для страниц товаров - максимально специфичные селекторы */
     html body .header .nav button#backButton i,
     html body .header .nav button.back-button i,
-    html body .header .nav .back-button i {
+    html body .header .nav .back-button i,
+    html body header .nav button#backButton i,
+    html body header .nav button.back-button i,
+    body .header .container .nav button#backButton i,
+    body .header .container .nav button.back-button i,
+    body .header .container .nav .back-button i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
