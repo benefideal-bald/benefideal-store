@@ -126,6 +126,76 @@ body {
     .container {
         padding: 0 var(--space-4);
     }
+    
+    /* КРИТИЧЕСКОЕ ПРАВИЛО: Стрелка назад ВСЕГДА видна на мобильных - ПЕРВОЕ ПРАВИЛО */
+    /* Это правило идет ПЕРВЫМ, чтобы перекрыть все остальные */
+    button#backButton,
+    button.back-button,
+    button.mobile-menu-toggle.back-button,
+    .back-button,
+    .header .nav button#backButton,
+    .header .nav button.back-button,
+    .header .nav .back-button,
+    .header .nav button.mobile-menu-toggle.back-button,
+    .nav button#backButton,
+    .nav button.back-button,
+    .nav .back-button,
+    .nav button.mobile-menu-toggle.back-button,
+    header .back-button,
+    header button#backButton,
+    header button.back-button,
+    header .nav .back-button,
+    header .nav button#backButton,
+    header .nav button.back-button,
+    .container .nav .back-button,
+    .container .nav button#backButton,
+    .container .nav button.back-button,
+    body .header .nav button#backButton,
+    body .header .nav button.back-button,
+    body .header .nav .back-button,
+    body header .nav button#backButton,
+    body header .nav button.back-button {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        position: relative !important;
+        z-index: 1001 !important;
+        align-items: center !important;
+        justify-content: center !important;
+        order: 1 !important;
+        margin-right: auto !important;
+        margin-left: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        cursor: pointer !important;
+    }
+    
+    /* Иконка стрелки ВСЕГДА видна */
+    button#backButton i,
+    button.back-button i,
+    button.mobile-menu-toggle.back-button i,
+    .back-button i,
+    .header .nav button#backButton i,
+    .header .nav button.back-button i,
+    .header .nav .back-button i,
+    .nav button#backButton i,
+    .nav button.back-button i,
+    header .back-button i,
+    header button#backButton i,
+    header button.back-button i,
+    body .header .nav button#backButton i,
+    body .header .nav button.back-button i {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        font-size: 1.5rem !important;
+        color: #1f2937 !important;
+    }
 }
 
 /* ========================================
