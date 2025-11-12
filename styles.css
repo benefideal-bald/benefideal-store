@@ -1549,14 +1549,14 @@ body {
     }
     
     .subscription-btn {
-        height: 55px;
-        min-height: 55px;
-        max-height: 55px;
-        padding: var(--space-2) var(--space-3);
+        height: 55px !important;
+        min-height: 55px !important;
+        max-height: 55px !important;
+        padding: var(--space-2) var(--space-3) !important;
     }
     
     .subscription-duration {
-        font-size: 1.05rem;
+        font-size: 1.05rem !important;
     }
 }
 
