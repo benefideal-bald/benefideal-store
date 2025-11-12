@@ -1732,7 +1732,8 @@ label.subscription-btn:focus-visible {
     background: var(--gradient-primary);
     color: var(--white);
     border-color: transparent;
-    box-shadow: var(--shadow-colored);
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 .subscription-duration {
