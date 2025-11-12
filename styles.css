@@ -2174,7 +2174,7 @@ label.subscription-btn:focus-visible {
 .mobile-menu {
     display: none; /* Скрыто по умолчанию */
     position: fixed;
-    top: 70px; /* Высота хедера */
+    top: 60px; /* Высота хедера */
     left: 0;
     right: 0;
     background: var(--white);
@@ -2183,6 +2183,8 @@ label.subscription-btn:focus-visible {
     max-height: 0;
     overflow: hidden;
     transition: max-height var(--transition-base);
+    margin-top: 0;
+    padding-top: 0;
 }
 
 .mobile-menu.active {
@@ -2194,6 +2196,7 @@ label.subscription-btn:focus-visible {
     flex-direction: column;
     padding: var(--space-4);
     gap: var(--space-2);
+    margin-top: 0;
 }
 
 .mobile-nav-links a {
