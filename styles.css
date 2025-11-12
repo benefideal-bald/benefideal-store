@@ -1525,12 +1525,12 @@ body {
 @media (max-width: 968px) {
     .product-title {
         margin-bottom: var(--space-2);
-        text-align: center;
+        text-align: center !important;
     }
     
     .product-subtitle {
         margin-bottom: var(--space-4);
-        text-align: center;
+        text-align: center !important;
     }
     
     .product-image {
