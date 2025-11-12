@@ -1648,7 +1648,8 @@ body {
     min-height: 55px;
     max-height: 55px;
     width: 100%;
-    outline: none;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .subscription-btn:hover {
@@ -1658,16 +1659,27 @@ body {
 }
 
 .subscription-btn:focus,
-.subscription-btn:active {
-    outline: none;
+.subscription-btn:active,
+.subscription-btn:focus-visible {
+    outline: none !important;
+    border: 2px solid var(--primary);
+}
+
+.subscription-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    outline: none !important;
 }
 
 .subscription-option input[type="radio"]:focus {
-    outline: none;
+    outline: none !important;
 }
 
-.subscription-option input[type="radio"]:focus + .subscription-btn {
-    outline: none;
+.subscription-option input[type="radio"]:focus + .subscription-btn,
+.subscription-option input[type="radio"]:focus-visible + .subscription-btn {
+    outline: none !important;
+    border: 2px solid var(--primary);
 }
 
 .subscription-option input[type="radio"]:checked + .subscription-btn {
