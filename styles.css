@@ -1791,6 +1791,7 @@ body {
 /* Это правило должно быть ПЕРВЫМ для мобильных */
 @media screen and (max-width: 768px) {
     /* Стрелка назад - ВСЕГДА видна на мобильных (для ВСЕХ страниц, включая товары и отзывы) */
+    /* УБИРАЕМ :has() - используем только простые селекторы, которые работают везде */
     button#backButton,
     button.back-button,
     button.mobile-menu-toggle.back-button,
@@ -1802,12 +1803,13 @@ body {
     .nav button#backButton,
     .nav button.back-button,
     .nav .back-button,
-    /* Специфично для страниц товаров - добавляем все возможные селекторы */
-    body:has(.product-page) button#backButton,
-    body:has(.product-page) button.back-button,
-    body:has(.product-page) .back-button,
-    body:has(.product-page) .header .nav button#backButton,
-    body:has(.product-page) .header .nav .back-button {
+    /* Дополнительные селекторы для максимальной совместимости */
+    header .back-button,
+    header button#backButton,
+    header button.back-button,
+    .container .nav .back-button,
+    .container .nav button#backButton,
+    .container .nav button.back-button {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
