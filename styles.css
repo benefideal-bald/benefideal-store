@@ -1648,12 +1648,25 @@ body {
     min-height: 55px;
     max-height: 55px;
     width: 100%;
+    outline: none;
 }
 
 .subscription-btn:hover {
     border-color: var(--primary);
     background: var(--white);
     transform: translateY(-2px);
+}
+
+.subscription-btn:focus,
+.subscription-btn:active,
+.subscription-option input[type="radio"]:focus + .subscription-btn {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.subscription-option input[type="radio"]:focus {
+    outline: none;
 }
 
 .subscription-option input[type="radio"]:checked + .subscription-btn {
