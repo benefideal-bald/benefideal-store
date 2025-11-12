@@ -1962,12 +1962,12 @@ body {
     .nav button#backButton,
     .nav button.back-button,
     .nav button.mobile-menu-toggle.back-button,
-    /* Специфично для страниц товаров - добавляем селекторы с body:has() */
-    body:has(.product-page) button#backButton,
-    body:has(.product-page) button.back-button,
-    body:has(.product-page) .back-button,
-    body:has(.product-page) .header .nav button#backButton,
-    body:has(.product-page) .header .nav .back-button {
+    /* Дополнительные селекторы для максимальной совместимости (без :has()) */
+    header .back-button,
+    header button#backButton,
+    header button.back-button,
+    .container .nav .back-button,
+    .container .nav button#backButton {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
