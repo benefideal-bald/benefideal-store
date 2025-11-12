@@ -2039,8 +2039,9 @@ body {
         height: auto !important;
     }
     
-    /* Показываем стрелку назад на мобильных (страницы товаров) */
-    /* КРИТИЧЕСКИ ВАЖНО: Добавляем все возможные селекторы для страниц товаров */
+    /* Показываем стрелку назад на мобильных (страницы товаров и отзывов) */
+    /* КРИТИЧЕСКИ ВАЖНО: Добавляем все возможные селекторы - работает для ВСЕХ страниц */
+    /* Это правило должно работать так же, как на странице отзывов */
     .back-button,
     button.back-button,
     button#backButton,
@@ -2049,14 +2050,12 @@ body {
     .header .nav .back-button,
     .header .nav button#backButton,
     .header .nav button.back-button,
+    .header .nav button.mobile-menu-toggle.back-button,
     .nav .back-button,
     .nav button#backButton,
-    a.back-button,
-    /* Специфично для страниц товаров */
-    .product-page ~ .header .back-button,
-    .product-page ~ .header .nav .back-button,
-    body:has(.product-page) .back-button,
-    body:has(.product-page) button#backButton {
+    .nav button.back-button,
+    .nav button.mobile-menu-toggle.back-button,
+    a.back-button {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -2064,6 +2063,7 @@ body {
         flex: 0 0 auto !important;
         flex-shrink: 0 !important;
         margin-right: auto !important;
+        margin-left: 0 !important;
         width: 40px !important;
         height: 40px !important;
         min-width: 40px !important;
@@ -2074,18 +2074,32 @@ body {
         z-index: 1001 !important;
         align-items: center !important;
         justify-content: center !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        cursor: pointer !important;
     }
     
-    /* Убеждаемся, что иконка внутри стрелки видна */
+    /* Убеждаемся, что иконка внутри стрелки видна (для ВСЕХ страниц) */
     .back-button i,
+    button.back-button i,
+    button#backButton i,
+    button.mobile-menu-toggle.back-button i,
     .header .back-button i,
     .header .nav .back-button i,
+    .header .nav button#backButton i,
+    .header .nav button.back-button i,
+    .nav .back-button i,
+    .nav button#backButton i,
+    .nav button.back-button i,
     a.back-button i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
         font-size: 1.5rem !important;
-        color: var(--gray-700) !important;
+        color: #1f2937 !important;
+        width: auto !important;
+        height: auto !important;
     }
     
     /* Скрываем обычное меню на мобильных */
