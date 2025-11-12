@@ -1608,14 +1608,21 @@ body {
     }
     
     .subscription-options {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-2) !important;
     }
     
     .subscription-btn {
-        height: 55px !important;
-        min-height: 55px !important;
-        max-height: 55px !important;
-        padding: var(--space-2) var(--space-3) !important;
+        height: 50px !important;
+        min-height: 50px !important;
+        max-height: 50px !important;
+        padding: var(--space-1) var(--space-1) !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .subscription-duration {
+        font-size: 0.8rem !important;
+        line-height: 1.1 !important;
     }
     
     .subscription-duration {
