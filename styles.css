@@ -1658,25 +1658,46 @@ body {
         line-height: 1;
         width: 100%;
         text-align: center;
+        order: 1;
     }
     
     .original-price {
         font-size: 1.125rem;
         line-height: 1;
         margin: 0;
-        display: inline-block;
+        order: 2;
     }
     
     .discount {
         padding: var(--space-1) var(--space-3);
         font-size: 0.75rem;
         margin: 0;
-        display: inline-block;
+        order: 2;
         margin-left: var(--space-2);
     }
     
-    .price-section .original-price + .discount {
-        margin-left: var(--space-2);
+    .price-section::after {
+        content: '';
+        display: block;
+        width: 100%;
+        order: 2;
+    }
+    
+    .price-section {
+        flex-wrap: wrap;
+        flex-direction: row;
+        justify-content: center;
+    }
+    
+    .price-section .current-price {
+        flex-basis: 100%;
+        order: 1;
+    }
+    
+    .price-section .original-price,
+    .price-section .discount {
+        order: 2;
+        flex-shrink: 0;
     }
 }
 
