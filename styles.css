@@ -1545,9 +1545,7 @@ body {
     }
     
     .subscription-options {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: var(--space-2);
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
