@@ -1808,11 +1808,7 @@ label.subscription-btn:focus-visible {
     }
     
     .original-price {
-        font-size: 1.125rem;
-        line-height: 1;
-        margin: 0;
-        order: 2;
-        flex-shrink: 0;
+        display: none !important;
     }
     
     .discount {
