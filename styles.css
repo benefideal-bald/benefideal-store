@@ -2393,6 +2393,7 @@ body {
     /* КРИТИЧЕСКОЕ ПРАВИЛО: Для страниц с классом .product-page - стрелка ВСЕГДА видна */
     /* Это правило специально для страниц товаров, где стрелка не показывалась */
     /* Используем максимально специфичные селекторы для перекрытия всех правил */
+    /* ВАЖНО: Это правило должно перекрыть ВСЕ остальные, включая десктопные */
     html body .header .nav button#backButton,
     html body .header .nav button.back-button,
     html body .header .nav .back-button,
@@ -2406,7 +2407,11 @@ body {
     body .header .container .nav button.back-button,
     body .header .container .nav .back-button,
     body header .container .nav button#backButton,
-    body header .container .nav button.back-button {
+    body header .container .nav button.back-button,
+    /* Дополнительные селекторы для максимальной совместимости */
+    button.mobile-menu-toggle.back-button#backButton,
+    button#backButton.mobile-menu-toggle.back-button,
+    .header .nav button.mobile-menu-toggle.back-button#backButton {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -2435,7 +2440,9 @@ body {
     html body header .nav button.back-button i,
     body .header .container .nav button#backButton i,
     body .header .container .nav button.back-button i,
-    body .header .container .nav .back-button i {
+    body .header .container .nav .back-button i,
+    button.mobile-menu-toggle.back-button#backButton i,
+    button#backButton.mobile-menu-toggle.back-button i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
