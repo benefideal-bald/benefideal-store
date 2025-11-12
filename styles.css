@@ -1410,19 +1410,6 @@ body {
         display: flex;
         flex-direction: column;
     }
-    
-    .product-info {
-        order: 1;
-    }
-    
-    .product-gallery {
-        order: 2;
-    }
-    
-    .product-description {
-        order: 3;
-        margin-top: var(--space-8);
-    }
 }
 
 .product-gallery {
@@ -1494,9 +1481,7 @@ body {
 @media (max-width: 968px) {
     .product-info {
         padding-left: 0;
-        display: flex;
-        flex-direction: column;
-        order: 1;
+        display: contents;
     }
     
     .product-title,
@@ -1504,13 +1489,13 @@ body {
         order: 1;
     }
     
-    .product-description {
-        order: 3;
-        margin-top: 0;
-    }
-    
     .product-gallery {
         order: 2;
+    }
+    
+    .product-description {
+        order: 3;
+        margin-top: var(--space-8);
     }
 }
 
