@@ -1949,7 +1949,8 @@ body {
     /* КРИТИЧЕСКИ ВАЖНО: Показываем гамбургер/стрелку на мобильных */
     /* Используем ТОТ ЖЕ селектор, что работает на главной странице */
     /* СТРЕЛКА ВСЕГДА ПЕРВОЙ - максимальный приоритет */
-    /* Перекрываем базовое правило .back-button { display: none; } */
+    /* Перекрываем ВСЕ десктопные правила - это правило идет ПОСЛЕ десктопных */
+    /* Добавляем ВСЕ возможные селекторы для максимальной совместимости */
     button#backButton,
     button.back-button,
     button.mobile-menu-toggle.back-button,
@@ -1962,12 +1963,24 @@ body {
     .nav button#backButton,
     .nav button.back-button,
     .nav button.mobile-menu-toggle.back-button,
-    /* Дополнительные селекторы для максимальной совместимости (без :has()) */
+    .nav .back-button,
+    /* Дополнительные селекторы для максимальной совместимости */
     header .back-button,
     header button#backButton,
     header button.back-button,
+    header .nav .back-button,
+    header .nav button#backButton,
+    header .nav button.back-button,
     .container .nav .back-button,
-    .container .nav button#backButton {
+    .container .nav button#backButton,
+    .container .nav button.back-button,
+    .container .nav .back-button,
+    /* Еще более специфичные селекторы */
+    body .header .nav button#backButton,
+    body .header .nav button.back-button,
+    body .header .nav .back-button,
+    body header .nav button#backButton,
+    body header .nav button.back-button {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
