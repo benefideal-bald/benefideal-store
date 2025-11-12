@@ -1423,6 +1423,7 @@ body {
 @media (max-width: 968px) {
     .product-gallery {
         position: static;
+        display: contents;
     }
     
     .product-image {
@@ -1488,17 +1489,20 @@ body {
         order: 1;
     }
     
-    .product-title,
-    .product-subtitle {
+    .product-title {
         order: 2;
     }
     
-    .product-purchase {
+    .product-subtitle {
         order: 3;
     }
     
-    .product-description {
+    .product-purchase {
         order: 4;
+    }
+    
+    .product-description {
+        order: 5;
         margin-top: var(--space-8);
     }
 }
