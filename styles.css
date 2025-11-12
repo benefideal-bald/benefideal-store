@@ -1731,9 +1731,7 @@ label.subscription-btn:focus-visible {
 .subscription-option input[type="radio"]:checked + .subscription-btn {
     background: var(--gradient-primary);
     color: var(--white);
-    border: none !important;
-    border-width: 0 !important;
-    border-color: transparent !important;
+    border: 2px solid var(--primary) !important;
     box-shadow: none !important;
     outline: none !important;
     outline-width: 0 !important;
