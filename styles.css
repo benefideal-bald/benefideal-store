@@ -1575,15 +1575,15 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--space-4);
+    padding: var(--space-2) var(--space-3);
     border: 2px solid var(--gray-200);
     border-radius: var(--radius-lg);
     background: var(--gray-50);
     cursor: pointer;
     transition: all var(--transition-base);
-    height: 70px;
-    min-height: 70px;
-    max-height: 70px;
+    height: 55px;
+    min-height: 55px;
+    max-height: 55px;
     width: 100%;
 }
 
@@ -1601,7 +1601,7 @@ body {
 }
 
 .subscription-duration {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 600;
     color: var(--gray-700);
     transition: color var(--transition-fast);
