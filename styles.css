@@ -2185,6 +2185,7 @@ label.subscription-btn:focus-visible {
     transition: max-height var(--transition-base);
     margin-top: 0 !important;
     padding-top: 0 !important;
+    border-top: 1px solid var(--gray-200);
 }
 
 @media (max-width: 768px) {
@@ -2192,6 +2193,7 @@ label.subscription-btn:focus-visible {
         top: 60px !important;
         margin-top: 0 !important;
         padding-top: 0 !important;
+        border-top: 1px solid var(--gray-200) !important;
     }
     
     .mobile-nav-links {
