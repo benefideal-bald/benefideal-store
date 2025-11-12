@@ -1649,20 +1649,32 @@ body {
     max-height: 55px;
     width: 100%;
     outline: none !important;
+    outline-width: 0 !important;
+    outline-style: none !important;
+    outline-color: transparent !important;
     -webkit-tap-highlight-color: transparent;
+    -webkit-focus-ring-color: transparent;
+    box-shadow: none !important;
 }
 
 .subscription-btn:hover {
     border-color: var(--primary);
     background: var(--white);
     transform: translateY(-2px);
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 .subscription-btn:focus,
 .subscription-btn:active,
-.subscription-btn:focus-visible {
+.subscription-btn:focus-visible,
+.subscription-btn:focus-within {
     outline: none !important;
+    outline-width: 0 !important;
+    outline-style: none !important;
+    outline-color: transparent !important;
     border: 2px solid var(--primary);
+    box-shadow: none !important;
 }
 
 .subscription-option input[type="radio"] {
@@ -1670,16 +1682,50 @@ body {
     opacity: 0;
     pointer-events: none;
     outline: none !important;
+    outline-width: 0 !important;
+    outline-style: none !important;
+    outline-color: transparent !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
-.subscription-option input[type="radio"]:focus {
+.subscription-option input[type="radio"]:focus,
+.subscription-option input[type="radio"]:active,
+.subscription-option input[type="radio"]:focus-visible {
     outline: none !important;
+    outline-width: 0 !important;
+    outline-style: none !important;
+    outline-color: transparent !important;
+    box-shadow: none !important;
 }
 
 .subscription-option input[type="radio"]:focus + .subscription-btn,
-.subscription-option input[type="radio"]:focus-visible + .subscription-btn {
+.subscription-option input[type="radio"]:focus-visible + .subscription-btn,
+.subscription-option input[type="radio"]:active + .subscription-btn {
     outline: none !important;
+    outline-width: 0 !important;
+    outline-style: none !important;
+    outline-color: transparent !important;
     border: 2px solid var(--primary);
+    box-shadow: none !important;
+}
+
+label.subscription-btn {
+    outline: none !important;
+    outline-width: 0 !important;
+    outline-style: none !important;
+    outline-color: transparent !important;
+}
+
+label.subscription-btn:focus,
+label.subscription-btn:active,
+label.subscription-btn:focus-visible {
+    outline: none !important;
+    outline-width: 0 !important;
+    outline-style: none !important;
+    outline-color: transparent !important;
+    box-shadow: none !important;
 }
 
 .subscription-option input[type="radio"]:checked + .subscription-btn {
