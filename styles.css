@@ -1485,16 +1485,24 @@ body {
         display: contents;
     }
     
+    .product-layout {
+        align-items: center;
+    }
+    
     .product-image {
         order: 1;
     }
     
     .product-title {
         order: 2;
+        text-align: center !important;
+        width: 100%;
     }
     
     .product-subtitle {
         order: 3;
+        text-align: center !important;
+        width: 100%;
     }
     
     .product-purchase {
@@ -1525,12 +1533,10 @@ body {
 @media (max-width: 968px) {
     .product-title {
         margin-bottom: var(--space-2);
-        text-align: center !important;
     }
     
     .product-subtitle {
         margin-bottom: var(--space-4);
-        text-align: center !important;
     }
     
     .product-image {
