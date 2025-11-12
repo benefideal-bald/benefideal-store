@@ -1835,12 +1835,12 @@ body {
     .header .nav .back-button i,
     .nav button#backButton i,
     .nav button.back-button i,
-    /* Специфично для страниц товаров */
-    body:has(.product-page) button#backButton i,
-    body:has(.product-page) button.back-button i,
-    body:has(.product-page) .back-button i,
-    body:has(.product-page) .header .nav button#backButton i,
-    body:has(.product-page) .header .nav .back-button i {
+    /* Дополнительные селекторы для иконки (без :has()) */
+    header .back-button i,
+    header button#backButton i,
+    header button.back-button i,
+    .container .nav .back-button i,
+    .container .nav button#backButton i {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
