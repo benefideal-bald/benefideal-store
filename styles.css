@@ -1776,10 +1776,7 @@ label.subscription-btn:focus-visible {
 }
 
 .original-price {
-    font-size: 1.25rem;
-    color: var(--gray-400);
-    text-decoration: line-through;
-    font-weight: 500;
+    display: none !important;
 }
 
 .discount {
