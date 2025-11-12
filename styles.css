@@ -1661,8 +1661,7 @@ body {
 .subscription-btn:active,
 .subscription-option input[type="radio"]:focus + .subscription-btn {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    border: 2px solid var(--primary);
 }
 
 .subscription-option input[type="radio"]:focus {
