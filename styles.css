@@ -1547,6 +1547,17 @@ body {
     .subscription-options {
         grid-template-columns: repeat(2, 1fr);
     }
+    
+    .subscription-btn {
+        height: 55px;
+        min-height: 55px;
+        max-height: 55px;
+        padding: var(--space-2) var(--space-3);
+    }
+    
+    .subscription-duration {
+        font-size: 1.05rem;
+    }
 }
 
 .subscription-option {
