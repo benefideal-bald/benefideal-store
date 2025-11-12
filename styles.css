@@ -1484,17 +1484,21 @@ body {
         display: contents;
     }
     
-    .product-title,
-    .product-subtitle {
+    .product-image {
         order: 1;
     }
     
-    .product-gallery {
+    .product-title,
+    .product-subtitle {
         order: 2;
     }
     
-    .product-description {
+    .product-purchase {
         order: 3;
+    }
+    
+    .product-description {
+        order: 4;
         margin-top: var(--space-8);
     }
 }
