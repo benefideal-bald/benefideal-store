@@ -1672,13 +1672,29 @@ body {
     color: var(--gray-900);
 }
 
-/* Базовое правило - скрыто на десктопе, будет показано на мобильных */
+/* Базовое правило - видно по умолчанию, скрыто только на десктопе */
 .product-title-in-description {
-    display: none;
+    display: inline-block;
 }
 
 .product-subtitle-in-description {
-    display: none;
+    display: block;
+    font-size: 1.25rem;
+    color: var(--gray-600);
+    margin-bottom: var(--space-6);
+    margin-top: var(--space-2);
+    text-align: center;
+}
+
+/* Скрываем на десктопе */
+@media (min-width: 769px) {
+    .product-title-in-description {
+        display: none !important;
+    }
+    
+    .product-subtitle-in-description {
+        display: none !important;
+    }
 }
 
 /* КРИТИЧНО: Мобильные стили для названия и подзаголовка в описании - после базового правила */
