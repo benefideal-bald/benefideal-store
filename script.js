@@ -80,13 +80,27 @@ const subscriptionsGrid = document.getElementById('subscriptionsGrid');
 // Initialize app
 function initializeApp() {
     loadCart();
-    renderSubscriptions();
+    updateCartUI(); // Always update cart UI first
+    
+    // Only run these if elements exist (for main page)
+    if (subscriptionsGrid) {
+        renderSubscriptions();
+    }
+    
     setupEventListeners();
-    updateCartUI();
+    
+    // Only run these if elements exist
     initAnimations();
     initScrollAnimations();
-    initParticles();
-    initReviewsAutoScroll();
+    
+    if (document.querySelector('.hero')) {
+        initParticles();
+    }
+    
+    if (document.getElementById('reviewsWrapper') || document.querySelector('.reviews-wrapper')) {
+        initReviewsAutoScroll();
+    }
+    
     setupSubscriptionOptions();
 }
 
