@@ -1562,6 +1562,12 @@ body {
     margin-bottom: var(--space-8);
 }
 
+@media (min-width: 769px) {
+    .product-title-card {
+        display: none !important; /* На десктопе карточка скрыта */
+    }
+}
+
 @media (max-width: 968px) {
     .product-title {
         margin-bottom: var(--space-2);
