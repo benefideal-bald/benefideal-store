@@ -2137,11 +2137,15 @@ label.subscription-btn:focus-visible {
     }
     
     /* Уменьшаем размер галочки на мобильных */
-    .payment-radio {
+    .payment-radio,
+    #paymentSBP,
+    input[type="radio"][name="paymentMethod"] {
         width: 10px !important;
         height: 10px !important;
         min-width: 10px !important;
         min-height: 10px !important;
+        max-width: 10px !important;
+        max-height: 10px !important;
     }
 }
 
