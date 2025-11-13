@@ -1485,14 +1485,16 @@ body {
     
     .product-layout {
         align-items: center;
+        display: flex !important;
+        flex-direction: column !important;
     }
     
     .product-image {
-        order: 1;
+        order: 1 !important;
     }
     
     .product-title-card {
-        order: 2;
+        order: 2 !important;
         background: var(--white) !important;
         border: 1px solid var(--gray-200) !important;
         border-radius: var(--radius-lg) !important;
@@ -1504,6 +1506,8 @@ body {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
+        position: relative !important;
+        z-index: 1 !important;
     }
     
     .product-title {
@@ -1542,7 +1546,7 @@ body {
     }
 }
 
-/* Базовое правило - карточка видна только на мобильных */
+/* Базовое правило - карточка скрыта по умолчанию, будет показана в мобильном медиа-запросе */
 .product-title-card {
     display: none;
 }
