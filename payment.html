@@ -532,12 +532,26 @@
                     // Display order items
                     const itemsContainer = document.getElementById('orderItems');
                     if (itemsContainer) {
-                        itemsContainer.innerHTML = cart.map(item => `
+                        itemsContainer.innerHTML = cart.map(item => {
+                            // Format duration text
+                            let durationText = '';
+                            if (item.months) {
+                                if (item.months === 1) {
+                                    durationText = '1 месяц';
+                                } else if (item.months >= 2 && item.months <= 4) {
+                                    durationText = `${item.months} месяца`;
+                                } else {
+                                    durationText = `${item.months} месяцев`;
+                                }
+                            }
+                            
+                            return `
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--gray-200);">
                                 <span style="color: var(--gray-700); font-weight: 500;">${item.title}</span>
-                                <span style="color: var(--gray-600);">${item.price.toLocaleString()} ₽ × ${item.quantity}</span>
+                                <span style="color: var(--gray-600);">${item.price.toLocaleString()} ₽ × ${item.quantity}${durationText ? ` • ${durationText}` : ''}</span>
                             </div>
-                        `).join('');
+                            `;
+                        }).join('');
                     }
                 } else {
                     // No cart found, redirect back
