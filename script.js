@@ -597,9 +597,15 @@ function showCartNotification(message) {
     const notification = document.createElement('div');
     notification.className = 'cart-notification';
     notification.textContent = message;
+    
+    // Calculate position - ensure it's below header (60px) with some margin
+    const headerHeight = 60;
+    const marginTop = 20;
+    const notificationTop = Math.max(cartRect.top + marginTop, headerHeight + marginTop);
+    
     notification.style.cssText = `
         position: fixed;
-        top: ${cartRect.top - 60}px;
+        top: ${notificationTop}px;
         right: ${cartRect.right - 200}px;
         background: var(--gradient-primary);
         color: white;

@@ -2912,6 +2912,15 @@ label.subscription-btn:focus-visible {
     animation: slideUp 0.4s ease-out;
 }
 
+@media (max-width: 768px) {
+    .cart-notification {
+        top: 80px !important;
+        right: 20px !important;
+        left: auto !important;
+        max-width: calc(100% - 40px) !important;
+    }
+}
+
 /* ========================================
    КРИТИЧЕСКОЕ ПРАВИЛО ДЛЯ СТРЕЛКИ - САМЫЙ КОНЕЦ ФАЙЛА
    Это правило идет В САМОМ КОНЦЕ с максимальным приоритетом
