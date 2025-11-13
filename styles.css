@@ -1566,15 +1566,20 @@ body {
     }
     
     .product-title-in-description {
-        display: inline-block;
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
     
     .product-subtitle-in-description {
         display: block !important;
-        font-size: 1.25rem;
-        color: var(--gray-600);
+        font-size: 1.25rem !important;
+        color: var(--gray-600) !important;
         margin-bottom: var(--space-6) !important;
         margin-top: var(--space-2) !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        text-align: center !important;
     }
     
     .product-description ul {
