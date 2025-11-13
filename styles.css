@@ -2124,6 +2124,13 @@ input[type="radio"][name="paymentMethod"] {
     
     .payment-method-label {
         padding: var(--space-3) var(--space-4) !important; /* Оригинальный padding на десктопе */
+        justify-content: center !important; /* Центрируем содержимое */
+    }
+    
+    .payment-method-text {
+        flex: 0 1 auto !important; /* Убираем flex: 1, чтобы текст не растягивался */
+        margin-left: auto !important; /* Сдвигаем чуть правее */
+        margin-right: auto !important;
     }
 }
 
@@ -2161,11 +2168,13 @@ input[type="radio"][name="paymentMethod"] {
     .payment-method-label {
         flex-wrap: nowrap !important;
         padding: var(--space-2) var(--space-4) !important; /* Уменьшаем высоту карточки */
+        justify-content: flex-start !important; /* Возвращаем выравнивание влево на мобильных */
     }
     
     .payment-method-text {
         font-size: 0.9rem !important; /* Увеличиваем размер текста */
         white-space: nowrap !important;
+        flex: 1 !important; /* Сохраняем flex: 1 как в оригинале */
     }
     
     /* Уменьшаем размер галочки на мобильных через transform */
