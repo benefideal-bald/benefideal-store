@@ -1565,6 +1565,18 @@ body {
         text-align: center !important;
     }
     
+    .product-title-in-description {
+        display: inline-block;
+    }
+    
+    .product-subtitle-in-description {
+        display: block !important;
+        font-size: 1.25rem;
+        color: var(--gray-600);
+        margin-bottom: var(--space-6) !important;
+        margin-top: var(--space-2) !important;
+    }
+    
     .product-description ul {
         display: inline-block;
         text-align: left;
@@ -1653,6 +1665,14 @@ body {
     font-weight: 700;
     margin-bottom: var(--space-6);
     color: var(--gray-900);
+}
+
+.product-title-in-description {
+    display: none; /* Скрыто на десктопе */
+}
+
+.product-subtitle-in-description {
+    display: none; /* Скрыто на десктопе */
 }
 
 .product-description p {
