@@ -1502,6 +1502,8 @@ body {
         box-shadow: var(--shadow-sm) !important;
         width: 100% !important;
         display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
     
     .product-title {
@@ -1542,6 +1544,12 @@ body {
 
 .product-title-card {
     display: none; /* На десктопе карточка скрыта */
+}
+
+@media (min-width: 769px) {
+    .product-title-card {
+        display: none !important; /* На десктопе карточка скрыта */
+    }
 }
 
 .product-title {
