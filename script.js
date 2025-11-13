@@ -34,40 +34,65 @@ let cart = [];
 
 // Load cart from localStorage
 function loadCart() {
-    const savedCart = localStorage.getItem('benefideal_cart');
-    const cartTimestamp = localStorage.getItem('benefideal_cart_timestamp');
-    
-    if (savedCart && cartTimestamp) {
-        const now = new Date().getTime();
-        const savedTime = parseInt(cartTimestamp);
-        const daysDiff = (now - savedTime) / (1000 * 60 * 60 * 24);
+    try {
+        const savedCart = localStorage.getItem('benefideal_cart');
+        const cartTimestamp = localStorage.getItem('benefideal_cart_timestamp');
         
-        // If cart is older than 30 days, clear it
-        if (daysDiff > 30) {
-            localStorage.removeItem('benefideal_cart');
-            localStorage.removeItem('benefideal_cart_timestamp');
-            cart = [];
+        if (savedCart && cartTimestamp) {
+            const now = new Date().getTime();
+            const savedTime = parseInt(cartTimestamp);
+            const daysDiff = (now - savedTime) / (1000 * 60 * 60 * 24);
+            
+            // If cart is older than 30 days, clear it
+            if (daysDiff > 30) {
+                localStorage.removeItem('benefideal_cart');
+                localStorage.removeItem('benefideal_cart_timestamp');
+                cart = [];
+                updateCartUI();
+                showNotification('Корзина была очищена (срок хранения 30 дней истек)', 'info');
+                return;
+            }
+            
+            const parsedCart = JSON.parse(savedCart);
+            if (Array.isArray(parsedCart)) {
+                cart = parsedCart;
+                console.log('Cart loaded:', cart.length, 'items');
+                updateCartUI();
+                
+                // Show remaining days info
+                const remainingDays = Math.ceil(30 - daysDiff);
+                if (remainingDays <= 7) {
+                    showNotification(`Корзина будет сохранена еще ${remainingDays} дней`, 'info');
+                }
+            } else {
+                console.error('Invalid cart data in localStorage');
+                cart = [];
+                updateCartUI();
+            }
+        } else {
+            // No saved cart, keep current cart or initialize empty
+            if (cart.length === 0) {
+                cart = [];
+            }
             updateCartUI();
-            showNotification('Корзина была очищена (срок хранения 30 дней истек)', 'info');
-            return;
         }
-        
-        cart = JSON.parse(savedCart);
+    } catch (e) {
+        console.error('Error loading cart from localStorage:', e);
+        cart = [];
         updateCartUI();
-        
-        // Show remaining days info
-        const remainingDays = Math.ceil(30 - daysDiff);
-        if (remainingDays <= 7) {
-            showNotification(`Корзина будет сохранена еще ${remainingDays} дней`, 'info');
-        }
     }
 }
 
 // Save cart to localStorage
 function saveCart() {
-    const now = new Date().getTime();
-    localStorage.setItem('benefideal_cart', JSON.stringify(cart));
-    localStorage.setItem('benefideal_cart_timestamp', now.toString());
+    try {
+        const now = new Date().getTime();
+        localStorage.setItem('benefideal_cart', JSON.stringify(cart));
+        localStorage.setItem('benefideal_cart_timestamp', now.toString());
+        console.log('Cart saved:', cart.length, 'items');
+    } catch (e) {
+        console.error('Error saving cart to localStorage:', e);
+    }
 }
 
 // DOM elements
@@ -117,11 +142,9 @@ window.addEventListener('pageshow', function(event) {
     const existingNotifications = document.querySelectorAll('.notification, .cart-notification');
     existingNotifications.forEach(notif => notif.remove());
     
-    // If page was restored from cache, reload cart
-    if (event.persisted) {
-        loadCart();
-        updateCartUI();
-    }
+    // Always reload cart when page is shown (both from cache and normal navigation)
+    loadCart();
+    updateCartUI();
 });
 
 // Also reload cart when page becomes visible (in case of tab switching)
