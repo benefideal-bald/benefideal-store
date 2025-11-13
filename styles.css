@@ -1519,7 +1519,7 @@ body {
     }
     
     .product-purchase {
-        order: 4;
+        order: 3;
     }
     
     .product-description {
@@ -1542,14 +1542,9 @@ body {
     }
 }
 
+/* Базовое правило - карточка видна только на мобильных */
 .product-title-card {
-    display: none; /* На десктопе карточка скрыта */
-}
-
-@media (min-width: 769px) {
-    .product-title-card {
-        display: none !important; /* На десктопе карточка скрыта */
-    }
+    display: none;
 }
 
 .product-title {
