@@ -2116,6 +2116,17 @@ input[type="radio"][name="paymentMethod"] {
     accent-color: var(--primary);
 }
 
+/* Десктопные стили для checkout - сохраняем оригинальные размеры */
+@media (min-width: 769px) {
+    .payment-method-text {
+        font-size: 0.95rem !important; /* Оригинальный размер на десктопе */
+    }
+    
+    .payment-method-label {
+        padding: var(--space-3) var(--space-4) !important; /* Оригинальный padding на десктопе */
+    }
+}
+
 /* Мобильные стили для checkout */
 @media (max-width: 768px) {
     .checkout-total {
