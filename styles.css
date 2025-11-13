@@ -2724,27 +2724,22 @@ label.subscription-btn:focus-visible {
         font-size: 2rem;
     }
     
-    /* Скрываем основную линию на мобильных */
-    .workflow::before {
-        display: none;
-    }
-    
     /* Линия от нижней границы каждого шарика до нижней границы следующего */
-    .workflow-step:not(:last-child) .step-number::after {
+    .workflow-step:not(:last-child)::after {
         content: '';
         position: absolute;
-        left: 50%;
-        bottom: 0;
-        transform: translateX(-50%);
+        left: 28px;
+        top: 56px; /* Начинается под шариком (56px = высота шарика) */
         width: 2px;
-        height: calc(100% + var(--space-16)); /* Высота до следующего шарика */
+        height: calc(100% - 56px + var(--space-16)); /* Высота шага минус высота шарика плюс отступ */
         background: var(--gradient-primary);
         z-index: 0;
         border-radius: var(--radius-full);
+        transform: translateX(-50%);
     }
     
-    /* Для последнего шага линия не нужна */
-    .workflow-step:last-child .step-number::after {
+    /* Скрываем основную линию на мобильных */
+    .workflow::before {
         display: none;
     }
     
@@ -2752,7 +2747,6 @@ label.subscription-btn:focus-visible {
         width: 56px;
         height: 56px;
         font-size: 1.25rem;
-        position: relative;
     }
     
     .footer-content {
