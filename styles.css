@@ -2724,18 +2724,49 @@ label.subscription-btn:focus-visible {
         font-size: 2rem;
     }
     
-    /* Одна прямая линия от нижней границы первого шарика до нижней границы последнего */
-    /* Шарики выровнены по центру (align-items: center), поэтому их нижняя граница = центр шарика + половина высоты */
+    /* Скрываем основную линию */
     .workflow::before {
-        left: calc(28px - 1px);
-        top: 56px; /* Начинается под первым шариком (56px = высота шарика на мобильных) */
-        bottom: 56px; /* Заканчивается под последним шариком (56px = высота шарика на мобильных) */
+        display: none;
+    }
+    
+    /* Одна прямая линия от нижней границы первого шарика до нижней границы последнего */
+    .workflow-step:first-child .step-number::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        transform: translateX(-50%);
+        width: 2px;
+        background: var(--gradient-primary);
+        z-index: 0;
+        border-radius: var(--radius-full);
+    }
+    
+    /* Позиционируем линию абсолютно относительно workflow контейнера */
+    .workflow {
+        position: relative;
+    }
+    
+    .workflow-step:first-child .step-number::after {
+        position: absolute;
+        left: 28px;
+        top: auto;
+        bottom: 0;
+        transform: none;
+        height: calc(100% - 56px); /* Высота от нижней границы первого шарика */
+    }
+    
+    /* Вычисляем высоту линии: от нижней границы первого до нижней границы последнего шарика */
+    /* Между шариками: 3 отступа по var(--space-16) и 3 шарика по 56px */
+    .workflow-step:first-child .step-number::after {
+        height: calc(100% - 56px + var(--space-16) * 3 + 56px * 3);
     }
     
     .step-number {
         width: 56px;
         height: 56px;
         font-size: 1.25rem;
+        position: relative;
     }
     
     .footer-content {
