@@ -588,11 +588,24 @@ function updateCartUI() {
         `;
         cartTotal.textContent = '0';
     } else {
-        cartItems.innerHTML = cart.map((item, index) => `
+        cartItems.innerHTML = cart.map((item, index) => {
+            // Format duration text
+            let durationText = '';
+            if (item.months) {
+                if (item.months === 1) {
+                    durationText = '1 месяц';
+                } else if (item.months >= 2 && item.months <= 4) {
+                    durationText = `${item.months} месяца`;
+                } else {
+                    durationText = `${item.months} месяцев`;
+                }
+            }
+            
+            return `
             <div class="cart-item">
                 <div>
                     <h4>${item.title}</h4>
-                    <p>${item.price.toLocaleString()} ₽</p>
+                    <p>${item.price.toLocaleString()} ₽${durationText ? ` • ${durationText}` : ''}</p>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <button onclick="updateCartQuantityByIndex(${index}, ${item.quantity - 1})" 
@@ -610,7 +623,8 @@ function updateCartUI() {
                     </button>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         // Update total
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
