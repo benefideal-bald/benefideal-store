@@ -2727,8 +2727,14 @@ label.subscription-btn:focus-visible {
     /* Одна прямая линия от нижней границы первого шарика до нижней границы последнего */
     .workflow::before {
         left: calc(28px - 1px);
-        top: 56px; /* Начинается под первым шариком (56px = высота шарика) */
-        bottom: 56px; /* Заканчивается под последним шариком (56px = высота шарика) */
+        top: 56px !important; /* Начинается под первым шариком (56px = высота шарика) */
+        bottom: 56px !important; /* Заканчивается под последним шариком (56px = высота шарика) */
+    }
+    
+    /* Убираем все белые блоки */
+    .workflow-step:first-child::before,
+    .workflow-step:last-child::after {
+        display: none !important;
     }
     
     .step-number {
