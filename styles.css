@@ -1681,6 +1681,28 @@ body {
     display: none;
 }
 
+/* КРИТИЧНО: Мобильные стили для названия и подзаголовка в описании - после базового правила */
+@media (max-width: 968px) {
+    .product-description .product-title-in-description,
+    .product-title-in-description {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    .product-description .product-subtitle-in-description,
+    .product-subtitle-in-description {
+        display: block !important;
+        font-size: 1.25rem !important;
+        color: var(--gray-600) !important;
+        margin-bottom: var(--space-6) !important;
+        margin-top: var(--space-2) !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        text-align: center !important;
+    }
+}
+
 .product-description p {
     margin-bottom: var(--space-5);
     font-size: 1.05rem;
