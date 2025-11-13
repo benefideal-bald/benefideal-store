@@ -78,7 +78,7 @@ const cartTotal = document.getElementById('cartTotal');
 const subscriptionsGrid = document.getElementById('subscriptionsGrid');
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', function() {
+function initializeApp() {
     loadCart();
     renderSubscriptions();
     setupEventListeners();
@@ -88,6 +88,26 @@ document.addEventListener('DOMContentLoaded', function() {
     initParticles();
     initReviewsAutoScroll();
     setupSubscriptionOptions();
+}
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', initializeApp);
+
+// Also initialize when page is restored from cache (back/forward navigation)
+window.addEventListener('pageshow', function(event) {
+    // If page was restored from cache, reload cart
+    if (event.persisted) {
+        loadCart();
+        updateCartUI();
+    }
+});
+
+// Also reload cart when page becomes visible (in case of tab switching)
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        loadCart();
+        updateCartUI();
+    }
 });
 
 // Setup event listeners
