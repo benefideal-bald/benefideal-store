@@ -2914,7 +2914,7 @@ label.subscription-btn:focus-visible {
 
 @media (max-width: 768px) {
     .cart-notification {
-        top: 100px !important;
+        top: 70px !important;
         right: 20px !important;
         left: auto !important;
         max-width: calc(100% - 40px) !important;

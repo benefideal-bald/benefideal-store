@@ -600,7 +600,7 @@ function showCartNotification(message) {
     
     // Calculate position - ensure it's below header (60px) with some margin
     const headerHeight = 60;
-    const marginTop = 40;
+    const marginTop = 10;
     const notificationTop = Math.max(cartRect.top + marginTop, headerHeight + marginTop);
     
     notification.style.cssText = `
