@@ -2727,9 +2727,33 @@ label.subscription-btn:focus-visible {
     /* Одна прямая линия от нижней границы первого шарика до нижней границы последнего */
     .workflow::before {
         left: calc(28px - 1px);
-        top: 56px; /* Начинается под первым шариком (56px = высота шарика на мобильных) */
-        bottom: 56px; /* Заканчивается под последним шариком (56px = высота шарика на мобильных) */
+        top: 0;
+        bottom: 0;
         display: block;
+    }
+    
+    /* Обрезаем линию сверху - начинается под первым шариком */
+    .workflow-step:first-child::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 60px;
+        height: 56px;
+        background: var(--white);
+        z-index: 2;
+    }
+    
+    /* Обрезаем линию снизу - заканчивается под последним шариком */
+    .workflow-step:last-child::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 60px;
+        height: 56px;
+        background: var(--white);
+        z-index: 2;
     }
     
     .step-number {
