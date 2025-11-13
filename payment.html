@@ -583,6 +583,17 @@
                 transform: scale(1);
             }
         }
+
+        /* Мобильные стили для номера телефона */
+        @media (max-width: 768px) {
+            #sbpNumber {
+                font-size: 1rem !important;
+                letter-spacing: 0.5px !important;
+                padding: var(--space-2) var(--space-3) !important;
+                word-break: break-all;
+                overflow-wrap: break-word;
+            }
+        }
     </style>
 </body>
 </html>
