@@ -1503,6 +1503,11 @@ body {
         display: contents;
     }
     
+    .product-info .product-title,
+    .product-info .product-subtitle {
+        display: none !important; /* Скрываем название и подзаголовок из product-info на мобильных */
+    }
+    
     .product-layout {
         align-items: center;
         display: flex !important;
