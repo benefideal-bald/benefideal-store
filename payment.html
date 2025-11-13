@@ -586,12 +586,36 @@
 
         /* Мобильные стили для номера телефона */
         @media (max-width: 768px) {
+            /* Контейнер с номером и кнопкой */
+            #phoneNumberContainer {
+                gap: var(--space-1) !important;
+                overflow: hidden;
+            }
+            
             #sbpNumber {
-                font-size: 1rem !important;
+                font-size: 0.85rem !important;
                 letter-spacing: 0.5px !important;
-                padding: var(--space-2) var(--space-3) !important;
+                padding: var(--space-2) var(--space-2) !important;
                 word-break: break-all;
                 overflow-wrap: break-word;
+                min-width: 0 !important;
+                flex: 1 1 auto !important;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            /* Уменьшаем кнопку копирования на мобильных */
+            #sbpNumber + button,
+            button[onclick="copySBPNumber()"] {
+                padding: var(--space-2) var(--space-2) !important;
+                min-width: auto !important;
+                flex-shrink: 0 !important;
+                width: auto !important;
+            }
+            
+            /* Уменьшаем размер иконки в кнопке */
+            button[onclick="copySBPNumber()"] i {
+                font-size: 0.9rem !important;
             }
         }
     </style>
