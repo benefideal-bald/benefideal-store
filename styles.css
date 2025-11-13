@@ -2152,7 +2152,7 @@ input[type="radio"][name="paymentMethod"] {
     input[type="radio"][name="paymentMethod"] {
         width: 18px !important;
         height: 18px !important;
-        transform: scale(0.6) !important;
+        transform: scale(0.5) !important;
         transform-origin: left center !important;
     }
 }
