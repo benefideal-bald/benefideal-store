@@ -546,9 +546,12 @@
                             }
                             
                             return `
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--gray-200);">
-                                <span style="color: var(--gray-700); font-weight: 500;">${item.title}</span>
-                                <span style="color: var(--gray-600);">${item.price.toLocaleString()} ₽ × ${item.quantity}${durationText ? ` • ${durationText}` : ''}</span>
+                            <div class="order-item" style="padding: var(--space-2) 0; border-bottom: 1px solid var(--gray-200);">
+                                <div class="order-item-main" style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--gray-700); font-weight: 500;">${item.title}</span>
+                                    <span style="color: var(--gray-600);">${item.price.toLocaleString()} ₽ × ${item.quantity}</span>
+                                </div>
+                                ${durationText ? `<div class="order-item-duration" style="color: var(--gray-600); font-size: 0.9rem; margin-top: var(--space-1);">${durationText}</div>` : ''}
                             </div>
                             `;
                         }).join('');
@@ -630,6 +633,41 @@
             /* Уменьшаем размер иконки в кнопке */
             button[onclick="copySBPNumber()"] i {
                 font-size: 0.9rem !important;
+            }
+            
+            /* Стили для товаров в заказе на мобильных */
+            .order-item {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .order-item-main {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .order-item-duration {
+                display: block;
+                margin-top: var(--space-1);
+            }
+        }
+        
+        /* Десктопные стили - все на одной линии */
+        @media (min-width: 769px) {
+            .order-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .order-item-main {
+                display: contents;
+            }
+            
+            .order-item-duration {
+                display: inline;
+                margin-left: var(--space-2);
             }
         }
     </style>
