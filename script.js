@@ -443,9 +443,6 @@ function addToCart(subscriptionId) {
         // Force update cart UI
         updateCartUI();
         
-        // Show success animation from cart
-        showCartNotification('Товар добавлен в корзину!');
-        
         // Animate cart icon
         const cartBtn = document.querySelector('.cart-toggle');
         if (cartBtn) {
@@ -493,7 +490,6 @@ function removeFromCart(subscriptionId) {
     cart = cart.filter(item => item.id !== subscriptionId);
     saveCart();
     updateCartUI();
-    showNotification('Товар удален из корзины');
     
     // Force hide cart count if empty
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -536,7 +532,6 @@ function removeFromCartByIndex(index) {
         cart.splice(index, 1);
         saveCart();
         updateCartUI();
-        showNotification('Товар удален из корзины');
         
         // Force hide cart count if empty
         const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
