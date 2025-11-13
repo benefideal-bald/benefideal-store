@@ -1190,7 +1190,7 @@ function readReviewsFromJSON() {
         // Пользователь хочет, чтобы ВСЕ отзывы были в одном месте - в корневом reviews.json
         // Читаем ТОЛЬКО из корневого reviews.json (Git версия)
         let allReviews = [];
-        if (fs.existsSync(reviewsJsonPathGit)) {
+            if (fs.existsSync(reviewsJsonPathGit)) {
             try {
                 const rootData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
                 allReviews = JSON.parse(rootData);
