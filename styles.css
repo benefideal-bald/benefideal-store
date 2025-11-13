@@ -908,8 +908,8 @@ body {
     content: '';
     position: absolute;
     left: 31px;
-    top: 64px; /* Начинается под первым шариком (64px = высота шарика) */
-    bottom: 64px; /* Заканчивается под последним шариком (64px = высота шарика) */
+    top: 32px;
+    bottom: 32px;
     width: 2px;
     background: var(--gradient-primary);
     border-radius: var(--radius-full);
@@ -2726,8 +2726,8 @@ label.subscription-btn:focus-visible {
     
     .workflow::before {
         left: calc(28px - 1px);
-        top: 56px; /* Начинается под первым шариком на мобильных (56px = высота шарика) */
-        bottom: 56px; /* Заканчивается под последним шариком на мобильных (56px = высота шарика) */
+        top: 56px; /* Начинается под первым шариком (56px = высота шарика на мобильных) */
+        bottom: 56px; /* Заканчивается под последним шариком (56px = высота шарика на мобильных) */
     }
     
     .step-number {
