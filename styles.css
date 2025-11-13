@@ -1493,24 +1493,24 @@ body {
     
     .product-title-card {
         order: 2;
-        background: var(--white);
-        border: 1px solid var(--gray-200);
-        border-radius: var(--radius-lg);
-        padding: var(--space-5) var(--space-4);
-        margin-bottom: var(--space-4);
-        box-shadow: var(--shadow-sm);
-        width: 100%;
+        background: var(--white) !important;
+        border: 1px solid var(--gray-200) !important;
+        border-radius: var(--radius-lg) !important;
+        padding: var(--space-5) var(--space-4) !important;
+        margin-bottom: var(--space-4) !important;
+        margin-top: var(--space-4) !important;
+        box-shadow: var(--shadow-sm) !important;
+        width: 100% !important;
+        display: block !important;
     }
     
     .product-title {
-        order: 2;
         text-align: center !important;
         width: 100%;
         margin-bottom: var(--space-2) !important;
     }
     
     .product-subtitle {
-        order: 3;
         text-align: center !important;
         width: 100%;
         margin-bottom: 0 !important;
