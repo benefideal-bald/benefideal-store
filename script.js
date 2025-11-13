@@ -79,6 +79,10 @@ const subscriptionsGrid = document.getElementById('subscriptionsGrid');
 
 // Initialize app
 function initializeApp() {
+    // Clear any existing notifications first
+    const existingNotifications = document.querySelectorAll('.notification, .cart-notification');
+    existingNotifications.forEach(notif => notif.remove());
+    
     loadCart();
     updateCartUI(); // Always update cart UI first
     
