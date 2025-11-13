@@ -2149,10 +2149,11 @@ input[type="radio"][name="paymentMethod"] {
     /* Текст оплаты на одной линии с галочкой */
     .payment-method-label {
         flex-wrap: nowrap !important;
+        padding: var(--space-2) var(--space-4) !important; /* Уменьшаем высоту карточки */
     }
     
     .payment-method-text {
-        font-size: 0.85rem !important;
+        font-size: 0.9rem !important; /* Увеличиваем размер текста */
         white-space: nowrap !important;
     }
     
