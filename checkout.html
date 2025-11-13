@@ -40,7 +40,7 @@
                     </div>
                     
                     <div class="form-group" style="margin-bottom: var(--space-6);">
-                        <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
+                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
                                onmouseover="this.style.background='var(--gray-100)'" 
                                onmouseout="this.style.background='var(--gray-50)'">
                             <input type="radio" 
@@ -50,9 +50,9 @@
                                    checked 
                                    required
                                    style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
-                            <span style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem;">
-                                <i class="fas fa-mobile-alt" style="margin-right: var(--space-2); color: var(--primary); font-size: 1rem;"></i>
-                                Оплата переводом по СБП
+                            <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2); white-space: nowrap;">
+                                <i class="fas fa-mobile-alt" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
+                                <span>Оплата переводом по СБП</span>
                             </span>
                         </label>
                     </div>

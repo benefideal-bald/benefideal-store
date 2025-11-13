@@ -2078,7 +2078,7 @@ label.subscription-btn:focus-visible {
 .checkout-total .label {
     color: var(--gray-700);
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 0.95rem;
 }
 
 .checkout-total-amount {
@@ -2088,7 +2088,7 @@ label.subscription-btn:focus-visible {
 }
 
 #checkoutTotal {
-    font-size: 2rem;
+    font-size: 2.25rem;
     font-weight: 800;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
@@ -2098,7 +2098,7 @@ label.subscription-btn:focus-visible {
 }
 
 .checkout-currency {
-    font-size: 2rem;
+    font-size: 2.25rem;
     font-weight: 800;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
@@ -2139,11 +2139,21 @@ input[type="radio"][name="paymentMethod"] {
     }
     
     #checkoutTotal {
-        font-size: 1.75rem;
+        font-size: 2rem;
     }
     
     .checkout-currency {
-        font-size: 1.75rem;
+        font-size: 2rem;
+    }
+    
+    /* Текст оплаты на одной линии с галочкой */
+    .payment-method-label {
+        flex-wrap: nowrap !important;
+    }
+    
+    .payment-method-text {
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
     }
     
     /* Уменьшаем размер галочки на мобильных через transform */
