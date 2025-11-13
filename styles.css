@@ -2106,6 +2106,16 @@ label.subscription-btn:focus-visible {
     background-clip: text;
 }
 
+/* Базовые стили для галочки выбора оплаты */
+.payment-radio,
+#paymentSBP,
+input[type="radio"][name="paymentMethod"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
 /* Мобильные стили для checkout */
 @media (max-width: 768px) {
     .checkout-total {
