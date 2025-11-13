@@ -1574,6 +1574,7 @@ body {
 /* КРИТИЧНО: Мобильные стили должны перекрыть базовое правило */
 @media (max-width: 968px) {
     .product-title-card {
+        order: 2 !important;
         display: block !important;
         background: var(--white) !important;
         border: 1px solid var(--gray-200) !important;
@@ -1587,6 +1588,14 @@ body {
         opacity: 1 !important;
         position: relative !important;
         z-index: 1 !important;
+    }
+    
+    .product-image {
+        order: 1 !important;
+    }
+    
+    .product-purchase {
+        order: 3 !important;
     }
 }
 
