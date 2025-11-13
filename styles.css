@@ -1566,9 +1566,28 @@ body {
     }
 }
 
-/* Базовое правило - карточка скрыта на десктопе */
+/* Базовое правило - карточка скрыта на десктопе, но видна на мобильных */
 .product-title-card {
     display: none;
+}
+
+/* КРИТИЧНО: Мобильные стили должны перекрыть базовое правило */
+@media (max-width: 968px) {
+    .product-title-card {
+        display: block !important;
+        background: var(--white) !important;
+        border: 1px solid var(--gray-200) !important;
+        border-radius: var(--radius-lg) !important;
+        padding: var(--space-5) var(--space-4) !important;
+        margin-bottom: var(--space-4) !important;
+        margin-top: var(--space-4) !important;
+        box-shadow: var(--shadow-sm) !important;
+        width: 100% !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: relative !important;
+        z-index: 1 !important;
+    }
 }
 
 .product-title {
