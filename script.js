@@ -109,6 +109,10 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 
 // Also initialize when page is restored from cache (back/forward navigation)
 window.addEventListener('pageshow', function(event) {
+    // Clear any existing notifications first
+    const existingNotifications = document.querySelectorAll('.notification, .cart-notification');
+    existingNotifications.forEach(notif => notif.remove());
+    
     // If page was restored from cache, reload cart
     if (event.persisted) {
         loadCart();
@@ -119,6 +123,10 @@ window.addEventListener('pageshow', function(event) {
 // Also reload cart when page becomes visible (in case of tab switching)
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
+        // Clear any existing notifications first
+        const existingNotifications = document.querySelectorAll('.notification, .cart-notification');
+        existingNotifications.forEach(notif => notif.remove());
+        
         loadCart();
         updateCartUI();
     }
