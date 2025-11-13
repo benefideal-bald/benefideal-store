@@ -2146,16 +2146,14 @@ input[type="radio"][name="paymentMethod"] {
         font-size: 1.75rem;
     }
     
-    /* Уменьшаем размер галочки на мобильных */
+    /* Уменьшаем размер галочки на мобильных через transform */
     .payment-radio,
     #paymentSBP,
     input[type="radio"][name="paymentMethod"] {
-        width: 10px !important;
-        height: 10px !important;
-        min-width: 10px !important;
-        min-height: 10px !important;
-        max-width: 10px !important;
-        max-height: 10px !important;
+        width: 18px !important;
+        height: 18px !important;
+        transform: scale(0.6) !important;
+        transform-origin: left center !important;
     }
 }
 
