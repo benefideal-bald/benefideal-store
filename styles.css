@@ -2724,30 +2724,41 @@ label.subscription-btn:focus-visible {
         font-size: 2rem;
     }
     
-    /* Скрываем основную линию */
+    /* Одна прямая линия от нижней границы первого шарика до нижней границы последнего */
     .workflow::before {
-        display: none;
+        left: calc(28px - 1px);
+        top: 0;
+        bottom: 0;
     }
     
-    /* Одна прямая линия от нижней границы первого шарика до нижней границы последнего */
-    .workflow-step:first-child .step-number::after {
+    /* Обрезаем линию сверху - начинается под первым шариком */
+    .workflow-step:first-child::before {
         content: '';
         position: absolute;
-        left: 50%;
+        left: 0;
+        top: 0;
+        width: 60px;
+        height: 56px;
+        background: var(--white);
+        z-index: 2;
+    }
+    
+    /* Обрезаем линию снизу - заканчивается под последним шариком */
+    .workflow-step:last-child::after {
+        content: '';
+        position: absolute;
+        left: 0;
         bottom: 0;
-        transform: translateX(-50%);
-        width: 2px;
-        background: var(--gradient-primary);
-        z-index: 0;
-        border-radius: var(--radius-full);
-        height: calc(100% - 56px + var(--space-16) * 3 + 56px * 3); /* От нижней границы первого до нижней границы последнего шарика */
+        width: 60px;
+        height: 56px;
+        background: var(--white);
+        z-index: 2;
     }
     
     .step-number {
         width: 56px;
         height: 56px;
         font-size: 1.25rem;
-        position: relative;
     }
     
     .footer-content {
