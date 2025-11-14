@@ -2689,6 +2689,24 @@ app.post('/api/cardlink/callback', (req, res) => {
     }
 });
 
+// API endpoint для получения платежной ссылки Cardlink (без верификации)
+// Используется, если API недоступно
+app.get('/api/cardlink/payment-link', (req, res) => {
+    const CARDLINK_PAYMENT_LINK = process.env.CARDLINK_PAYMENT_LINK;
+    
+    if (!CARDLINK_PAYMENT_LINK || CARDLINK_PAYMENT_LINK === 'YOUR_PAYMENT_LINK_HERE') {
+        return res.json({
+            success: false,
+            error: 'Платежная ссылка не настроена. Создайте платежную ссылку в личном кабинете Cardlink и добавьте её в переменную окружения CARDLINK_PAYMENT_LINK на Render.'
+        });
+    }
+    
+    res.json({
+        success: true,
+        payment_link_template: CARDLINK_PAYMENT_LINK
+    });
+});
+
 // Debug endpoint to check all reviews in JSON file (for finding lost reviews like Влад, Таня)
 app.get('/api/debug/check-all-reviews-json', (req, res) => {
     try {
