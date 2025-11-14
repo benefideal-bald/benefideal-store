@@ -175,6 +175,7 @@
                         return;
                     }
                     
+                    const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
                     const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                     
                     // Сохраняем данные заказа для callback
@@ -183,41 +184,71 @@
                         name,
                         email,
                         cart,
+                        total,
                         timestamp: Date.now()
                     }));
                     
+                    // ВАРИАНТ 1: Если есть API (после верификации)
                     // Определяем API URL
                     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
                     const apiUrl = isLocalhost
                         ? 'http://localhost:3000/api/cardlink/create-payment'
                         : `${window.location.origin}/api/cardlink/create-payment`;
                     
-                    // Отправляем запрос на сервер для создания платежа
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            name,
-                            email,
-                            cart,
-                            orderId
-                        })
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.success && result.payment_url) {
-                        // Перенаправляем на страницу оплаты Cardlink
-                        window.location.href = result.payment_url;
-                    } else {
-                        console.error('Ошибка создания платежа:', result);
-                        alert(result.error || 'Ошибка при создании платежа. Попробуйте еще раз или выберите другой способ оплаты.');
+                    // Пытаемся создать платеж через API
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                name,
+                                email,
+                                cart,
+                                orderId
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success && result.payment_url) {
+                            // Перенаправляем на страницу оплаты Cardlink
+                            window.location.href = result.payment_url;
+                            return;
+                        }
+                    } catch (apiError) {
+                        console.log('API недоступен, используем платежную ссылку:', apiError);
                     }
+                    
+                    // ВАРИАНТ 2: Используем платежную ссылку (без верификации)
+                    // ВАЖНО: Замените эту ссылку на вашу платежную ссылку из Cardlink
+                    // Создайте платежную ссылку в личном кабинете Cardlink (раздел "My links" или "Create payment link")
+                    // И вставьте её сюда
+                    const PAYMENT_LINK_TEMPLATE = process.env.CARDLINK_PAYMENT_LINK || 'YOUR_PAYMENT_LINK_HERE';
+                    
+                    if (PAYMENT_LINK_TEMPLATE === 'YOUR_PAYMENT_LINK_HERE') {
+                        // Если ссылка не настроена, показываем инструкцию
+                        alert(`Для оплаты через Cardlink:\n\n1. Создайте платежную ссылку в личном кабинете Cardlink\n2. Укажите сумму: ${total.toLocaleString()} ₽\n3. После оплаты вернитесь на сайт и подтвердите оплату\n\nИли выберите оплату через СБП.`);
+                        
+                        // Перенаправляем на страницу с инструкциями
+                        window.location.href = 'payment.html';
+                        return;
+                    }
+                    
+                    // Формируем платежную ссылку с параметрами (если Cardlink поддерживает)
+                    // Обычно платежные ссылки имеют формат: https://cardlink.link/pay/XXXXX?amount=10000
+                    const paymentUrl = PAYMENT_LINK_TEMPLATE.replace('{amount}', (total * 100).toString())
+                                                             .replace('{order_id}', orderId)
+                                                             .replace('{email}', encodeURIComponent(email))
+                                                             .replace('{name}', encodeURIComponent(name));
+                    
+                    // Открываем платежную ссылку
+                    window.location.href = paymentUrl;
+                    
                 } catch (error) {
                     console.error('Ошибка обработки оплаты Cardlink:', error);
-                    alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз.');
+                    alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз или выберите оплату через СБП.');
                 }
             }
 
