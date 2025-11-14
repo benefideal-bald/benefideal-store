@@ -175,7 +175,6 @@
                         return;
                     }
                     
-                    const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
                     const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                     
                     // Сохраняем данные заказа для callback
@@ -184,48 +183,37 @@
                         name,
                         email,
                         cart,
-                        total,
                         timestamp: Date.now()
                     }));
                     
-                    // ВАЖНО: Замените эти значения на ваши Shop ID и API token из личного кабинета Cardlink
-                    const CARDLINK_SHOP_ID = 'YOUR_SHOP_ID'; // Замените на ваш Shop ID
-                    const CARDLINK_API_TOKEN = 'YOUR_API_TOKEN'; // Замените на ваш API token
-                    const CARDLINK_API_URL = 'https://api.cardlink.shop/v1/payments'; // URL API Cardlink
-                    const CALLBACK_URL = `${window.location.origin}/cardlink-callback.html`; // URL для callback
+                    // Определяем API URL
+                    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+                    const apiUrl = isLocalhost
+                        ? 'http://localhost:3000/api/cardlink/create-payment'
+                        : `${window.location.origin}/api/cardlink/create-payment`;
                     
-                    // Формируем данные для оплаты
-                    const paymentData = {
-                        shop_id: CARDLINK_SHOP_ID,
-                        amount: total * 100, // Сумма в копейках
-                        currency: 'RUB',
-                        order_id: orderId,
-                        description: `Заказ #${orderId} - ${cart.map(i => i.title).join(', ')}`,
-                        customer_name: name,
-                        customer_email: email,
-                        success_url: `${window.location.origin}/payment-success.html?order_id=${orderId}`,
-                        fail_url: `${window.location.origin}/payment-fail.html?order_id=${orderId}`,
-                        callback_url: CALLBACK_URL
-                    };
-                    
-                    // Отправляем запрос на создание платежа
-                    const response = await fetch(CARDLINK_API_URL, {
+                    // Отправляем запрос на сервер для создания платежа
+                    const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${CARDLINK_API_TOKEN}`
+                            'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(paymentData)
+                        body: JSON.stringify({
+                            name,
+                            email,
+                            cart,
+                            orderId
+                        })
                     });
                     
                     const result = await response.json();
                     
-                    if (response.ok && result.payment_url) {
+                    if (result.success && result.payment_url) {
                         // Перенаправляем на страницу оплаты Cardlink
                         window.location.href = result.payment_url;
                     } else {
                         console.error('Ошибка создания платежа:', result);
-                        alert('Ошибка при создании платежа. Попробуйте еще раз или выберите другой способ оплаты.');
+                        alert(result.error || 'Ошибка при создании платежа. Попробуйте еще раз или выберите другой способ оплаты.');
                     }
                 } catch (error) {
                     console.error('Ошибка обработки оплаты Cardlink:', error);

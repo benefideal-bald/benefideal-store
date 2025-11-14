@@ -46,15 +46,47 @@
     </footer>
 
     <script>
-        // Обработка успешной оплаты
+        // Обработка успешной оплаты через Cardlink
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
             const orderId = urlParams.get('order_id');
             
             if (orderId) {
-                // Здесь можно отправить данные заказа в Telegram и базу данных
-                // Аналогично функции confirmPayment() в payment.html
-                console.log('Заказ успешно оплачен:', orderId);
+                // Получаем данные заказа из localStorage
+                const pendingOrder = JSON.parse(localStorage.getItem('benefideal_pending_order') || '{}');
+                
+                if (pendingOrder.orderId === orderId) {
+                    const { name, email, cart } = pendingOrder;
+                    
+                    // Отправляем данные заказа в Telegram и базу данных
+                    // Аналогично функции confirmPayment() в payment.html
+                    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+                    const apiUrl = isLocalhost
+                        ? 'http://localhost:3000/api/subscription'
+                        : `${window.location.origin}/api/subscription`;
+                    
+                    // Сохраняем заказы в базу данных
+                    cart.forEach(async (item) => {
+                        try {
+                            await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ item, name, email: email.toLowerCase().trim(), order_id: orderId })
+                            });
+                        } catch (error) {
+                            console.error('Ошибка сохранения заказа:', error);
+                        }
+                    });
+                    
+                    // Очищаем корзину и данные заказа
+                    localStorage.removeItem('benefideal_cart');
+                    localStorage.removeItem('benefideal_cart_timestamp');
+                    localStorage.removeItem('benefideal_pending_order');
+                    
+                    console.log('✅ Заказ успешно обработан:', orderId);
+                }
             }
         })();
     </script>

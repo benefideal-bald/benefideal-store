@@ -2587,6 +2587,108 @@ app.get('/api/debug/force-create-tanya', (req, res) => {
     }
 });
 
+// API endpoint для создания платежа через Cardlink
+app.post('/api/cardlink/create-payment', async (req, res) => {
+    const { name, email, cart, orderId } = req.body;
+    
+    if (!name || !email || !cart || !orderId) {
+        return res.status(400).json({ 
+            success: false,
+            error: 'Отсутствуют обязательные поля' 
+        });
+    }
+    
+    // ВАЖНО: Замените эти значения на ваши Shop ID и API token из личного кабинета Cardlink
+    // Или используйте переменные окружения для безопасности
+    const CARDLINK_SHOP_ID = process.env.CARDLINK_SHOP_ID || 'YOUR_SHOP_ID';
+    const CARDLINK_API_TOKEN = process.env.CARDLINK_API_TOKEN || 'YOUR_API_TOKEN';
+    const CARDLINK_API_URL = process.env.CARDLINK_API_URL || 'https://api.cardlink.shop/v1/payments';
+    
+    if (CARDLINK_SHOP_ID === 'YOUR_SHOP_ID' || CARDLINK_API_TOKEN === 'YOUR_API_TOKEN') {
+        return res.status(500).json({
+            success: false,
+            error: 'Cardlink не настроен. Установите CARDLINK_SHOP_ID и CARDLINK_API_TOKEN в переменных окружения на Render.'
+        });
+    }
+    
+    try {
+        const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+        const callbackUrl = `${req.protocol}://${req.get('host')}/api/cardlink/callback`;
+        const successUrl = `${req.protocol}://${req.get('host')}/payment-success.html?order_id=${orderId}`;
+        const failUrl = `${req.protocol}://${req.get('host')}/payment-fail.html?order_id=${orderId}`;
+        
+        // Формируем данные для оплаты
+        const paymentData = {
+            shop_id: CARDLINK_SHOP_ID,
+            amount: total * 100, // Сумма в копейках
+            currency: 'RUB',
+            order_id: orderId,
+            description: `Заказ #${orderId} - ${cart.map(i => i.title).join(', ')}`,
+            customer_name: name,
+            customer_email: email,
+            success_url: successUrl,
+            fail_url: failUrl,
+            callback_url: callbackUrl
+        };
+        
+        console.log('💳 Creating Cardlink payment:', {
+            orderId,
+            amount: total,
+            customer: name
+        });
+        
+        // Отправляем запрос на создание платежа
+        const response = await axios.post(CARDLINK_API_URL, paymentData, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${CARDLINK_API_TOKEN}`
+            }
+        });
+        
+        if (response.data && response.data.payment_url) {
+            console.log('✅ Cardlink payment created successfully:', response.data.payment_url);
+            res.json({
+                success: true,
+                payment_url: response.data.payment_url
+            });
+        } else {
+            console.error('❌ Invalid response from Cardlink:', response.data);
+            res.status(500).json({
+                success: false,
+                error: 'Неверный ответ от Cardlink'
+            });
+        }
+    } catch (error) {
+        console.error('❌ Error creating Cardlink payment:', error.response?.data || error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Ошибка при создании платежа',
+            details: error.response?.data || error.message
+        });
+    }
+});
+
+// API endpoint для обработки callback от Cardlink
+app.post('/api/cardlink/callback', (req, res) => {
+    console.log('📞 Cardlink callback received:', req.body);
+    
+    // Cardlink отправляет данные о статусе платежа
+    const { order_id, status, amount, transaction_id } = req.body;
+    
+    if (status === 'success' || status === 'paid') {
+        // Платеж успешен - обрабатываем заказ
+        console.log('✅ Payment successful:', { order_id, amount, transaction_id });
+        
+        // Здесь можно обновить статус заказа в базе данных
+        // Или отправить данные в Telegram
+        
+        res.status(200).json({ success: true, message: 'Callback processed' });
+    } else {
+        console.log('❌ Payment failed:', { order_id, status });
+        res.status(200).json({ success: false, message: 'Payment failed' });
+    }
+});
+
 // Debug endpoint to check all reviews in JSON file (for finding lost reviews like Влад, Таня)
 app.get('/api/debug/check-all-reviews-json', (req, res) => {
     try {
