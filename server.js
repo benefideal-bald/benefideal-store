@@ -5,6 +5,7 @@ const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const { exec } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -890,6 +891,9 @@ app.post('/api/review', (req, res) => {
                 fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(uniqueReviews, null, 2), 'utf8');
                 console.log(`✅ Saved review to root reviews.json (Git) - total: ${uniqueReviews.length} reviews`);
                 console.log(`   Все отзывы теперь в одном месте - в корневом reviews.json (Git версия)!`);
+                
+                // КРИТИЧЕСКИ ВАЖНО: Автоматически коммитим изменения в Git, чтобы отзывы не потерялись при деплое!
+                commitReviewsToGit();
             } else {
                 console.log(`⚠️ Review already exists in root reviews.json (skipped)`);
                 return res.status(400).json({ 
