@@ -1215,14 +1215,13 @@ function readReviewsFromJSON() {
 }
 
 // Helper function to write reviews to JSON file
+// КРИТИЧЕСКИ ВАЖНО: Все отзывы должны быть в ОДНОМ месте - корневой reviews.json (Git версия)!
 function writeReviewsToJSON(reviews) {
     try {
-        // Ensure directory exists
-        const dir = path.dirname(reviewsJsonPath);
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        fs.writeFileSync(reviewsJsonPath, JSON.stringify(reviews, null, 2), 'utf8');
+        // КРИТИЧЕСКИ ВАЖНО: Сохраняем ВСЕ отзывы в корневой reviews.json (Git версия)!
+        // Пользователь хочет, чтобы ВСЕ отзывы были в одном месте - в корневом reviews.json
+        fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(reviews, null, 2), 'utf8');
+        console.log(`✅ Saved ${reviews.length} reviews to root reviews.json (Git) - ALL reviews in one place!`);
         return true;
     } catch (error) {
         console.error('❌ Error writing reviews.json:', error);
@@ -2206,13 +2205,15 @@ app.get('/api/debug/restore-vlad', (req, res) => {
                 is_static: false
             };
             
-            // Read current reviews first
-            if (fs.existsSync(reviewsJsonPath)) {
+            // КРИТИЧЕСКИ ВАЖНО: Читаем из корневого reviews.json (Git версия)!
+            // Все отзывы должны быть в одном месте - в корневом reviews.json
+            if (fs.existsSync(reviewsJsonPathGit)) {
                 try {
-                    const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+                    const data = fs.readFileSync(reviewsJsonPathGit, 'utf8');
                     allReviews = JSON.parse(data);
+                    console.log(`📋 Read ${allReviews.length} reviews from root reviews.json (Git)`);
                 } catch (error) {
-                    console.error('❌ Error reading reviews.json:', error);
+                    console.error('❌ Error reading root reviews.json:', error);
                 }
             }
             
@@ -2309,14 +2310,16 @@ app.get('/api/debug/restore-tanya', (req, res) => {
                 is_static: false
             };
             
-            // Read current dynamic reviews
+            // КРИТИЧЕСКИ ВАЖНО: Читаем из корневого reviews.json (Git версия)!
+            // Все отзывы должны быть в одном месте - в корневом reviews.json
             let dynamicReviews = [];
-            if (fs.existsSync(reviewsJsonPath)) {
+            if (fs.existsSync(reviewsJsonPathGit)) {
                 try {
-                    const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+                    const data = fs.readFileSync(reviewsJsonPathGit, 'utf8');
                     dynamicReviews = JSON.parse(data);
+                    console.log(`📋 Read ${dynamicReviews.length} reviews from root reviews.json (Git)`);
                 } catch (error) {
-                    console.error('❌ Error reading reviews.json:', error);
+                    console.error('❌ Error reading root reviews.json:', error);
                 }
             }
             
@@ -2371,14 +2374,16 @@ app.get('/api/debug/restore-tanya', (req, res) => {
                 is_static: false
             };
             
-            // Read current dynamic reviews
+            // КРИТИЧЕСКИ ВАЖНО: Читаем из корневого reviews.json (Git версия)!
+            // Все отзывы должны быть в одном месте - в корневом reviews.json
             let dynamicReviews = [];
-            if (fs.existsSync(reviewsJsonPath)) {
+            if (fs.existsSync(reviewsJsonPathGit)) {
                 try {
-                    const data = fs.readFileSync(reviewsJsonPath, 'utf8');
+                    const data = fs.readFileSync(reviewsJsonPathGit, 'utf8');
                     dynamicReviews = JSON.parse(data);
+                    console.log(`📋 Read ${dynamicReviews.length} reviews from root reviews.json (Git)`);
                 } catch (error) {
-                    console.error('❌ Error reading reviews.json:', error);
+                    console.error('❌ Error reading root reviews.json:', error);
                 }
             }
             
