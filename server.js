@@ -892,8 +892,11 @@ app.post('/api/review', (req, res) => {
                 console.log(`✅ Saved review to root reviews.json (Git) - total: ${uniqueReviews.length} reviews`);
                 console.log(`   Все отзывы теперь в одном месте - в корневом reviews.json (Git версия)!`);
                 
-                // КРИТИЧЕСКИ ВАЖНО: Автоматически коммитим изменения в Git, чтобы отзывы не потерялись при деплое!
-                commitReviewsToGit();
+                // КРИТИЧЕСКИ ВАЖНО: Автоматически коммитим изменения в Git через GitHub API, чтобы отзывы не потерялись при деплое!
+                // Это работает асинхронно, не блокируя ответ пользователю
+                commitReviewsToGitViaAPI().catch(err => {
+                    console.error('Ошибка при автоматическом коммите (не критично):', err.message);
+                });
             } else {
                 console.log(`⚠️ Review already exists in root reviews.json (skipped)`);
                 return res.status(400).json({ 
@@ -1218,6 +1221,68 @@ function readReviewsFromJSON() {
     }
 }
 
+// Функция для автоматического коммита отзывов в Git через GitHub API
+// Это гарантирует, что все новые отзывы попадут в Git и не потеряются при деплое
+async function commitReviewsToGitViaAPI() {
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const GITHUB_REPO = process.env.GITHUB_REPO || 'benefideal-bald/benefideal-store'; // owner/repo
+    const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
+    
+    if (!GITHUB_TOKEN) {
+        console.log(`⚠️ GITHUB_TOKEN не установлен. Автоматический коммит в Git через API недоступен.`);
+        console.log(`   Для автоматического коммита установите переменную окружения GITHUB_TOKEN на Render.`);
+        console.log(`   Или вручную закоммитьте reviews.json в Git после каждого нового отзыва.`);
+        return false;
+    }
+    
+    try {
+        // Читаем текущий файл reviews.json
+        const fileContent = fs.readFileSync(reviewsJsonPathGit, 'utf8');
+        const contentBase64 = Buffer.from(fileContent).toString('base64');
+        
+        // Получаем SHA текущего файла (нужно для обновления)
+        const getFileSha = await axios.get(
+            `https://api.github.com/repos/${GITHUB_REPO}/contents/reviews.json?ref=${GITHUB_BRANCH}`,
+            {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            }
+        ).catch(() => null);
+        
+        const sha = getFileSha?.data?.sha || null;
+        
+        // Коммитим изменения через GitHub API
+        const commitMessage = `Auto-commit: новый отзыв добавлен (${new Date().toISOString()})`;
+        
+        const response = await axios.put(
+            `https://api.github.com/repos/${GITHUB_REPO}/contents/reviews.json`,
+            {
+                message: commitMessage,
+                content: contentBase64,
+                branch: GITHUB_BRANCH,
+                ...(sha ? { sha: sha } : {})
+            },
+            {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        
+        console.log(`✅ Отзыв автоматически закоммичен в Git через GitHub API!`);
+        console.log(`   Commit SHA: ${response.data.commit.sha}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Ошибка при автоматическом коммите в Git через API:`, error.response?.data || error.message);
+        console.warn(`   ВАЖНО: Вручную закоммитьте reviews.json в Git, чтобы отзыв не потерялся!`);
+        return false;
+    }
+}
+
 // Helper function to write reviews to JSON file
 // КРИТИЧЕСКИ ВАЖНО: Все отзывы должны быть в ОДНОМ месте - корневой reviews.json (Git версия)!
 function writeReviewsToJSON(reviews) {
@@ -1226,6 +1291,13 @@ function writeReviewsToJSON(reviews) {
         // Пользователь хочет, чтобы ВСЕ отзывы были в одном месте - в корневом reviews.json
         fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(reviews, null, 2), 'utf8');
         console.log(`✅ Saved ${reviews.length} reviews to root reviews.json (Git) - ALL reviews in one place!`);
+        
+        // КРИТИЧЕСКИ ВАЖНО: Автоматически коммитим изменения в Git через GitHub API, чтобы отзывы не потерялись при деплое!
+        // Это работает асинхронно, не блокируя ответ пользователю
+        commitReviewsToGitViaAPI().catch(err => {
+            console.error('Ошибка при автоматическом коммите (не критично):', err.message);
+        });
+        
         return true;
     } catch (error) {
         console.error('❌ Error writing reviews.json:', error);
