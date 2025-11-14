@@ -222,29 +222,49 @@
                     }
                     
                     // ВАРИАНТ 2: Используем платежную ссылку (без верификации)
-                    // ВАЖНО: Замените эту ссылку на вашу платежную ссылку из Cardlink
-                    // Создайте платежную ссылку в личном кабинете Cardlink (раздел "My links" или "Create payment link")
-                    // И вставьте её сюда
-                    const PAYMENT_LINK_TEMPLATE = process.env.CARDLINK_PAYMENT_LINK || 'YOUR_PAYMENT_LINK_HERE';
-                    
-                    if (PAYMENT_LINK_TEMPLATE === 'YOUR_PAYMENT_LINK_HERE') {
-                        // Если ссылка не настроена, показываем инструкцию
-                        alert(`Для оплаты через Cardlink:\n\n1. Создайте платежную ссылку в личном кабинете Cardlink\n2. Укажите сумму: ${total.toLocaleString()} ₽\n3. После оплаты вернитесь на сайт и подтвердите оплату\n\nИли выберите оплату через СБП.`);
+                    // Получаем платежную ссылку с сервера
+                    try {
+                        const linkResponse = await fetch(`${isLocalhost ? 'http://localhost:3000' : window.location.origin}/api/cardlink/payment-link`);
+                        const linkResult = await linkResponse.json();
                         
-                        // Перенаправляем на страницу с инструкциями
+                        if (linkResult.success && linkResult.payment_link_template) {
+                            const PAYMENT_LINK_TEMPLATE = linkResult.payment_link_template;
+                            
+                            // Формируем платежную ссылку с параметрами (если Cardlink поддерживает)
+                            // Обычно платежные ссылки имеют формат: https://cardlink.link/pay/XXXXX?amount=10000
+                            // Или просто статическая ссылка, на которую пользователь переходит и вводит сумму вручную
+                            let paymentUrl = PAYMENT_LINK_TEMPLATE;
+                            
+                            // Пытаемся подставить параметры, если ссылка поддерживает их
+                            if (PAYMENT_LINK_TEMPLATE.includes('{amount}')) {
+                                paymentUrl = paymentUrl.replace('{amount}', (total * 100).toString());
+                            }
+                            if (PAYMENT_LINK_TEMPLATE.includes('{order_id}')) {
+                                paymentUrl = paymentUrl.replace('{order_id}', orderId);
+                            }
+                            if (PAYMENT_LINK_TEMPLATE.includes('{email}')) {
+                                paymentUrl = paymentUrl.replace('{email}', encodeURIComponent(email));
+                            }
+                            if (PAYMENT_LINK_TEMPLATE.includes('{name}')) {
+                                paymentUrl = paymentUrl.replace('{name}', encodeURIComponent(name));
+                            }
+                            
+                            // Если ссылка не поддерживает параметры, просто открываем её
+                            // Пользователь введет сумму вручную на странице Cardlink
+                            window.location.href = paymentUrl;
+                            return;
+                        } else {
+                            // Если ссылка не настроена, показываем инструкцию
+                            alert(`Для оплаты через Cardlink:\n\n1. Создайте платежную ссылку в личном кабинете Cardlink (раздел "My links" или кнопка "Create payment link")\n2. Скопируйте ссылку\n3. Добавьте её в переменную окружения CARDLINK_PAYMENT_LINK на Render\n\nИли выберите оплату через СБП.`);
+                            window.location.href = 'payment.html';
+                            return;
+                        }
+                    } catch (linkError) {
+                        console.error('Ошибка получения платежной ссылки:', linkError);
+                        alert('Не удалось получить платежную ссылку. Выберите оплату через СБП или обратитесь в поддержку.');
                         window.location.href = 'payment.html';
                         return;
                     }
-                    
-                    // Формируем платежную ссылку с параметрами (если Cardlink поддерживает)
-                    // Обычно платежные ссылки имеют формат: https://cardlink.link/pay/XXXXX?amount=10000
-                    const paymentUrl = PAYMENT_LINK_TEMPLATE.replace('{amount}', (total * 100).toString())
-                                                             .replace('{order_id}', orderId)
-                                                             .replace('{email}', encodeURIComponent(email))
-                                                             .replace('{name}', encodeURIComponent(name));
-                    
-                    // Открываем платежную ссылку
-                    window.location.href = paymentUrl;
                     
                 } catch (error) {
                     console.error('Ошибка обработки оплаты Cardlink:', error);
