@@ -39,7 +39,7 @@
                         </div>
                     </div>
                     
-                    <div class="form-group" style="margin-bottom: var(--space-6);">
+                    <div class="form-group" style="margin-bottom: var(--space-4);">
                         <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
                                onmouseover="this.style.background='var(--gray-100)'" 
                                onmouseout="this.style.background='var(--gray-50)'">
@@ -53,6 +53,23 @@
                             <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2); white-space: nowrap;">
                                 <i class="fas fa-mobile-alt" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
                                 <span>Оплата переводом по СБП</span>
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: var(--space-6);">
+                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
+                               onmouseover="this.style.background='var(--gray-100)'" 
+                               onmouseout="this.style.background='var(--gray-50)'">
+                            <input type="radio" 
+                                   name="paymentMethod" 
+                                   id="paymentCardlink" 
+                                   value="cardlink" 
+                                   required
+                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
+                            <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2); white-space: nowrap;">
+                                <i class="fas fa-credit-card" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
+                                <span>Оплата картой (Cardlink)</span>
                             </span>
                         </label>
                     </div>
@@ -134,12 +151,87 @@
                 e.preventDefault();
                 const name = document.getElementById('fullName').value.trim();
                 const email = document.getElementById('email').value.trim().toLowerCase(); // Normalize email to lowercase
+                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+                
                 localStorage.setItem('benefideal_checkout_name', name);
                 localStorage.setItem('benefideal_checkout_email', email);
-                console.log('💾 Saved to localStorage:', { name, email });
-                // Redirect to payment page
-                window.location.href = 'payment.html';
+                console.log('💾 Saved to localStorage:', { name, email, paymentMethod });
+                
+                if (paymentMethod === 'cardlink') {
+                    // Оплата через Cardlink
+                    processCardlinkPayment(name, email);
+                } else {
+                    // Оплата через СБП (как было)
+                    window.location.href = 'payment.html';
+                }
             });
+            
+            // Функция для обработки оплаты через Cardlink
+            async function processCardlinkPayment(name, email) {
+                try {
+                    const cart = JSON.parse(localStorage.getItem('benefideal_cart') || '[]');
+                    if (cart.length === 0) {
+                        alert('Корзина пуста');
+                        return;
+                    }
+                    
+                    const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+                    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    // Сохраняем данные заказа для callback
+                    localStorage.setItem('benefideal_pending_order', JSON.stringify({
+                        orderId,
+                        name,
+                        email,
+                        cart,
+                        total,
+                        timestamp: Date.now()
+                    }));
+                    
+                    // ВАЖНО: Замените эти значения на ваши Shop ID и API token из личного кабинета Cardlink
+                    const CARDLINK_SHOP_ID = 'YOUR_SHOP_ID'; // Замените на ваш Shop ID
+                    const CARDLINK_API_TOKEN = 'YOUR_API_TOKEN'; // Замените на ваш API token
+                    const CARDLINK_API_URL = 'https://api.cardlink.shop/v1/payments'; // URL API Cardlink
+                    const CALLBACK_URL = `${window.location.origin}/cardlink-callback.html`; // URL для callback
+                    
+                    // Формируем данные для оплаты
+                    const paymentData = {
+                        shop_id: CARDLINK_SHOP_ID,
+                        amount: total * 100, // Сумма в копейках
+                        currency: 'RUB',
+                        order_id: orderId,
+                        description: `Заказ #${orderId} - ${cart.map(i => i.title).join(', ')}`,
+                        customer_name: name,
+                        customer_email: email,
+                        success_url: `${window.location.origin}/payment-success.html?order_id=${orderId}`,
+                        fail_url: `${window.location.origin}/payment-fail.html?order_id=${orderId}`,
+                        callback_url: CALLBACK_URL
+                    };
+                    
+                    // Отправляем запрос на создание платежа
+                    const response = await fetch(CARDLINK_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${CARDLINK_API_TOKEN}`
+                        },
+                        body: JSON.stringify(paymentData)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok && result.payment_url) {
+                        // Перенаправляем на страницу оплаты Cardlink
+                        window.location.href = result.payment_url;
+                    } else {
+                        console.error('Ошибка создания платежа:', result);
+                        alert('Ошибка при создании платежа. Попробуйте еще раз или выберите другой способ оплаты.');
+                    }
+                } catch (error) {
+                    console.error('Ошибка обработки оплаты Cardlink:', error);
+                    alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз.');
+                }
+            }
 
         })();
     </script>

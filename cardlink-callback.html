@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обработка платежа – Benefideal</title>
+</head>
+<body>
+    <script>
+        // Обработчик callback от Cardlink
+        // Этот файл должен обрабатывать уведомления от Cardlink о статусе платежа
+        
+        // ВАЖНО: Этот файл должен быть доступен по URL, указанному в callback_url
+        // Cardlink будет отправлять POST запросы на этот URL с данными о платеже
+        
+        // Для обработки callback на сервере используйте server.js или создайте отдельный endpoint
+        // Здесь показан пример обработки на клиенте (если Cardlink поддерживает GET запросы)
+        
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('order_id');
+            const status = urlParams.get('status');
+            
+            if (orderId && status === 'success') {
+                // Платеж успешен
+                const pendingOrder = JSON.parse(localStorage.getItem('benefideal_pending_order') || '{}');
+                
+                if (pendingOrder.orderId === orderId) {
+                    // Сохраняем заказ и перенаправляем на страницу успеха
+                    localStorage.removeItem('benefideal_pending_order');
+                    localStorage.removeItem('benefideal_cart');
+                    localStorage.removeItem('benefideal_cart_timestamp');
+                    
+                    // Сохраняем данные заказа для отправки в Telegram и базу данных
+                    // Это будет обработано на странице payment-success.html
+                    window.location.href = `payment-success.html?order_id=${orderId}`;
+                } else {
+                    window.location.href = 'payment-fail.html';
+                }
+            } else {
+                window.location.href = 'payment-fail.html';
+            }
+        })();
+    </script>
+</body>
+</html>
+
