@@ -904,21 +904,19 @@ app.post('/api/review', (req, res) => {
                 }
             }
             
-            // ПРАВИЛО: 1 заказ = 1 отзыв
-            // Проверяем, не оставлял ли клиент уже отзыв для этого заказа (по email + order_id)
+            // ПРАВИЛО: 1 email = 1 отзыв (независимо от количества заказов)
+            // Проверяем, не оставлял ли клиент уже отзыв (только по email, без учета order_id)
             const email = normalizedEmail.toLowerCase().trim();
-            const orderId = newestOrderId || 'null';
             const alreadyReviewed = allReviewsInRoot.some(r => {
                 const rEmail = (r.customer_email || '').toLowerCase().trim();
-                const rOrderId = r.order_id || 'null';
-                return rEmail === email && rOrderId === orderId;
+                return rEmail === email;
             });
             
             if (alreadyReviewed) {
-                console.log(`⚠️ Клиент ${email} уже оставил отзыв для заказа ${orderId}`);
+                console.log(`⚠️ Клиент ${email} уже оставил отзыв`);
                 return res.status(400).json({ 
                     success: false,
-                    error: 'Вы уже оставили отзыв для этого заказа.' 
+                    error: 'Вы уже оставили отзыв.' 
                 });
             }
             
