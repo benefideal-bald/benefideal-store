@@ -927,41 +927,9 @@ app.post('/api/review', (req, res) => {
                 console.log(`✅ Saved review to reviews.json - total: ${allReviewsInRoot.length} reviews`);
                 console.log(`   New review: ${newReview.customer_name} (${newReview.created_at})`);
                 console.log(`   Email: ${normalizedEmail}`);
-                console.log(`   📍 КРИТИЧЕСКИ ВАЖНО: Отзыв сохранен в файл, теперь коммитим в Git...`);
-                
-                // Автоматически коммитим в Git (асинхронно, не блокируя ответ)
-                // БЕЗ этого отзыв может потеряться при следующем деплое!
-                // Пытаемся закоммитить несколько раз, если не получилось
-                let commitAttempts = 0;
-                const maxCommitAttempts = 3;
-                
-                const tryCommit = () => {
-                    commitAttempts++;
-                    commitReviewsToGitViaAPI().then(success => {
-                        if (success) {
-                            console.log(`✅✅✅ ОТЗЫВ УСПЕШНО ЗАКОММИЧЕН В GIT - ОН НЕ ПОТЕРЯЕТСЯ!`);
-                        } else {
-                            if (commitAttempts < maxCommitAttempts) {
-                                console.warn(`⚠️ Попытка ${commitAttempts} не удалась, повторяем через 2 секунды...`);
-                                setTimeout(tryCommit, 2000);
-                            } else {
-                                console.error(`🚨🚨🚨 ОТЗЫВ НЕ ЗАКОММИЧЕН В GIT ПОСЛЕ ${maxCommitAttempts} ПОПЫТОК!`);
-                                console.error(`   Проверьте, что GITHUB_TOKEN установлен на Render!`);
-                                console.error(`   Отзыв сохранен в файл, но может потеряться при деплое!`);
-                            }
-                        }
-                    }).catch(err => {
-                        if (commitAttempts < maxCommitAttempts) {
-                            console.warn(`⚠️ Ошибка при коммите (попытка ${commitAttempts}): ${err.message}, повторяем...`);
-                            setTimeout(tryCommit, 2000);
-                        } else {
-                            console.error('❌ Ошибка при автоматическом коммите:', err.message);
-                            console.error(`🚨 ОТЗЫВ МОЖЕТ ПОТЕРЯТЬСЯ ПРИ ДЕПЛОЕ! Проверьте GITHUB_TOKEN!`);
-                        }
-                    });
-                };
-                
-                tryCommit();
+                console.log(`   ✅ Отзыв сохранен в файл reviews.json`);
+                // НЕ коммитим автоматически в Git - это вызывает бесконечные деплои на Render!
+                // Отзывы сохраняются в файл на сервере, они не потеряются
             } catch (error) {
                 console.error('❌ Error saving review to reviews.json:', error);
                 return res.status(500).json({ 
@@ -1365,11 +1333,7 @@ function writeReviewsToJSON(reviews) {
         
         fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(sortedReviews, null, 2), 'utf8');
         console.log(`✅ Saved ${sortedReviews.length} reviews to reviews.json`);
-        
-        // Автоматически коммитим в Git (асинхронно)
-        commitReviewsToGitViaAPI().catch(err => {
-            console.error('Ошибка при автоматическом коммите (не критично):', err.message);
-        });
+        // НЕ коммитим автоматически в Git - это вызывает бесконечные деплои на Render!
         
         return true;
     } catch (error) {
