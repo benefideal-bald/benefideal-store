@@ -770,11 +770,11 @@ app.post('/api/review', (req, res) => {
     }
     
     // Normalize email to lowercase for case-insensitive comparison
-    const normalizedEmail = email.toLowerCase().trim();
+    let normalizedEmail = email.toLowerCase().trim();
     
     console.log('📨 Review submit request received:');
     console.log('   Name:', name);
-    console.log('   Email:', normalizedEmail);
+    console.log('   Email (from form):', normalizedEmail);
     console.log('   Rating:', rating);
     console.log('   Text length:', text ? text.length : 0);
     
@@ -792,13 +792,49 @@ app.post('/api/review', (req, res) => {
         
         console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found for ${normalizedEmail}`);
         
+        // Если email не найден, пытаемся найти по имени клиента
         if (!emailCheck || emailCheck.count === 0) {
-            console.error(`❌ Email ${normalizedEmail} not found in subscriptions`);
-            return res.status(400).json({ 
-                success: false,
-                error: 'Email не найден в системе. Проверьте правильность введенного адреса.' 
+            console.log(`⚠️ Email ${normalizedEmail} not found, trying to find by name: "${name}"`);
+            
+            // Ищем email по имени клиента
+            db.get(`
+                SELECT DISTINCT customer_email 
+                FROM subscriptions 
+                WHERE customer_name LIKE ? 
+                ORDER BY purchase_date DESC 
+                LIMIT 1
+            `, [`%${name}%`], (errName, nameResult) => {
+                if (errName) {
+                    console.error('❌ Error searching by name:', errName);
+                    return res.status(400).json({ 
+                        success: false,
+                        error: 'Email не найден в системе. Проверьте правильность введенного адреса.' 
+                    });
+                }
+                
+                if (nameResult && nameResult.customer_email) {
+                    // Нашли email по имени - используем его!
+                    normalizedEmail = nameResult.customer_email.toLowerCase().trim();
+                    console.log(`✅ Found email by name: ${normalizedEmail}`);
+                    // Продолжаем с найденным email
+                    continueWithEmail(normalizedEmail);
+                } else {
+                    console.error(`❌ Email not found by name either`);
+                    return res.status(400).json({ 
+                        success: false,
+                        error: 'Email не найден в системе. Проверьте правильность введенного адреса.' 
+                    });
+                }
             });
+            return; // Выходим из текущего колбэка
         }
+        
+        // Email найден - продолжаем
+        continueWithEmail(normalizedEmail);
+    });
+    
+    // Функция для продолжения обработки с найденным email
+    function continueWithEmail(normalizedEmail) {
         
         // Get all orders (with or without order_id), get newest first
         // Use LOWER() for case-insensitive comparison
@@ -956,9 +992,9 @@ app.post('/api/review', (req, res) => {
                 email: normalizedEmail,
                 order_id: newestOrderId
             });
-        });
-    });
-});
+        }); // конец db.all
+    } // конец continueWithEmail
+}); // конец app.post
 
 // Helper function to remove duplicate reviews
 function removeDuplicateReviews(reviews) {
