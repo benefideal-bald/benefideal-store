@@ -887,24 +887,8 @@ app.post('/api/review', (req, res) => {
             const newestOrder = allOrders[0];
             const newestOrderId = newestOrder.order_id === 'NULL_ORDER' ? null : newestOrder.order_id;
             
-            // Добавляем отзыв в JSON файл (все отзывы хранятся вместе!)
-            console.log(`📝 Adding review to JSON: name=${name}, email=${normalizedEmail}, rating=${rating}, order_id=${newestOrderId}`);
-            
-            // Создаем новый отзыв
-            const newReview = {
-                id: `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                customer_name: name,
-                customer_email: normalizedEmail,
-                review_text: text,
-                rating: parseInt(rating),
-                order_id: newestOrderId,
-                created_at: new Date().toISOString(),
-                is_static: false
-            };
-            
-            // ПРОСТАЯ СИСТЕМА: Читаем все отзывы, добавляем новый, сохраняем
+            // ПРОСТАЯ СИСТЕМА: Читаем все отзывы, проверяем, добавляем новый, сохраняем
             // Все отзывы хранятся в корневом reviews.json (Git версия)
-            // НИЧЕГО НЕ УДАЛЯЕМ - просто добавляем новый отзыв!
             let allReviewsInRoot = [];
             if (fs.existsSync(reviewsJsonPathGit)) {
                 try {
@@ -920,7 +904,40 @@ app.post('/api/review', (req, res) => {
                 }
             }
             
-            // Добавляем новый отзыв (БЕЗ проверки на дубликаты - клиент может оставлять сколько угодно отзывов!)
+            // ПРАВИЛО: 1 заказ = 1 отзыв
+            // Проверяем, не оставлял ли клиент уже отзыв для этого заказа (по email + order_id)
+            const email = normalizedEmail.toLowerCase().trim();
+            const orderId = newestOrderId || 'null';
+            const alreadyReviewed = allReviewsInRoot.some(r => {
+                const rEmail = (r.customer_email || '').toLowerCase().trim();
+                const rOrderId = r.order_id || 'null';
+                return rEmail === email && rOrderId === orderId;
+            });
+            
+            if (alreadyReviewed) {
+                console.log(`⚠️ Клиент ${email} уже оставил отзыв для заказа ${orderId}`);
+                return res.status(400).json({ 
+                    success: false,
+                    error: 'Вы уже оставили отзыв для этого заказа.' 
+                });
+            }
+            
+            // Добавляем отзыв в JSON файл (все отзывы хранятся вместе!)
+            console.log(`📝 Adding review to JSON: name=${name}, email=${normalizedEmail}, rating=${rating}, order_id=${newestOrderId}`);
+            
+            // Создаем новый отзыв
+            const newReview = {
+                id: `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                customer_name: name,
+                customer_email: normalizedEmail,
+                review_text: text,
+                rating: parseInt(rating),
+                order_id: newestOrderId,
+                created_at: new Date().toISOString(),
+                is_static: false
+            };
+            
+            // Добавляем новый отзыв (НИЧЕГО НЕ УДАЛЯЕМ - только добавляем!)
             allReviewsInRoot.push(newReview);
             
             // Сортируем по дате (новые первыми)
