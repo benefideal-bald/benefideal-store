@@ -1,23 +1,5 @@
 [
   {
-    "id": "review_max",
-    "customer_name": "Макс",
-    "customer_email": "max@example.com",
-    "review_text": "Все четко, админу спасибо за помощь)",
-    "rating": 5,
-    "created_at": "2025-11-15T10:00:00Z",
-    "is_static": false
-  },
-  {
-    "id": "review_tanya",
-    "customer_name": "Таня",
-    "customer_email": "tanya@example.com",
-    "review_text": "все как супер ❤️❤️ спасибо 😊",
-    "rating": 5,
-    "created_at": "2025-11-14T20:00:00Z",
-    "is_static": false
-  },
-  {
     "id": "static_tikhon",
     "customer_name": "Тихон",
     "customer_email": "tikhon@example.com",

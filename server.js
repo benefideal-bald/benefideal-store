@@ -2892,6 +2892,34 @@ app.get('/api/debug/emails', (req, res) => {
 });
 
 // Debug endpoint to check specific email
+// Endpoint для поиска реальных email адресов клиентов по имени
+app.get('/api/debug/find-customer-email/:name', (req, res) => {
+    const name = decodeURIComponent(req.params.name);
+    console.log(`🔍 Searching for customer email by name: "${name}"`);
+    
+    db.all(`SELECT DISTINCT customer_name, customer_email, order_id, purchase_date 
+            FROM subscriptions 
+            WHERE customer_name LIKE ? 
+            ORDER BY purchase_date DESC 
+            LIMIT 10`, 
+        [`%${name}%`], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        res.json({
+            name: name,
+            found: rows.length > 0,
+            customers: rows.map(r => ({
+                name: r.customer_name,
+                email: r.customer_email,
+                order_id: r.order_id,
+                purchase_date: r.purchase_date
+            }))
+        });
+    });
+});
+
 app.get('/api/debug/email/:email', (req, res) => {
     const email = req.params.email.toLowerCase().trim();
     
