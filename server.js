@@ -2651,17 +2651,21 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
             }
         });
         
-        if (response.data && response.data.payment_url) {
-            console.log('✅ Cardlink payment created successfully:', response.data.payment_url);
+        // Cardlink может возвращать payment_url или link_page_url
+        const paymentUrl = response.data?.payment_url || response.data?.link_page_url || response.data?.link;
+        
+        if (paymentUrl) {
+            console.log('✅ Cardlink payment created successfully:', paymentUrl);
             res.json({
                 success: true,
-                payment_url: response.data.payment_url
+                payment_url: paymentUrl
             });
         } else {
             console.error('❌ Invalid response from Cardlink:', response.data);
             res.status(500).json({
                 success: false,
-                error: 'Неверный ответ от Cardlink'
+                error: 'Неверный ответ от Cardlink',
+                details: response.data
             });
         }
     } catch (error) {
