@@ -1,5 +1,23 @@
 [
   {
+    "id": "review_max_restored",
+    "customer_name": "Макс",
+    "customer_email": "temp_max@restore.pending",
+    "review_text": "Все четко, админу спасибо за помощь)",
+    "rating": 5,
+    "created_at": "2025-11-15T10:00:00Z",
+    "is_static": false
+  },
+  {
+    "id": "review_tanya_restored",
+    "customer_name": "Таня",
+    "customer_email": "temp_tanya@restore.pending",
+    "review_text": "все как супер ❤️❤️ спасибо 😊",
+    "rating": 5,
+    "created_at": "2025-11-14T20:00:00Z",
+    "is_static": false
+  },
+  {
     "id": "review_1_1763225769513_kdgrqx1qp",
     "customer_name": "София",
     "customer_email": "static_review_1@benefideal.com",
@@ -8,5 +26,176 @@
     "order_id": "STATIC_REVIEW_1",
     "created_at": "2025-10-22T16:56:09.504Z",
     "is_static": false
+  },
+  {
+    "id": "static_tikhon",
+    "customer_name": "Тихон",
+    "customer_email": "tikhon@example.com",
+    "review_text": "Купил кепкат про на 3 месяца я доволен",
+    "rating": 5,
+    "created_at": "2025-11-08T13:48:59Z",
+    "is_static": true
+  },
+  {
+    "id": "static_maxim",
+    "customer_name": "Максим",
+    "customer_email": "static_review_maxim@benefideal.com",
+    "review_text": "Приобрел кепкат про на месяц, все работает как следует",
+    "rating": 4,
+    "created_at": "2025-11-07T12:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_timur",
+    "customer_name": "Тимур",
+    "customer_email": "static_review_timur@benefideal.com",
+    "review_text": "Купил чат гпт на месяц, сделали все быстро, рекомендую 🤝",
+    "rating": 5,
+    "created_at": "2025-11-06T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_sofia",
+    "customer_name": "София",
+    "customer_email": "static_review_1@benefideal.com",
+    "review_text": "Купила кепкат про для тиктока все топ",
+    "rating": 5,
+    "created_at": "2025-10-15T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_pavel",
+    "customer_name": "Павел",
+    "customer_email": "static_review_2@benefideal.com",
+    "review_text": "Купил чат гпт на месяц, всё работает. Спасибо большое андрею за помощь 🤝",
+    "rating": 5,
+    "created_at": "2025-10-10T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_yulia",
+    "customer_name": "Юлия",
+    "customer_email": "static_review_3@benefideal.com",
+    "review_text": "Adobe заказала для работы над дизайн проектами, photoshop, illustrator, indesign все работает и не лагает. Поддержка оперативно отвечает на вопросы, спасибо за все.",
+    "rating": 5,
+    "created_at": "2025-09-20T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_roman",
+    "customer_name": "Роман",
+    "customer_email": "static_review_4@benefideal.com",
+    "review_text": "Кепкат про стал моим основным редактором, шаблоны и эффекты открывают новые возможности, активация мгновенная и цена приятная",
+    "rating": 5,
+    "created_at": "2025-09-15T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_tatyana",
+    "customer_name": "Татьяна",
+    "customer_email": "static_review_5@benefideal.com",
+    "review_text": "Чат гпт использую для написания текстов и исследования, все возможности GPT 4 доступны, скорость ответов отличная.",
+    "rating": 5,
+    "created_at": "2025-09-10T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_nikita",
+    "customer_name": "Никита",
+    "customer_email": "static_review_6@benefideal.com",
+    "review_text": "подписка на адоб лучшая моя покупка, использую для фриланса. premiere pro и after effects работают без задержки.",
+    "rating": 5,
+    "created_at": "2025-09-05T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_arina",
+    "customer_name": "Арина",
+    "customer_email": "static_review_7@benefideal.com",
+    "review_text": "Capcut покупала для блога в Instagram. Все функции доступны, убираю водяные знаки и использую эксклюзивные эффекты",
+    "rating": 5,
+    "created_at": "2025-08-25T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_konstantin",
+    "customer_name": "Константин",
+    "customer_email": "static_review_8@benefideal.com",
+    "review_text": "Chat gpt plus приобрел для работы выдали данные меньше чем за 5 минут",
+    "rating": 5,
+    "created_at": "2025-09-01T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_karina",
+    "customer_name": "Карина",
+    "customer_email": "static_review_9@benefideal.com",
+    "review_text": "Adobe заказала для обучения дизайну. Все отлично работает",
+    "rating": 5,
+    "created_at": "2025-08-30T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_andrey",
+    "customer_name": "Андрей",
+    "customer_email": "static_review_10@benefideal.com",
+    "review_text": "Купил adobe creative cloud для монтажа все программы работают отлично",
+    "rating": 5,
+    "created_at": "2025-08-28T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_alexey",
+    "customer_name": "Алексей",
+    "customer_email": "static_review_11@benefideal.com",
+    "review_text": "Отличный сервис получил данные для гпт через час после оплаты.",
+    "rating": 5,
+    "created_at": "2025-08-27T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_maria",
+    "customer_name": "Мария",
+    "customer_email": "static_review_12@benefideal.com",
+    "review_text": "Заказала адоб на 3 месяца данные пришли очень быстро, проблем не было спасибо!",
+    "rating": 5,
+    "created_at": "2025-08-26T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_dmitriy",
+    "customer_name": "Дмитрий",
+    "customer_email": "static_review_13@benefideal.com",
+    "review_text": "Пользуюсь уже несколько месяцев, всё стабильно работает, обязательно буду еще брать",
+    "rating": 5,
+    "created_at": "2025-08-24T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_elena",
+    "customer_name": "Елена",
+    "customer_email": "static_review_14@benefideal.com",
+    "review_text": "быстро все выдали кепкат работает все функции доступны, все топ",
+    "rating": 5,
+    "created_at": "2025-08-23T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_ivan",
+    "customer_name": "Иван",
+    "customer_email": "static_review_15@benefideal.com",
+    "review_text": "Всё четко и по делу никаких проблем.",
+    "rating": 5,
+    "created_at": "2025-08-22T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_olga",
+    "customer_name": "Ольга",
+    "customer_email": "static_review_16@benefideal.com",
+    "review_text": "Отличные цены и быстрое обслуживание, я получила доступ к адоб почти сразу после оплаты. Очень рекомендую этот магазин.",
+    "rating": 5,
+    "created_at": "2025-08-20T10:00:00Z",
+    "is_static": true
   }
 ]

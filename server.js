@@ -2956,6 +2956,150 @@ app.get('/api/debug/find-customer-email/:name', (req, res) => {
     });
 });
 
+// Endpoint для восстановления пропавших отзывов (Макс и Таня)
+app.get('/api/debug/restore-missing-reviews', (req, res) => {
+    console.log('🔧 ========== RESTORING MISSING REVIEWS ==========');
+    
+    const missingReviews = [
+        {
+            name: 'Макс',
+            text: 'Все четко, админу спасибо за помощь)',
+            rating: 5
+        },
+        {
+            name: 'Таня',
+            text: 'все как супер ❤️❤️ спасибо 😊',
+            rating: 5
+        }
+    ];
+    
+    const results = [];
+    let processed = 0;
+    
+    missingReviews.forEach((reviewData, index) => {
+        // Ищем email по имени в базе данных
+        db.get(`
+            SELECT DISTINCT customer_email, order_id, purchase_date 
+            FROM subscriptions 
+            WHERE customer_name LIKE ? 
+            ORDER BY purchase_date DESC 
+            LIMIT 1
+        `, [`%${reviewData.name}%`], (err, customer) => {
+            processed++;
+            
+            if (err) {
+                console.error(`❌ Error finding email for ${reviewData.name}:`, err);
+                results.push({
+                    name: reviewData.name,
+                    success: false,
+                    error: err.message
+                });
+            } else if (!customer || !customer.customer_email) {
+                console.error(`❌ Email not found for ${reviewData.name}`);
+                results.push({
+                    name: reviewData.name,
+                    success: false,
+                    error: 'Email not found in database'
+                });
+            } else {
+                // Email найден - добавляем отзыв
+                const email = customer.customer_email.toLowerCase().trim();
+                const orderId = customer.order_id || null;
+                
+                console.log(`✅ Found email for ${reviewData.name}: ${email}`);
+                
+                // Читаем все отзывы
+                let allReviews = [];
+                if (fs.existsSync(reviewsJsonPathGit)) {
+                    try {
+                        const data = fs.readFileSync(reviewsJsonPathGit, 'utf8');
+                        allReviews = JSON.parse(data);
+                        if (!Array.isArray(allReviews)) {
+                            allReviews = [];
+                        }
+                    } catch (error) {
+                        console.error('❌ Error reading reviews.json:', error);
+                        allReviews = [];
+                    }
+                }
+                
+                // Проверяем, нет ли уже такого отзыва
+                const exists = allReviews.some(r => 
+                    r.customer_name === reviewData.name && 
+                    r.review_text === reviewData.text
+                );
+                
+                if (exists) {
+                    console.log(`⚠️ Review for ${reviewData.name} already exists`);
+                    results.push({
+                        name: reviewData.name,
+                        success: true,
+                        message: 'Review already exists',
+                        email: email
+                    });
+                } else {
+                    // Создаем новый отзыв
+                    const newReview = {
+                        id: `review_${Date.now()}_${reviewData.name.toLowerCase()}_restored`,
+                        customer_name: reviewData.name,
+                        customer_email: email,
+                        review_text: reviewData.text,
+                        rating: reviewData.rating,
+                        order_id: orderId,
+                        created_at: new Date().toISOString(),
+                        is_static: false
+                    };
+                    
+                    // Добавляем в начало списка (новые первыми)
+                    allReviews.unshift(newReview);
+                    
+                    // Сортируем по дате (новые первыми)
+                    allReviews.sort((a, b) => {
+                        const timeA = new Date(a.created_at || 0).getTime();
+                        const timeB = new Date(b.created_at || 0).getTime();
+                        return timeB - timeA;
+                    });
+                    
+                    // Сохраняем
+                    try {
+                        fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(allReviews, null, 2), 'utf8');
+                        console.log(`✅ Restored review for ${reviewData.name}`);
+                        
+                        // Автоматически коммитим в Git
+                        commitReviewsToGitViaAPI().catch(err => {
+                            console.error('Ошибка при автоматическом коммите (не критично):', err.message);
+                        });
+                        
+                        results.push({
+                            name: reviewData.name,
+                            success: true,
+                            email: email,
+                            order_id: orderId,
+                            review: newReview
+                        });
+                    } catch (error) {
+                        console.error(`❌ Error saving review for ${reviewData.name}:`, error);
+                        results.push({
+                            name: reviewData.name,
+                            success: false,
+                            error: error.message
+                        });
+                    }
+                }
+            }
+            
+            // Когда все обработано, отправляем ответ
+            if (processed === missingReviews.length) {
+                res.json({
+                    success: true,
+                    message: 'Restoration completed',
+                    results: results
+                });
+            }
+        });
+    });
+});
+
 app.get('/api/debug/email/:email', (req, res) => {
     const email = req.params.email.toLowerCase().trim();
     
