@@ -2683,18 +2683,28 @@ app.post('/api/cardlink/callback', (req, res) => {
     console.log('📞 Cardlink callback received:', req.body);
     
     // Cardlink отправляет данные о статусе платежа
-    const { order_id, status, amount, transaction_id } = req.body;
+    // Структура может отличаться, проверьте документацию
+    const status = req.body.Status || req.body.status || req.body.payment_status;
+    const orderId = req.body.InvId || req.body.order_id || req.body.invoice_id;
+    const amount = req.body.OutSum || req.body.amount;
+    const transactionId = req.body.TrsId || req.body.transaction_id || req.body.id;
+    const signature = req.body.SignatureValue || req.body.signature;
     
-    if (status === 'success' || status === 'paid') {
+    // ВАЖНО: Проверьте подпись запроса для безопасности (если Cardlink её отправляет)
+    // if (signature && !verifySignature(req.body, signature)) {
+    //     return res.status(400).json({ success: false, error: 'Invalid signature' });
+    // }
+    
+    if (status === 'SUCCESS' || status === 'success' || status === 'paid' || status === 'PAID') {
         // Платеж успешен - обрабатываем заказ
-        console.log('✅ Payment successful:', { order_id, amount, transaction_id });
+        console.log('✅ Payment successful:', { orderId, amount, transactionId });
         
         // Здесь можно обновить статус заказа в базе данных
         // Или отправить данные в Telegram
         
         res.status(200).json({ success: true, message: 'Callback processed' });
     } else {
-        console.log('❌ Payment failed:', { order_id, status });
+        console.log('❌ Payment failed:', { orderId, status });
         res.status(200).json({ success: false, message: 'Payment failed' });
     }
 });
