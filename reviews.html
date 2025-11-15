@@ -71,13 +71,6 @@
                 Смотреть больше
             </button>
         </div>
-            
-        <div style="text-align: center; margin-top: var(--space-16);">
-            <a href="index.html" class="btn btn-primary" style="text-decoration: none;">
-                <i class="fas fa-arrow-left"></i>
-                Вернуться на главную
-            </a>
-        </div>
     </main>
 
     <!-- Footer -->
@@ -117,8 +110,6 @@
             const showMoreBtn = document.getElementById('showMoreBtn');
             
             let allReviews = [];
-            let displayedCount = 0;
-            const reviewsPerPage = 10;
             
             async function loadAllReviews() {
                 try {
@@ -145,9 +136,8 @@
                         console.log('   Last (oldest):', allReviews[allReviews.length - 1]?.customer_name, '-', allReviews[allReviews.length - 1]?.created_at);
                         console.log('   All review names:', allReviews.map(r => r.customer_name));
                         
-                        // Start from 0 - show first 10 reviews (newest first)
-                        displayedCount = 0;
-                        displayReviews(); // Will show first 10 reviews (newest first)
+                        // Показываем ВСЕ отзывы сразу
+                        displayAllReviews();
                     } else {
                         console.error('❌ No reviews in API response!', data);
                         // No dynamic reviews, but static ones are still visible
@@ -197,99 +187,43 @@
                 return card;
             }
             
-            function displayReviews() {
-                // Display dynamic reviews from displayedCount to displayedCount + reviewsPerPage
-                // Dynamic reviews come FIRST (newest first) - новейшие отзывы должны быть первыми!
-                const reviewsToShow = allReviews.slice(displayedCount, displayedCount + reviewsPerPage);
+            function displayAllReviews() {
+                // Показываем ВСЕ отзывы сразу (newest first)
+                console.log(`📋 Displaying ALL reviews: ${allReviews.length} total`);
+                console.log(`   All review names:`, allReviews.map(r => r.customer_name));
                 
-                console.log(`📋 Displaying reviews: ${displayedCount} to ${displayedCount + reviewsPerPage - 1}`);
-                console.log(`   Reviews to show:`, reviewsToShow.map(r => r.customer_name));
+                // Remove all existing cards
+                const existingCards = reviewsContainer.querySelectorAll('.review-card');
+                console.log(`   🗑️ Removing ${existingCards.length} existing cards`);
+                existingCards.forEach(card => card.remove());
                 
-                // КРИТИЧЕСКИ ВАЖНО: Проверяем, есть ли Илья в отображаемых отзывах
-                const ilyaInThisPage = reviewsToShow.find(r => r.customer_name === 'Илья');
-                if (ilyaInThisPage) {
-                    console.log(`✅ Илья review WILL BE DISPLAYED on this page!`);
-                } else if (displayedCount === 0) {
-                    // Если Илья не в первых 10 отзывах, проверяем, есть ли он вообще
-                    const ilyaInAll = allReviews.find(r => r.customer_name === 'Илья');
-                    if (ilyaInAll) {
-                        const ilyaPosition = allReviews.indexOf(ilyaInAll);
-                        console.error(`❌ Илья review is at position ${ilyaPosition}, but not in first ${reviewsPerPage} reviews!`);
-                        console.error(`   This means Илья review is OLDER than expected or sorting is wrong!`);
-                    } else {
-                        console.error(`❌ Илья review NOT FOUND in allReviews array at all!`);
-                    }
-                }
-                
-                if (reviewsToShow.length === 0) {
-                    // No more reviews to show
-                    loadMoreBtn.style.display = 'none';
-                    return;
-                }
-                
-                // Create all cards first
+                // Create all cards
                 const cardsToAdd = [];
-                reviewsToShow.forEach((review, index) => {
+                allReviews.forEach((review, index) => {
                     const card = createReviewCard(review);
                     if (card) {
                         card.setAttribute('data-dynamic', 'true');
                         card.classList.add('dynamic-review');
-                        card.setAttribute('data-review-name', review.customer_name); // For debugging
+                        card.setAttribute('data-review-name', review.customer_name);
                         cardsToAdd.push(card);
-                        console.log(`   ✅ Created card ${index + 1}/${reviewsToShow.length}: ${review.customer_name}`);
+                        console.log(`   ✅ Created card ${index + 1}/${allReviews.length}: ${review.customer_name}`);
                     } else {
                         console.error(`   ❌ Failed to create review card for: ${review.customer_name}`);
                     }
                 });
                 
-                console.log(`   📦 Total cards created: ${cardsToAdd.length} out of ${reviewsToShow.length} reviews`);
+                // Append all cards to container
+                cardsToAdd.forEach((card, index) => {
+                    reviewsContainer.appendChild(card);
+                    const reviewName = card.getAttribute('data-review-name');
+                    console.log(`   ✅ Added card ${index + 1}/${cardsToAdd.length} to DOM: ${reviewName}`);
+                });
                 
-                // API returns reviews sorted DESC (newest first)
-                // If first load, remove all existing cards and show first 10 from API
-                if (displayedCount === 0) {
-                    // Remove all existing cards
-                    const existingCards = reviewsContainer.querySelectorAll('.review-card');
-                    console.log(`   🗑️ Removing ${existingCards.length} existing cards`);
-                    existingCards.forEach(card => card.remove());
-                    
-                    // Append first 10 reviews (newest first, новейшие должны быть первыми)
-                    cardsToAdd.forEach((card, index) => {
-                        reviewsContainer.appendChild(card);
-                        const reviewName = card.getAttribute('data-review-name');
-                        console.log(`   ✅ Added card ${index + 1}/${cardsToAdd.length} to DOM: ${reviewName}`);
-                    });
-                    
-                    // Проверяем, сколько карточек реально в DOM
-                    const cardsInDOM = reviewsContainer.querySelectorAll('.review-card');
-                    console.log(`   📊 Cards in DOM after adding: ${cardsInDOM.length}`);
-                    console.log(`   📊 Expected: ${cardsToAdd.length}`);
-                    if (cardsInDOM.length !== cardsToAdd.length) {
-                        console.error(`   ❌ MISMATCH! Expected ${cardsToAdd.length} cards, but found ${cardsInDOM.length} in DOM!`);
-                    }
-                    
-                    console.log(`✅ Displayed ${cardsToAdd.length} reviews. First review: ${reviewsToShow[0]?.customer_name}, Last: ${reviewsToShow[reviewsToShow.length - 1]?.customer_name}`);
-                } else {
-                    // Subsequent loads: append to the end (showing older reviews)
-                    cardsToAdd.forEach(card => {
-                        reviewsContainer.appendChild(card);
-                    });
-                    console.log(`✅ Added ${cardsToAdd.length} more reviews (page ${Math.floor(displayedCount / reviewsPerPage) + 1})`);
-                }
+                // Hide "Load More" button since we show all reviews
+                loadMoreBtn.style.display = 'none';
                 
-                displayedCount += reviewsToShow.length;
-                
-                // Show/hide "Load More" button
-                if (displayedCount < allReviews.length) {
-                    loadMoreBtn.style.display = 'block';
-                } else {
-                    loadMoreBtn.style.display = 'none';
-                }
+                console.log(`✅ Displayed ALL ${cardsToAdd.length} reviews. First: ${allReviews[0]?.customer_name}, Last: ${allReviews[allReviews.length - 1]?.customer_name}`);
             }
-            
-            // Load more button click handler
-            showMoreBtn.addEventListener('click', function() {
-                displayReviews();
-            });
             
             // Initial load - show static reviews immediately, then load dynamic ones
             loadAllReviews();
