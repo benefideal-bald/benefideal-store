@@ -131,6 +131,10 @@ function initializeApp() {
     }
     
     setupSubscriptionOptions();
+    
+    // Прокрутка к якорю при загрузке страницы (если есть в URL)
+    // Это нужно для плавной прокрутки при переходе с других страниц
+    handleAnchorScroll();
 }
 
 // Initialize on DOM ready
@@ -154,6 +158,9 @@ window.addEventListener('pageshow', function(event) {
             link.blur();
         }
     });
+    
+    // Прокрутка к якорю при восстановлении страницы из кеша
+    handleAnchorScroll();
 });
 
 // Убираем focus с навигационных ссылок после клика (чтобы фиолетовая полоса не оставалась)
