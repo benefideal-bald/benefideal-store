@@ -229,6 +229,26 @@ function handleScroll() {
     }
 }
 
+// Функция для обработки прокрутки к якорю при загрузке страницы
+function handleAnchorScroll() {
+    // Проверяем, есть ли якорь в URL
+    const hash = window.location.hash;
+    if (hash) {
+        // Небольшая задержка, чтобы страница успела загрузиться
+        setTimeout(() => {
+            const target = document.querySelector(hash);
+            if (target) {
+                const headerHeight = document.querySelector('.header')?.offsetHeight || 80;
+                const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        }, 100);
+    }
+}
+
 // Initialize animations
 function initAnimations() {
     // Animate cards on load
