@@ -816,44 +816,17 @@ app.post('/api/review', (req, res) => {
         
         console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found for ${normalizedEmail}`);
         
-        // Если email не найден, пытаемся найти по имени клиента
+        // ЗАЩИТА ОТ СПАМА: Отзыв можно оставить ТОЛЬКО с почты, с которой покупал
+        // Если email не найден в базе покупок - отказываем
         if (!emailCheck || emailCheck.count === 0) {
-            console.log(`⚠️ Email ${normalizedEmail} not found, trying to find by name: "${name}"`);
-            
-            // Ищем email по имени клиента
-            db.get(`
-                SELECT DISTINCT customer_email 
-                FROM subscriptions 
-                WHERE customer_name LIKE ? 
-                ORDER BY purchase_date DESC 
-                LIMIT 1
-            `, [`%${name}%`], (errName, nameResult) => {
-                if (errName) {
-                    console.error('❌ Error searching by name:', errName);
-                    return res.status(400).json({ 
-                        success: false,
-                        error: 'Email не найден в системе. Проверьте правильность введенного адреса.' 
-                    });
-                }
-                
-                if (nameResult && nameResult.customer_email) {
-                    // Нашли email по имени - используем его!
-                    normalizedEmail = nameResult.customer_email.toLowerCase().trim();
-                    console.log(`✅ Found email by name: ${normalizedEmail}`);
-                    // Продолжаем с найденным email
-                    continueWithEmail(normalizedEmail);
-                } else {
-                    console.error(`❌ Email not found by name either`);
-                    return res.status(400).json({ 
-                        success: false,
-                        error: 'Email не найден в системе. Проверьте правильность введенного адреса.' 
-                    });
-                }
+            console.error(`❌ Email ${normalizedEmail} not found in subscriptions - SPAM PROTECTION`);
+            return res.status(400).json({ 
+                success: false,
+                error: 'Email не найден в системе. Отзыв можно оставить только с почты, с которой вы совершали покупку.' 
             });
-            return; // Выходим из текущего колбэка
         }
         
-        // Email найден - продолжаем
+        // Email найден в базе покупок - продолжаем
         continueWithEmail(normalizedEmail);
     });
     
@@ -904,19 +877,21 @@ app.post('/api/review', (req, res) => {
                 }
             }
             
-            // ПРАВИЛО: 1 email = 1 отзыв (независимо от количества заказов)
-            // Проверяем, не оставлял ли клиент уже отзыв (только по email, без учета order_id)
+            // ПРАВИЛО: 1 заказ = 1 отзыв
+            // Проверяем, не оставлял ли клиент уже отзыв для этого заказа (по email + order_id)
             const email = normalizedEmail.toLowerCase().trim();
+            const orderId = newestOrderId || 'null';
             const alreadyReviewed = allReviewsInRoot.some(r => {
                 const rEmail = (r.customer_email || '').toLowerCase().trim();
-                return rEmail === email;
+                const rOrderId = r.order_id || 'null';
+                return rEmail === email && rOrderId === orderId;
             });
             
             if (alreadyReviewed) {
-                console.log(`⚠️ Клиент ${email} уже оставил отзыв`);
+                console.log(`⚠️ Клиент ${email} уже оставил отзыв для заказа ${orderId}`);
                 return res.status(400).json({ 
                     success: false,
-                    error: 'Вы уже оставили отзыв.' 
+                    error: 'Вы уже оставили отзыв для этого заказа.' 
                 });
             }
             
