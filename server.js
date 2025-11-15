@@ -942,10 +942,20 @@ app.post('/api/review', (req, res) => {
                 fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(allReviewsInRoot, null, 2), 'utf8');
                 console.log(`✅ Saved review to reviews.json - total: ${allReviewsInRoot.length} reviews`);
                 console.log(`   New review: ${newReview.customer_name} (${newReview.created_at})`);
+                console.log(`   📍 КРИТИЧЕСКИ ВАЖНО: Отзыв сохранен в файл, теперь коммитим в Git...`);
                 
                 // Автоматически коммитим в Git (асинхронно, не блокируя ответ)
-                commitReviewsToGitViaAPI().catch(err => {
-                    console.error('Ошибка при автоматическом коммите (не критично):', err.message);
+                // БЕЗ этого отзыв может потеряться при следующем деплое!
+                commitReviewsToGitViaAPI().then(success => {
+                    if (success) {
+                        console.log(`✅✅✅ ОТЗЫВ УСПЕШНО ЗАКОММИЧЕН В GIT - ОН НЕ ПОТЕРЯЕТСЯ!`);
+                    } else {
+                        console.error(`🚨🚨🚨 ОТЗЫВ НЕ ЗАКОММИЧЕН В GIT - МОЖЕТ ПОТЕРЯТЬСЯ ПРИ ДЕПЛОЕ!`);
+                        console.error(`   Проверьте, что GITHUB_TOKEN установлен на Render!`);
+                    }
+                }).catch(err => {
+                    console.error('❌ Ошибка при автоматическом коммите:', err.message);
+                    console.error(`🚨 ОТЗЫВ МОЖЕТ ПОТЕРЯТЬСЯ ПРИ ДЕПЛОЕ! Проверьте GITHUB_TOKEN!`);
                 });
             } catch (error) {
                 console.error('❌ Error saving review to reviews.json:', error);
@@ -1273,15 +1283,18 @@ function readReviewsFromJSON() {
 
 // Функция для автоматического коммита отзывов в Git через GitHub API
 // Это гарантирует, что все новые отзывы попадут в Git и не потеряются при деплое
+// КРИТИЧЕСКИ ВАЖНО: Без этого отзывы могут потеряться при следующем деплое!
 async function commitReviewsToGitViaAPI() {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'benefideal-bald/benefideal-store'; // owner/repo
     const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
     
     if (!GITHUB_TOKEN) {
-        console.log(`⚠️ GITHUB_TOKEN не установлен. Автоматический коммит в Git через API недоступен.`);
-        console.log(`   Для автоматического коммита установите переменную окружения GITHUB_TOKEN на Render.`);
-        console.log(`   Или вручную закоммитьте reviews.json в Git после каждого нового отзыва.`);
+        console.error(`🚨🚨🚨 КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ: GITHUB_TOKEN не установлен!`);
+        console.error(`   БЕЗ GITHUB_TOKEN отзывы НЕ будут автоматически коммититься в Git!`);
+        console.error(`   Это означает, что при следующем деплое отзывы могут ПОТЕРЯТЬСЯ!`);
+        console.error(`   ⚠️  УСТАНОВИТЕ переменную окружения GITHUB_TOKEN на Render!`);
+        console.error(`   ⚠️  Или вручную закоммитьте reviews.json в Git после каждого нового отзыва!`);
         return false;
     }
     
