@@ -387,13 +387,20 @@ body {
 
 /* Убираем фиолетовую полосу после клика - она должна быть только при наведении */
 .nav-links a:active::after,
-.nav-links a:focus::after {
+.nav-links a:focus::after,
+.nav-links a:visited::after {
     width: 0;
 }
 
 .nav-links a:active:hover::after,
-.nav-links a:focus:hover::after {
+.nav-links a:focus:hover::after,
+.nav-links a:visited:hover::after {
     width: 100%;
+}
+
+/* Убираем outline при фокусе (для клавиатурной навигации можно оставить, но без полосы) */
+.nav-links a:focus {
+    outline: none;
 }
 
 .nav-actions {

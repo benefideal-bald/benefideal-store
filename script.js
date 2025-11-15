@@ -145,6 +145,28 @@ window.addEventListener('pageshow', function(event) {
     // Always reload cart when page is shown (both from cache and normal navigation)
     loadCart();
     updateCartUI();
+    
+    // Убираем focus с навигационных ссылок после перехода на страницу
+    // Это предотвращает появление фиолетовой полосы после клика
+    const navLinks = document.querySelectorAll('.nav-links a, .mobile-nav-links a');
+    navLinks.forEach(link => {
+        if (document.activeElement === link) {
+            link.blur();
+        }
+    });
+});
+
+// Убираем focus с навигационных ссылок после клика (чтобы фиолетовая полоса не оставалась)
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.nav-links a, .mobile-nav-links a')) {
+        const link = e.target.closest('a');
+        // Небольшая задержка, чтобы переход успел произойти
+        setTimeout(() => {
+            if (link && document.activeElement === link) {
+                link.blur();
+            }
+        }, 100);
+    }
 });
 
 // Also reload cart when page becomes visible (in case of tab switching)
