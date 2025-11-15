@@ -962,25 +962,47 @@ app.post('/api/review', (req, res) => {
             });
             
             // Сохраняем ВСЕ отзывы в корневой reviews.json
+            // КРИТИЧЕСКИ ВАЖНО: Сохраняем ДО отправки ответа клиенту!
             try {
                 fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(allReviewsInRoot, null, 2), 'utf8');
                 console.log(`✅ Saved review to reviews.json - total: ${allReviewsInRoot.length} reviews`);
                 console.log(`   New review: ${newReview.customer_name} (${newReview.created_at})`);
+                console.log(`   Email: ${normalizedEmail}`);
                 console.log(`   📍 КРИТИЧЕСКИ ВАЖНО: Отзыв сохранен в файл, теперь коммитим в Git...`);
                 
                 // Автоматически коммитим в Git (асинхронно, не блокируя ответ)
                 // БЕЗ этого отзыв может потеряться при следующем деплое!
-                commitReviewsToGitViaAPI().then(success => {
-                    if (success) {
-                        console.log(`✅✅✅ ОТЗЫВ УСПЕШНО ЗАКОММИЧЕН В GIT - ОН НЕ ПОТЕРЯЕТСЯ!`);
-                    } else {
-                        console.error(`🚨🚨🚨 ОТЗЫВ НЕ ЗАКОММИЧЕН В GIT - МОЖЕТ ПОТЕРЯТЬСЯ ПРИ ДЕПЛОЕ!`);
-                        console.error(`   Проверьте, что GITHUB_TOKEN установлен на Render!`);
-                    }
-                }).catch(err => {
-                    console.error('❌ Ошибка при автоматическом коммите:', err.message);
-                    console.error(`🚨 ОТЗЫВ МОЖЕТ ПОТЕРЯТЬСЯ ПРИ ДЕПЛОЕ! Проверьте GITHUB_TOKEN!`);
-                });
+                // Пытаемся закоммитить несколько раз, если не получилось
+                let commitAttempts = 0;
+                const maxCommitAttempts = 3;
+                
+                const tryCommit = () => {
+                    commitAttempts++;
+                    commitReviewsToGitViaAPI().then(success => {
+                        if (success) {
+                            console.log(`✅✅✅ ОТЗЫВ УСПЕШНО ЗАКОММИЧЕН В GIT - ОН НЕ ПОТЕРЯЕТСЯ!`);
+                        } else {
+                            if (commitAttempts < maxCommitAttempts) {
+                                console.warn(`⚠️ Попытка ${commitAttempts} не удалась, повторяем через 2 секунды...`);
+                                setTimeout(tryCommit, 2000);
+                            } else {
+                                console.error(`🚨🚨🚨 ОТЗЫВ НЕ ЗАКОММИЧЕН В GIT ПОСЛЕ ${maxCommitAttempts} ПОПЫТОК!`);
+                                console.error(`   Проверьте, что GITHUB_TOKEN установлен на Render!`);
+                                console.error(`   Отзыв сохранен в файл, но может потеряться при деплое!`);
+                            }
+                        }
+                    }).catch(err => {
+                        if (commitAttempts < maxCommitAttempts) {
+                            console.warn(`⚠️ Ошибка при коммите (попытка ${commitAttempts}): ${err.message}, повторяем...`);
+                            setTimeout(tryCommit, 2000);
+                        } else {
+                            console.error('❌ Ошибка при автоматическом коммите:', err.message);
+                            console.error(`🚨 ОТЗЫВ МОЖЕТ ПОТЕРЯТЬСЯ ПРИ ДЕПЛОЕ! Проверьте GITHUB_TOKEN!`);
+                        }
+                    });
+                };
+                
+                tryCommit();
             } catch (error) {
                 console.error('❌ Error saving review to reviews.json:', error);
                 return res.status(500).json({ 
@@ -3060,20 +3082,58 @@ app.get('/api/debug/restore-missing-reviews', (req, res) => {
                     }
                 }
                 
-                // Проверяем, нет ли уже такого отзыва
-                const exists = allReviews.some(r => 
+                // Проверяем, нет ли уже такого отзыва (по имени и тексту)
+                const existingReviewIndex = allReviews.findIndex(r => 
                     r.customer_name === reviewData.name && 
                     r.review_text === reviewData.text
                 );
                 
-                if (exists) {
-                    console.log(`⚠️ Review for ${reviewData.name} already exists`);
-                    results.push({
-                        name: reviewData.name,
-                        success: true,
-                        message: 'Review already exists',
-                        email: email
-                    });
+                if (existingReviewIndex !== -1) {
+                    // Отзыв существует, но возможно с временным email - обновляем email на реальный!
+                    const existingReview = allReviews[existingReviewIndex];
+                    const oldEmail = existingReview.customer_email;
+                    
+                    if (oldEmail !== email && (oldEmail.includes('temp_') || oldEmail.includes('@restore.pending') || oldEmail.includes('@example.com'))) {
+                        // Обновляем email на реальный из базы данных
+                        console.log(`🔄 Updating email for ${reviewData.name}: ${oldEmail} -> ${email}`);
+                        allReviews[existingReviewIndex].customer_email = email;
+                        allReviews[existingReviewIndex].order_id = orderId;
+                        
+                        // Сохраняем обновленный отзыв
+                        try {
+                            fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(allReviews, null, 2), 'utf8');
+                            console.log(`✅ Updated review for ${reviewData.name} with real email: ${email}`);
+                            
+                            // Автоматически коммитим в Git
+                            commitReviewsToGitViaAPI().catch(err => {
+                                console.error('Ошибка при автоматическом коммите (не критично):', err.message);
+                            });
+                            
+                            results.push({
+                                name: reviewData.name,
+                                success: true,
+                                message: 'Review email updated',
+                                old_email: oldEmail,
+                                new_email: email,
+                                order_id: orderId
+                            });
+                        } catch (error) {
+                            console.error(`❌ Error updating review for ${reviewData.name}:`, error);
+                            results.push({
+                                name: reviewData.name,
+                                success: false,
+                                error: error.message
+                            });
+                        }
+                    } else {
+                        console.log(`✅ Review for ${reviewData.name} already exists with correct email: ${email}`);
+                        results.push({
+                            name: reviewData.name,
+                            success: true,
+                            message: 'Review already exists with correct email',
+                            email: email
+                        });
+                    }
                 } else {
                     // Создаем новый отзыв
                     const newReview = {
