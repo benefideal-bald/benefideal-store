@@ -1272,14 +1272,9 @@ function readReviewsFromJSON() {
             }
         }
         
-        // Удаляем дубликаты перед возвратом
-        const uniqueReviews = removeDuplicateReviews(allReviews);
-        
-        if (uniqueReviews.length !== allReviews.length) {
-            console.log(`   Removed ${allReviews.length - uniqueReviews.length} duplicates`);
-        }
-        
-        return uniqueReviews;
+        // НИЧЕГО НЕ УДАЛЯЕМ - возвращаем все отзывы как есть
+        // Дубликаты не удаляем - клиент может оставить несколько отзывов для разных заказов
+        return allReviews;
     } catch (error) {
         console.error('❌ Error reading reviews.json:', error);
         return [];
@@ -1397,15 +1392,7 @@ app.get('/api/reviews', (req, res) => {
     
     console.log(`Found ${allReviews.length} reviews in JSON file`);
     
-    // Удаляем дубликаты перед возвратом (на всякий случай)
-    const beforeDedup = allReviews.length;
-    allReviews = removeDuplicateReviews(allReviews);
-    if (allReviews.length !== beforeDedup) {
-        console.log(`   Removed ${beforeDedup - allReviews.length} duplicates`);
-        // НЕ сохраняем все отзывы в data/reviews.json - это объединенные отзывы (root + data)
-        // Сохраняем только динамические отзывы в data/reviews.json через readReviewsFromJSON()
-        // которая уже делает это правильно
-    }
+    // НИЧЕГО НЕ УДАЛЯЕМ - возвращаем все отзывы как есть
     
     // Сортируем отзывы по дате (новые первыми)
     const getTimestamp = (dateStr) => {
