@@ -887,21 +887,6 @@ app.post('/api/review', (req, res) => {
             const newestOrder = allOrders[0];
             const newestOrderId = newestOrder.order_id === 'NULL_ORDER' ? null : newestOrder.order_id;
             
-            // Check if this order already has a review - проверяем в JSON файле!
-            let allReviews = readReviewsFromJSON();
-            const existingReview = allReviews.find(r => 
-                r.customer_email.toLowerCase() === normalizedEmail && 
-                (r.order_id === newestOrderId || (newestOrderId === null && (r.order_id === null || r.order_id === '')))
-            );
-            
-            if (existingReview) {
-                console.log(`⚠️ Review already exists for email ${normalizedEmail} and order_id ${newestOrderId}`);
-                return res.status(400).json({ 
-                    success: false,
-                    error: 'Вы уже оставили отзыв для вашего последнего заказа.' 
-                });
-            }
-            
             // Добавляем отзыв в JSON файл (все отзывы хранятся вместе!)
             console.log(`📝 Adding review to JSON: name=${name}, email=${normalizedEmail}, rating=${rating}, order_id=${newestOrderId}`);
             
@@ -919,6 +904,7 @@ app.post('/api/review', (req, res) => {
             
             // ПРОСТАЯ СИСТЕМА: Читаем все отзывы, добавляем новый, сохраняем
             // Все отзывы хранятся в корневом reviews.json (Git версия)
+            // НИЧЕГО НЕ УДАЛЯЕМ - просто добавляем новый отзыв!
             let allReviewsInRoot = [];
             if (fs.existsSync(reviewsJsonPathGit)) {
                 try {
@@ -934,24 +920,7 @@ app.post('/api/review', (req, res) => {
                 }
             }
             
-            // Проверяем, нет ли уже такого отзыва (по email + order_id)
-            const email = normalizedEmail.toLowerCase().trim();
-            const orderId = newestOrderId || 'null';
-            const existsInRoot = allReviewsInRoot.some(r => {
-                const rEmail = (r.customer_email || '').toLowerCase().trim();
-                const rOrderId = r.order_id || 'null';
-                return rEmail === email && rOrderId === orderId;
-            });
-            
-            if (existsInRoot) {
-                console.log(`⚠️ Review already exists in reviews.json (skipped)`);
-                return res.status(400).json({ 
-                    success: false,
-                    error: 'Вы уже оставили отзыв для вашего последнего заказа.' 
-                });
-            }
-            
-            // Добавляем новый отзыв
+            // Добавляем новый отзыв (БЕЗ проверки на дубликаты - клиент может оставлять сколько угодно отзывов!)
             allReviewsInRoot.push(newReview);
             
             // Сортируем по дате (новые первыми)
