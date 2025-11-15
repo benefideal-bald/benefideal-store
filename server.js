@@ -2602,7 +2602,8 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
     // Или используйте переменные окружения для безопасности
     const CARDLINK_SHOP_ID = process.env.CARDLINK_SHOP_ID || 'YOUR_SHOP_ID';
     const CARDLINK_API_TOKEN = process.env.CARDLINK_API_TOKEN || 'YOUR_API_TOKEN';
-    const CARDLINK_API_URL = process.env.CARDLINK_API_URL || 'https://api.cardlink.shop/v1/payments';
+    // Cardlink API endpoint - может быть разным, проверьте в документации
+    const CARDLINK_API_URL = process.env.CARDLINK_API_URL || 'https://cardlink.link/api/v1/bill/create';
     
     if (CARDLINK_SHOP_ID === 'YOUR_SHOP_ID' || CARDLINK_API_TOKEN === 'YOUR_API_TOKEN') {
         return res.status(500).json({
@@ -2618,17 +2619,22 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
         const failUrl = `${req.protocol}://${req.get('host')}/payment-fail.html?order_id=${orderId}`;
         
         // Формируем данные для оплаты
+        // ВАЖНО: Структура данных может отличаться в зависимости от версии API Cardlink
+        // Если не работает, проверьте документацию API в личном кабинете Cardlink
         const paymentData = {
             shop_id: CARDLINK_SHOP_ID,
             amount: total * 100, // Сумма в копейках
-            currency: 'RUB',
+            currency_in: 'RUB', // Может быть currency или currency_in
             order_id: orderId,
             description: `Заказ #${orderId} - ${cart.map(i => i.title).join(', ')}`,
+            name: `Заказ #${orderId}`, // Название платежа
+            type: 'normal', // Тип платежа
             customer_name: name,
             customer_email: email,
             success_url: successUrl,
             fail_url: failUrl,
-            callback_url: callbackUrl
+            callback_url: callbackUrl,
+            payer_pays_commission: 0 // 0 - продавец оплачивает комиссию, 1 - плательщик
         };
         
         console.log('💳 Creating Cardlink payment:', {
