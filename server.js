@@ -857,16 +857,20 @@ app.post('/api/review', (req, res) => {
                 is_static: false
             };
             
-            // КРИТИЧЕСКИ ВАЖНО: Сохраняем ВСЕ отзывы в корневой reviews.json (Git версия)!
-            // Пользователь хочет, чтобы ВСЕ отзывы были в одном месте - в корневом reviews.json
-            // Читаем корневой reviews.json (Git версия)
+            // ПРОСТАЯ СИСТЕМА: Читаем все отзывы, добавляем новый, сохраняем
+            // Все отзывы хранятся в корневом reviews.json (Git версия)
             let allReviewsInRoot = [];
             if (fs.existsSync(reviewsJsonPathGit)) {
                 try {
                     const rootData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
                     allReviewsInRoot = JSON.parse(rootData);
+                    if (!Array.isArray(allReviewsInRoot)) {
+                        console.warn('⚠️ reviews.json is not an array, resetting to empty array');
+                        allReviewsInRoot = [];
+                    }
                 } catch (error) {
                     console.warn('⚠️ Error reading root reviews.json:', error.message);
+                    allReviewsInRoot = [];
                 }
             }
             
@@ -879,29 +883,39 @@ app.post('/api/review', (req, res) => {
                 return rEmail === email && rOrderId === orderId;
             });
             
-            if (!existsInRoot) {
-                // Добавляем новый отзыв в корневой reviews.json
-                allReviewsInRoot.push(newReview);
-                
-                // Удаляем дубликаты перед сохранением
-                const uniqueReviews = removeDuplicateReviews(allReviewsInRoot);
-                
-                // КРИТИЧЕСКИ ВАЖНО: Сохраняем ВСЕ отзывы в корневой reviews.json (Git версия)!
-                // Все отзывы в одном месте - в корневом reviews.json, как статические отзывы
-                fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(uniqueReviews, null, 2), 'utf8');
-                console.log(`✅ Saved review to root reviews.json (Git) - total: ${uniqueReviews.length} reviews`);
-                console.log(`   Все отзывы теперь в одном месте - в корневом reviews.json (Git версия)!`);
-                
-                // КРИТИЧЕСКИ ВАЖНО: Автоматически коммитим изменения в Git через GitHub API, чтобы отзывы не потерялись при деплое!
-                // Это работает асинхронно, не блокируя ответ пользователю
-                commitReviewsToGitViaAPI().catch(err => {
-                    console.error('Ошибка при автоматическом коммите (не критично):', err.message);
-                });
-            } else {
-                console.log(`⚠️ Review already exists in root reviews.json (skipped)`);
+            if (existsInRoot) {
+                console.log(`⚠️ Review already exists in reviews.json (skipped)`);
                 return res.status(400).json({ 
                     success: false,
                     error: 'Вы уже оставили отзыв для вашего последнего заказа.' 
+                });
+            }
+            
+            // Добавляем новый отзыв
+            allReviewsInRoot.push(newReview);
+            
+            // Сортируем по дате (новые первыми)
+            allReviewsInRoot.sort((a, b) => {
+                const timeA = new Date(a.created_at || 0).getTime();
+                const timeB = new Date(b.created_at || 0).getTime();
+                return timeB - timeA;
+            });
+            
+            // Сохраняем ВСЕ отзывы в корневой reviews.json
+            try {
+                fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(allReviewsInRoot, null, 2), 'utf8');
+                console.log(`✅ Saved review to reviews.json - total: ${allReviewsInRoot.length} reviews`);
+                console.log(`   New review: ${newReview.customer_name} (${newReview.created_at})`);
+                
+                // Автоматически коммитим в Git (асинхронно, не блокируя ответ)
+                commitReviewsToGitViaAPI().catch(err => {
+                    console.error('Ошибка при автоматическом коммите (не критично):', err.message);
+                });
+            } catch (error) {
+                console.error('❌ Error saving review to reviews.json:', error);
+                return res.status(500).json({ 
+                    success: false,
+                    error: 'Ошибка при сохранении отзыва. Попробуйте еще раз.' 
                 });
             }
             
@@ -1287,13 +1301,23 @@ async function commitReviewsToGitViaAPI() {
 // КРИТИЧЕСКИ ВАЖНО: Все отзывы должны быть в ОДНОМ месте - корневой reviews.json (Git версия)!
 function writeReviewsToJSON(reviews) {
     try {
-        // КРИТИЧЕСКИ ВАЖНО: Сохраняем ВСЕ отзывы в корневой reviews.json (Git версия)!
-        // Пользователь хочет, чтобы ВСЕ отзывы были в одном месте - в корневом reviews.json
-        fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(reviews, null, 2), 'utf8');
-        console.log(`✅ Saved ${reviews.length} reviews to root reviews.json (Git) - ALL reviews in one place!`);
+        // ПРОСТАЯ СИСТЕМА: Сохраняем все отзывы в корневой reviews.json
+        if (!Array.isArray(reviews)) {
+            console.error('❌ reviews is not an array!', typeof reviews);
+            return false;
+        }
         
-        // КРИТИЧЕСКИ ВАЖНО: Автоматически коммитим изменения в Git через GitHub API, чтобы отзывы не потерялись при деплое!
-        // Это работает асинхронно, не блокируя ответ пользователю
+        // Сортируем по дате (новые первыми)
+        const sortedReviews = [...reviews].sort((a, b) => {
+            const timeA = new Date(a.created_at || 0).getTime();
+            const timeB = new Date(b.created_at || 0).getTime();
+            return timeB - timeA;
+        });
+        
+        fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(sortedReviews, null, 2), 'utf8');
+        console.log(`✅ Saved ${sortedReviews.length} reviews to reviews.json`);
+        
+        // Автоматически коммитим в Git (асинхронно)
         commitReviewsToGitViaAPI().catch(err => {
             console.error('Ошибка при автоматическом коммите (не критично):', err.message);
         });
