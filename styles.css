@@ -385,6 +385,17 @@ body {
     width: 100%;
 }
 
+/* Убираем фиолетовую полосу после клика - она должна быть только при наведении */
+.nav-links a:active::after,
+.nav-links a:focus::after {
+    width: 0;
+}
+
+.nav-links a:active:hover::after,
+.nav-links a:focus:hover::after {
+    width: 100%;
+}
+
 .nav-actions {
     display: flex;
     align-items: center;
