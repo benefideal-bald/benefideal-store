@@ -847,22 +847,62 @@ app.post('/api/review', (req, res) => {
             const newestOrder = allOrders[0];
             const newestOrderId = newestOrder.order_id === 'NULL_ORDER' ? null : newestOrder.order_id;
             
-            // ПРОСТАЯ СИСТЕМА: Читаем все отзывы, проверяем, добавляем новый, сохраняем
-            // Все отзывы хранятся в корневом reviews.json (Git версия)
-            let allReviewsInRoot = [];
+            // ПРОСТАЯ СИСТЕМА: Читаем все отзывы из обоих источников, проверяем, добавляем новый, сохраняем
+            // 1. Читаем начальные отзывы из Git версии (reviews.json в корне)
+            // 2. Читаем новые отзывы из персистентного хранилища (data/reviews.json)
+            // 3. Объединяем их, убирая дубликаты
+            let allReviewsFromGit = [];
             if (fs.existsSync(reviewsJsonPathGit)) {
                 try {
                     const rootData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
-                    allReviewsInRoot = JSON.parse(rootData);
-                    if (!Array.isArray(allReviewsInRoot)) {
-                        console.warn('⚠️ reviews.json is not an array, resetting to empty array');
-                        allReviewsInRoot = [];
+                    allReviewsFromGit = JSON.parse(rootData);
+                    if (!Array.isArray(allReviewsFromGit)) {
+                        console.warn('⚠️ Git reviews.json is not an array, resetting to empty array');
+                        allReviewsFromGit = [];
                     }
                 } catch (error) {
-                    console.warn('⚠️ Error reading root reviews.json:', error.message);
-                    allReviewsInRoot = [];
+                    console.warn('⚠️ Error reading Git reviews.json:', error.message);
+                    allReviewsFromGit = [];
                 }
             }
+            
+            // Читаем новые отзывы из персистентного хранилища
+            let allReviewsFromData = [];
+            if (fs.existsSync(reviewsJsonPath)) {
+                try {
+                    const dataContent = fs.readFileSync(reviewsJsonPath, 'utf8');
+                    allReviewsFromData = JSON.parse(dataContent);
+                    if (!Array.isArray(allReviewsFromData)) {
+                        console.warn('⚠️ Data reviews.json is not an array, resetting to empty array');
+                        allReviewsFromData = [];
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Error reading data/reviews.json:', error.message);
+                    allReviewsFromData = [];
+                }
+            }
+            
+            // Объединяем отзывы из обоих источников, убирая дубликаты по ID
+            const reviewsMap = new Map();
+            
+            // Сначала добавляем отзывы из Git (начальные)
+            allReviewsFromGit.forEach(review => {
+                if (review.id) {
+                    reviewsMap.set(review.id, review);
+                }
+            });
+            
+            // Затем добавляем отзывы из персистентного хранилища (новые, перезаписывают старые если есть дубликаты)
+            allReviewsFromData.forEach(review => {
+                if (review.id) {
+                    reviewsMap.set(review.id, review);
+                }
+            });
+            
+            // Преобразуем Map обратно в массив
+            let allReviewsInRoot = Array.from(reviewsMap.values());
+            
+            console.log(`📋 Merged reviews: ${allReviewsFromGit.length} from Git + ${allReviewsFromData.length} from data = ${allReviewsInRoot.length} total`);
             
             // ПРАВИЛО: 1 заказ = 1 отзыв
             // Проверяем, не оставлял ли клиент уже отзыв для этого заказа (по email + order_id)
@@ -907,25 +947,32 @@ app.post('/api/review', (req, res) => {
                 return timeB - timeA;
             });
             
-            // Сохраняем ВСЕ отзывы в корневой reviews.json
-            // КРИТИЧЕСКИ ВАЖНО: Сохраняем ДО отправки ответа клиенту!
+            // Сохраняем ВСЕ отзывы в персистентное хранилище (data/reviews.json)
+            // КРИТИЧЕСКИ ВАЖНО: Сохраняем в data/reviews.json - это персистентное хранилище на Render!
+            // Этот файл НЕ перезаписывается при деплое, поэтому отзывы не потеряются!
             try {
-                fs.writeFileSync(reviewsJsonPathGit, JSON.stringify(allReviewsInRoot, null, 2), 'utf8');
-                console.log(`✅ Saved review to reviews.json - total: ${allReviewsInRoot.length} reviews`);
+                // Убеждаемся, что директория data/ существует
+                const dataDir = path.dirname(reviewsJsonPath);
+                if (!fs.existsSync(dataDir)) {
+                    fs.mkdirSync(dataDir, { recursive: true });
+                    console.log(`✅ Created data directory: ${dataDir}`);
+                }
+                
+                // Сохраняем в персистентное хранилище
+                fs.writeFileSync(reviewsJsonPath, JSON.stringify(allReviewsInRoot, null, 2), 'utf8');
+                console.log(`✅ Saved review to data/reviews.json (persistent storage) - total: ${allReviewsInRoot.length} reviews`);
                 console.log(`   New review: ${newReview.customer_name} (${newReview.created_at})`);
                 console.log(`   Email: ${normalizedEmail}`);
-                console.log(`   ✅ Отзыв сохранен в файл reviews.json`);
-                // НЕ коммитим автоматически в Git - это вызывает бесконечные деплои на Render!
-                // Отзывы сохраняются в файл на сервере, они не потеряются
+                console.log(`   ✅ Отзыв сохранен в персистентное хранилище - НЕ ПОТЕРЯЕТСЯ при деплое!`);
             } catch (error) {
-                console.error('❌ Error saving review to reviews.json:', error);
+                console.error('❌ Error saving review to data/reviews.json:', error);
                 return res.status(500).json({ 
                     success: false,
                     error: 'Ошибка при сохранении отзыва. Попробуйте еще раз.' 
                 });
             }
             
-            console.log(`✅ ========== REVIEW SAVED TO JSON ==========`);
+            console.log(`✅ ========== REVIEW SAVED TO PERSISTENT STORAGE ==========`);
             console.log(`   ID: "${newReview.id}"`);
             console.log(`   Name: "${name}"`);
             console.log(`   Email: "${normalizedEmail}"`);
@@ -933,8 +980,9 @@ app.post('/api/review', (req, res) => {
             console.log(`   Rating: ${rating}`);
             console.log(`   Order ID: "${newestOrderId}"`);
             console.log(`   Created at: "${newReview.created_at}"`);
-            console.log(`   Saved to: data/reviews.json (персистентное хранилище - НЕ перезаписывается при деплое!)`);
-            console.log(`   При чтении автоматически объединяется с корневым reviews.json (Git)`);
+            console.log(`   Saved to: data/reviews.json (персистентное хранилище)`);
+            console.log(`   ✅ Отзыв НЕ ПОТЕРЯЕТСЯ при деплое на Render!`);
+            console.log(`   При чтении автоматически объединяется с reviews.json из Git (начальные отзывы)`);
             console.log(`   ======================================`);
             
             // Также сохраняем в базу данных для валидации (опционально, для обратной совместимости)
@@ -1213,22 +1261,60 @@ function migrateReviewsFromDatabase() {
 // Helper function to read reviews from JSON file
 function readReviewsFromJSON() {
     try {
-        // КРИТИЧЕСКИ ВАЖНО: Все отзывы теперь в одном месте - в корневом reviews.json (Git версия)!
-        // Пользователь хочет, чтобы ВСЕ отзывы были в одном месте - в корневом reviews.json
-        // Читаем ТОЛЬКО из корневого reviews.json (Git версия)
-        let allReviews = [];
-            if (fs.existsSync(reviewsJsonPathGit)) {
+        // КРИТИЧЕСКИ ВАЖНО: Объединяем отзывы из двух источников!
+        // 1. Начальные отзывы из Git (reviews.json в корне) - статические отзывы
+        // 2. Новые отзывы из персистентного хранилища (data/reviews.json) - отзывы клиентов
+        // При чтении объединяем их, убирая дубликаты по ID
+        
+        let allReviewsFromGit = [];
+        if (fs.existsSync(reviewsJsonPathGit)) {
             try {
                 const rootData = fs.readFileSync(reviewsJsonPathGit, 'utf8');
-                allReviews = JSON.parse(rootData);
-                console.log(`📋 Read ${allReviews.length} reviews from root reviews.json (Git) - ALL reviews in one place!`);
+                allReviewsFromGit = JSON.parse(rootData);
+                if (!Array.isArray(allReviewsFromGit)) {
+                    allReviewsFromGit = [];
+                }
             } catch (error) {
-                console.warn('⚠️ Error reading root reviews.json:', error.message);
+                console.warn('⚠️ Error reading Git reviews.json:', error.message);
             }
         }
         
+        let allReviewsFromData = [];
+        if (fs.existsSync(reviewsJsonPath)) {
+            try {
+                const dataContent = fs.readFileSync(reviewsJsonPath, 'utf8');
+                allReviewsFromData = JSON.parse(dataContent);
+                if (!Array.isArray(allReviewsFromData)) {
+                    allReviewsFromData = [];
+                }
+            } catch (error) {
+                console.warn('⚠️ Error reading data/reviews.json:', error.message);
+            }
+        }
+        
+        // Объединяем отзывы из обоих источников, убирая дубликаты по ID
+        const reviewsMap = new Map();
+        
+        // Сначала добавляем отзывы из Git (начальные)
+        allReviewsFromGit.forEach(review => {
+            if (review.id) {
+                reviewsMap.set(review.id, review);
+            }
+        });
+        
+        // Затем добавляем отзывы из персистентного хранилища (новые, перезаписывают старые если есть дубликаты)
+        allReviewsFromData.forEach(review => {
+            if (review.id) {
+                reviewsMap.set(review.id, review);
+            }
+        });
+        
+        // Преобразуем Map обратно в массив
+        const allReviews = Array.from(reviewsMap.values());
+        
+        console.log(`📋 Read reviews: ${allReviewsFromGit.length} from Git + ${allReviewsFromData.length} from data = ${allReviews.length} total`);
+        
         // НИЧЕГО НЕ УДАЛЯЕМ - возвращаем все отзывы как есть
-        // Дубликаты не удаляем - клиент может оставить несколько отзывов для разных заказов
         return allReviews;
     } catch (error) {
         console.error('❌ Error reading reviews.json:', error);
