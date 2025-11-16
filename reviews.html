@@ -356,10 +356,12 @@
                 displayedCount += reviewsToShow.length;
                 
                 // Show/hide "Load More" button
-                if (displayedCount < allReviews.length) {
-                    loadMoreBtn.style.display = 'block';
-                } else {
-                    loadMoreBtn.style.display = 'none';
+                if (loadMoreBtn) {
+                    if (displayedCount < allReviews.length) {
+                        loadMoreBtn.style.display = 'block';
+                    } else {
+                        loadMoreBtn.style.display = 'none';
+                    }
                 }
             }
             
