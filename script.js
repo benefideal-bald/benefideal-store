@@ -626,21 +626,29 @@ function updateCartUI() {
             cartCountElement.style.display = 'none';
         }
     } else {
-        console.error('Cart count element not found!');
+        // Если элемент не найден, пробуем найти его позже (для страницы отзывов)
+        console.warn('Cart count element not found, will retry...');
+        setTimeout(function() {
+            const retryElement = document.getElementById('cartCount');
+            if (retryElement) {
+                updateCartUI();
+            }
+        }, 100);
     }
     
 
-    // Update cart items
-    if (cart.length === 0) {
-        cartItems.innerHTML = `
-            <div style="text-align: center; padding: 2rem; color: var(--light-gray);">
-                <i class="fas fa-shopping-cart" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                <p>Корзина пуста</p>
-            </div>
-        `;
-        cartTotal.textContent = '0';
-    } else {
-        cartItems.innerHTML = cart.map((item, index) => {
+    // Update cart items (only if cartModal exists - for main page)
+    if (cartItems && cartModal && cartTotal) {
+        if (cart.length === 0) {
+            cartItems.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--light-gray);">
+                    <i class="fas fa-shopping-cart" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                    <p>Корзина пуста</p>
+                </div>
+            `;
+            cartTotal.textContent = '0';
+        } else {
+            cartItems.innerHTML = cart.map((item, index) => {
             // Format duration text
             let durationText = '';
             if (item.months) {

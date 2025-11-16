@@ -108,30 +108,53 @@
         </div>
     </footer>
 
-    <script src="script.js?v=3.8"></script>
+    <script src="script.js?v=3.9"></script>
     <script>
         // Dynamic loading and pagination for reviews page
         document.addEventListener('DOMContentLoaded', function() {
             // Загружаем корзину из localStorage при загрузке страницы
-            // Ждем загрузки script.js, затем вызываем loadCart
-            if (typeof loadCart === 'function') {
-                loadCart();
-            } else if (typeof window.loadCart === 'function') {
-                window.loadCart();
-            } else {
-                // Если функция еще не загружена, пробуем через небольшой таймаут
-                setTimeout(function() {
-                    if (typeof loadCart === 'function') {
-                        loadCart();
-                    } else if (typeof window.loadCart === 'function') {
-                        window.loadCart();
-                    }
-                }, 200);
+            // Ждем загрузки script.js, затем вызываем loadCart и updateCartUI
+            function initCartOnReviewsPage() {
+                // Проверяем, что элементы загружены
+                const cartCountElement = document.getElementById('cartCount');
+                if (!cartCountElement) {
+                    setTimeout(initCartOnReviewsPage, 100);
+                    return;
+                }
+                
+                // Загружаем корзину
+                if (typeof loadCart === 'function') {
+                    loadCart();
+                } else if (typeof window.loadCart === 'function') {
+                    window.loadCart();
+                }
+                
+                // Обновляем UI корзины
+                if (typeof updateCartUI === 'function') {
+                    updateCartUI();
+                } else if (typeof window.updateCartUI === 'function') {
+                    window.updateCartUI();
+                } else {
+                    // Если функция еще не загружена, пробуем через небольшой таймаут
+                    setTimeout(function() {
+                        if (typeof updateCartUI === 'function') {
+                            updateCartUI();
+                        } else if (typeof window.updateCartUI === 'function') {
+                            window.updateCartUI();
+                        }
+                    }, 200);
+                }
             }
+            initCartOnReviewsPage();
             
             const reviewsContainer = document.getElementById('reviewsContainer');
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             const showMoreBtn = document.getElementById('showMoreBtn');
+            
+            if (!reviewsContainer) {
+                console.error('❌ reviewsContainer not found!');
+                return;
+            }
             
             let allReviews = [];
             let displayedCount = 0;
