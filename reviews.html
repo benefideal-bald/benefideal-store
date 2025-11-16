@@ -112,6 +112,11 @@
     <script>
         // Dynamic loading and pagination for reviews page
         document.addEventListener('DOMContentLoaded', function() {
+            // Загружаем корзину из localStorage при загрузке страницы
+            if (typeof loadCart === 'function') {
+                loadCart();
+            }
+            
             const reviewsContainer = document.getElementById('reviewsContainer');
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             const showMoreBtn = document.getElementById('showMoreBtn');
