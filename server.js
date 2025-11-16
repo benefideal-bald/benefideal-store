@@ -113,10 +113,43 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         
         // Проверяем количество отзывов при старте
         console.log(`🔍 Проверка отзывов при старте сервера...`);
+        
+        // КРИТИЧЕСКИ ВАЖНО: При первом запуске копируем начальные отзывы из Git в data/reviews.json
+        // Это гарантирует, что все отзывы будут в одном месте (data/reviews.json) и не потеряются
         if (fs.existsSync(reviewsJsonPathGit)) {
             try {
                 const localReviews = JSON.parse(fs.readFileSync(reviewsJsonPathGit, 'utf8'));
-                console.log(`   📋 Найдено ${localReviews.length} отзывов в reviews.json`);
+                console.log(`   📋 Найдено ${localReviews.length} отзывов в reviews.json (Git)`);
+                
+                // Проверяем, существует ли data/reviews.json
+                if (!fs.existsSync(reviewsJsonPath)) {
+                    // Если data/reviews.json не существует, копируем начальные отзывы из Git
+                    console.log(`   📋 Копируем начальные отзывы из Git в data/reviews.json...`);
+                    try {
+                        // Убеждаемся, что директория data/ существует
+                        const dataDir = path.dirname(reviewsJsonPath);
+                        if (!fs.existsSync(dataDir)) {
+                            fs.mkdirSync(dataDir, { recursive: true });
+                            console.log(`   ✅ Создана директория: ${dataDir}`);
+                        }
+                        
+                        // Копируем отзывы из Git в data/reviews.json
+                        fs.writeFileSync(reviewsJsonPath, JSON.stringify(localReviews, null, 2), 'utf8');
+                        console.log(`   ✅ Скопировано ${localReviews.length} начальных отзывов в data/reviews.json`);
+                        console.log(`   ✅ Теперь все отзывы в одном месте (data/reviews.json) и не потеряются при деплое!`);
+                    } catch (copyError) {
+                        console.error(`   ❌ Ошибка при копировании отзывов: ${copyError.message}`);
+                    }
+                } else {
+                    // data/reviews.json существует - проверяем, нужно ли обновить
+                    try {
+                        const dataReviews = JSON.parse(fs.readFileSync(reviewsJsonPath, 'utf8'));
+                        console.log(`   📋 Найдено ${dataReviews.length} отзывов в data/reviews.json (персистентное хранилище)`);
+                        console.log(`   ✅ Все отзывы уже в персистентном хранилище - ничего не нужно копировать`);
+                    } catch (error) {
+                        console.warn(`   ⚠️ Ошибка при чтении data/reviews.json: ${error.message}`);
+                    }
+                }
             } catch (error) {
                 console.warn(`⚠️ Ошибка при проверке reviews.json при старте: ${error.message}`);
             }
