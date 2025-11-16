@@ -167,12 +167,18 @@
                         displayReviews(); // Will show first 10 reviews (newest first)
                     } else {
                         console.error('❌ No reviews in API response!', data);
-                        // No dynamic reviews, but static ones are still visible
+                        // Показываем сообщение, если нет отзывов
+                        if (reviewsContainer) {
+                            reviewsContainer.innerHTML = '<p style="text-align: center; color: var(--gray-600); padding: var(--space-8);">Отзывы пока отсутствуют</p>';
+                        }
                         allReviews = [];
                     }
                 } catch (error) {
                     console.error('Error loading reviews:', error);
-                    // Keep static reviews even if API fails
+                    // Показываем сообщение об ошибке
+                    if (reviewsContainer) {
+                        reviewsContainer.innerHTML = '<p style="text-align: center; color: var(--red); padding: var(--space-8);">Ошибка загрузки отзывов. Попробуйте обновить страницу.</p>';
+                    }
                     allReviews = [];
                 }
             }
