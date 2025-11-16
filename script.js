@@ -83,6 +83,9 @@ function loadCart() {
     }
 }
 
+// Make loadCart available globally for reviews.html
+window.loadCart = loadCart;
+
 // Save cart to localStorage
 function saveCart() {
     try {
