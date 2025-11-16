@@ -980,32 +980,31 @@ app.post('/api/review', (req, res) => {
                 return timeB - timeA;
             });
             
-            // Сохраняем ВСЕ отзывы в персистентное хранилище (data/reviews.json)
-            // КРИТИЧЕСКИ ВАЖНО: Сохраняем в data/reviews.json - это персистентное хранилище на Render!
-            // Этот файл НЕ перезаписывается при деплое, поэтому отзывы не потеряются!
-            try {
-                // Убеждаемся, что директория data/ существует
-                const dataDir = path.dirname(reviewsJsonPath);
-                if (!fs.existsSync(dataDir)) {
-                    fs.mkdirSync(dataDir, { recursive: true });
-                    console.log(`✅ Created data directory: ${dataDir}`);
+            // КРИТИЧЕСКИ ВАЖНО: Сохраняем отзыв в БАЗУ ДАННЫХ - это основное хранилище!
+            // База данных SQLite сохраняется на Render между деплоями (в отличие от файлов в data/)
+            // JSON файл используется только для чтения начальных отзывов из Git
+            const stmt = db.prepare(`
+                INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `);
+            
+            stmt.run([name, normalizedEmail, text, rating, newestOrderId, newReview.created_at], function(err) {
+                if (err) {
+                    console.error('❌ Error saving review to database:', err);
+                    return res.status(500).json({ 
+                        success: false,
+                        error: 'Ошибка при сохранении отзыва в базу данных. Попробуйте еще раз.' 
+                    });
                 }
                 
-                // Сохраняем в персистентное хранилище
-                fs.writeFileSync(reviewsJsonPath, JSON.stringify(allReviewsInRoot, null, 2), 'utf8');
-                console.log(`✅ Saved review to data/reviews.json (persistent storage) - total: ${allReviewsInRoot.length} reviews`);
+                console.log(`✅ Saved review to DATABASE (persistent storage) - ID: ${this.lastID}`);
                 console.log(`   New review: ${newReview.customer_name} (${newReview.created_at})`);
                 console.log(`   Email: ${normalizedEmail}`);
-                console.log(`   ✅ Отзыв сохранен в персистентное хранилище - НЕ ПОТЕРЯЕТСЯ при деплое!`);
-            } catch (error) {
-                console.error('❌ Error saving review to data/reviews.json:', error);
-                return res.status(500).json({ 
-                    success: false,
-                    error: 'Ошибка при сохранении отзыва. Попробуйте еще раз.' 
-                });
-            }
+                console.log(`   ✅ Отзыв сохранен в базу данных - НЕ ПОТЕРЯЕТСЯ при деплое!`);
+                stmt.finalize();
+            });
             
-            console.log(`✅ ========== REVIEW SAVED TO PERSISTENT STORAGE ==========`);
+            console.log(`✅ ========== REVIEW SAVED TO DATABASE ==========`);
             console.log(`   ID: "${newReview.id}"`);
             console.log(`   Name: "${name}"`);
             console.log(`   Email: "${normalizedEmail}"`);
@@ -1013,28 +1012,12 @@ app.post('/api/review', (req, res) => {
             console.log(`   Rating: ${rating}`);
             console.log(`   Order ID: "${newestOrderId}"`);
             console.log(`   Created at: "${newReview.created_at}"`);
-            console.log(`   Saved to: data/reviews.json (персистентное хранилище)`);
+            console.log(`   Saved to: DATABASE (SQLite - персистентное хранилище на Render)`);
             console.log(`   ✅ Отзыв НЕ ПОТЕРЯЕТСЯ при деплое на Render!`);
             console.log(`   При чтении автоматически объединяется с reviews.json из Git (начальные отзывы)`);
             console.log(`   ======================================`);
             
-            // Также сохраняем в базу данных для валидации (опционально, для обратной совместимости)
-            const stmt = db.prepare(`
-                INSERT INTO reviews (customer_name, customer_email, review_text, rating, order_id, created_at)
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            `);
-            
-            stmt.run([name, normalizedEmail, text, rating, newestOrderId], function(err) {
-                // Игнорируем ошибки базы данных - основное хранилище это JSON!
-                if (err) {
-                    console.warn(`⚠️ Failed to save review to database (but saved to JSON): ${err.message}`);
-                } else {
-                    console.log(`✅ Review also saved to database for validation purposes`);
-                }
-                stmt.finalize();
-            });
-            
-            // Отзыв уже сохранен в JSON - отправляем ответ
+            // Отзыв сохранен в базу данных - отправляем ответ
             res.json({ 
                 success: true, 
                 message: 'Отзыв успешно отправлен',
@@ -1291,14 +1274,14 @@ function migrateReviewsFromDatabase() {
     });
 }
 
-// Helper function to read reviews from JSON file
+// Helper function to read reviews from database and Git JSON
+// КРИТИЧЕСКИ ВАЖНО: Используем базу данных как основное хранилище!
+// База данных SQLite сохраняется на Render между деплоями (в отличие от файлов в data/)
 function readReviewsFromJSON() {
+    // Синхронная версия для обратной совместимости
+    // ВАЖНО: Это блокирующая операция, но используется только в API endpoints
     try {
-        // КРИТИЧЕСКИ ВАЖНО: Объединяем отзывы из двух источников!
-        // 1. Начальные отзывы из Git (reviews.json в корне) - статические отзывы
-        // 2. Новые отзывы из персистентного хранилища (data/reviews.json) - отзывы клиентов
-        // При чтении объединяем их, убирая дубликаты по ID
-        
+        // Читаем начальные отзывы из Git
         let allReviewsFromGit = [];
         if (fs.existsSync(reviewsJsonPathGit)) {
             try {
@@ -1312,45 +1295,81 @@ function readReviewsFromJSON() {
             }
         }
         
-        let allReviewsFromData = [];
-        if (fs.existsSync(reviewsJsonPath)) {
-            try {
-                const dataContent = fs.readFileSync(reviewsJsonPath, 'utf8');
-                allReviewsFromData = JSON.parse(dataContent);
-                if (!Array.isArray(allReviewsFromData)) {
-                    allReviewsFromData = [];
-                }
-            } catch (error) {
-                console.warn('⚠️ Error reading data/reviews.json:', error.message);
+        // Читаем отзывы из базы данных (основное хранилище)
+        // Используем синхронный подход через db.all с блокировкой
+        let dbReviews = [];
+        let dbReadComplete = false;
+        
+        db.all(`
+            SELECT 
+                'review_' || id as id,
+                customer_name,
+                customer_email,
+                review_text,
+                rating,
+                order_id,
+                created_at,
+                0 as is_static
+            FROM reviews
+            ORDER BY created_at DESC
+        `, [], (err, rows) => {
+            if (err) {
+                console.error('❌ Error reading reviews from database:', err);
+                dbReviews = [];
+            } else {
+                dbReviews = rows || [];
+            }
+            dbReadComplete = true;
+        });
+        
+        // Простое ожидание завершения (для синхронной функции)
+        // В реальности лучше сделать функцию асинхронной, но для обратной совместимости оставляем так
+        const startTime = Date.now();
+        while (!dbReadComplete && (Date.now() - startTime) < 1000) {
+            // Небольшая задержка без внешних зависимостей
+            const end = Date.now() + 10;
+            while (Date.now() < end) {
+                // Busy wait
             }
         }
         
-        // Объединяем отзывы из обоих источников, убирая дубликаты по ID
+        if (!dbReadComplete) {
+            console.warn('⚠️ Timeout waiting for database read, using empty array');
+            dbReviews = [];
+        }
+        
+        // Объединяем отзывы из обоих источников, убирая дубликаты по email + order_id
         const reviewsMap = new Map();
         
         // Сначала добавляем отзывы из Git (начальные)
         allReviewsFromGit.forEach(review => {
             if (review.id) {
-                reviewsMap.set(review.id, review);
+                const key = `${(review.customer_email || '').toLowerCase().trim()}_${review.order_id || 'null'}`;
+                reviewsMap.set(key, review);
             }
         });
         
-        // Затем добавляем отзывы из персистентного хранилища (новые, перезаписывают старые если есть дубликаты)
-        allReviewsFromData.forEach(review => {
-            if (review.id) {
-                reviewsMap.set(review.id, review);
-            }
+        // Затем добавляем отзывы из базы данных (новые, перезаписывают старые если есть дубликаты)
+        dbReviews.forEach(review => {
+            const key = `${(review.customer_email || '').toLowerCase().trim()}_${review.order_id || 'null'}`;
+            reviewsMap.set(key, review);
         });
         
         // Преобразуем Map обратно в массив
         const allReviews = Array.from(reviewsMap.values());
         
-        console.log(`📋 Read reviews: ${allReviewsFromGit.length} from Git + ${allReviewsFromData.length} from data = ${allReviews.length} total`);
+        // Сортируем по дате (новые первыми)
+        allReviews.sort((a, b) => {
+            const timeA = new Date(a.created_at || 0).getTime();
+            const timeB = new Date(b.created_at || 0).getTime();
+            return timeB - timeA;
+        });
         
-        // НИЧЕГО НЕ УДАЛЯЕМ - возвращаем все отзывы как есть
+        console.log(`📋 Read reviews: ${allReviewsFromGit.length} from Git + ${dbReviews.length} from database = ${allReviews.length} total`);
+        
         return allReviews;
     } catch (error) {
-        console.error('❌ Error reading reviews.json:', error);
+        console.error('❌ Error reading reviews:', error);
         return [];
     }
 }
