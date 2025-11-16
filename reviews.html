@@ -161,6 +161,14 @@
             const reviewsPerPage = 10;
             
             async function loadAllReviews() {
+                console.log('🚀 loadAllReviews() called');
+                console.log('   reviewsContainer:', reviewsContainer);
+                
+                if (!reviewsContainer) {
+                    console.error('❌ reviewsContainer is null! Cannot load reviews.');
+                    return;
+                }
+                
                 try {
                     // Determine API URL - try current origin first, then localhost
                     // For all reviews page, sort DESC (newest first, oldest last)
@@ -174,7 +182,14 @@
                     console.log('🔗 Fetching reviews from:', apiUrl);
                     
                     const response = await fetch(apiUrl);
+                    console.log('📡 Response status:', response.status, response.statusText);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
                     const data = await response.json();
+                    console.log('📦 Response data:', data);
                     
                     if (data.success && data.reviews && data.reviews.length > 0) {
                         // Use ALL reviews from API (already sorted DESC - newest first)
