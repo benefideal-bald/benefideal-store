@@ -294,7 +294,13 @@
                 
                 if (reviewsToShow.length === 0) {
                     // No more reviews to show
-                    loadMoreBtn.style.display = 'none';
+                    if (displayedCount === 0 && reviewsContainer) {
+                        // Если это первая загрузка и нет отзывов, показываем сообщение
+                        reviewsContainer.innerHTML = '<p style="text-align: center; color: var(--gray-600); padding: var(--space-8);">Отзывы пока отсутствуют</p>';
+                    }
+                    if (loadMoreBtn) {
+                        loadMoreBtn.style.display = 'none';
+                    }
                     return;
                 }
                 
