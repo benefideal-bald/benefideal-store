@@ -684,13 +684,17 @@ function updateCartUI() {
                 </div>
             </div>
         `;
-        }).join('');
+            }).join('');
 
-        // Update total
-        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        cartTotal.textContent = total.toLocaleString();
+            // Update total
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            cartTotal.textContent = total.toLocaleString();
+        }
     }
 }
+
+// Make updateCartUI available globally for reviews.html
+window.updateCartUI = updateCartUI;
 
 // Clear cart after successful purchase
 function clearCartAfterPurchase() {
