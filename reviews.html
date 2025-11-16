@@ -50,6 +50,30 @@
         <!-- Мобильное меню (скрыто на странице отзывов) -->
     </header>
 
+    <!-- Cart Modal -->
+    <div class="cart-modal" id="cartModal">
+        <div class="cart-content">
+            <div class="cart-header">
+                <h3>Корзина</h3>
+                <button class="cart-close" onclick="toggleCart()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items will be loaded here -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>Итого:</span>
+                    <span id="cartTotal">0</span> ₽
+                </div>
+                <button class="btn btn-primary" onclick="checkout()" style="width: 100%; margin-top: var(--space-4);">
+                    Оформить заказ
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- All Reviews Page -->
     <main style="padding: 120px var(--space-6) 60px; min-height: 80vh;">
         <div class="section-header" style="max-width: 1280px; margin: 0 auto; text-align: center; margin-bottom: var(--space-10);">

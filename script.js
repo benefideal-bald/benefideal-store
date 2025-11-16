@@ -419,14 +419,27 @@ function initReviewsAutoScroll() {
 
 // Toggle cart modal
 function toggleCart() {
-    cartModal.classList.toggle('active');
+    const cartModalElement = document.getElementById('cartModal');
+    if (!cartModalElement) {
+        console.error('Cart modal not found!');
+        return;
+    }
+    
+    cartModalElement.classList.toggle('active');
     
     // Add animation class
-    if (cartModal.classList.contains('active')) {
+    if (cartModalElement.classList.contains('active')) {
         const cartContent = document.querySelector('.cart-content');
-        cartContent.style.animation = 'scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        if (cartContent) {
+            cartContent.style.animation = 'scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        }
+        // Update cart UI when opening
+        updateCartUI();
     }
 }
+
+// Make toggleCart available globally
+window.toggleCart = toggleCart;
 
 // Render subscriptions
 function renderSubscriptions() {
@@ -720,6 +733,9 @@ function checkout() {
         window.location.href = 'checkout.html';
     }, 400);
 }
+
+// Make checkout available globally
+window.checkout = checkout;
 
 // Show notification from cart
 function showCartNotification(message) {
