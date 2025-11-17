@@ -57,7 +57,7 @@
                         </label>
                     </div>
                     
-                    <div class="form-group" style="margin-bottom: var(--space-6);">
+                    <div class="form-group" style="margin-bottom: var(--space-4);">
                         <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
                                onmouseover="this.style.background='var(--gray-100)'" 
                                onmouseout="this.style.background='var(--gray-50)'">
@@ -70,6 +70,23 @@
                             <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2); white-space: nowrap;">
                                 <i class="fas fa-credit-card" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
                                 <span>Оплата картой (Cardlink)</span>
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: var(--space-6);">
+                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
+                               onmouseover="this.style.background='var(--gray-100)'" 
+                               onmouseout="this.style.background='var(--gray-50)'">
+                            <input type="radio" 
+                                   name="paymentMethod" 
+                                   id="paymentEnot" 
+                                   value="enot" 
+                                   required
+                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
+                            <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2); white-space: nowrap;">
+                                <i class="fas fa-wallet" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
+                                <span>Оплата через Enot.io</span>
                             </span>
                         </label>
                     </div>
@@ -160,6 +177,9 @@
                 if (paymentMethod === 'cardlink') {
                     // Оплата через Cardlink
                     processCardlinkPayment(name, email);
+                } else if (paymentMethod === 'enot') {
+                    // Оплата через Enot.io
+                    processEnotPayment(name, email);
                 } else {
                     // Оплата через СБП (как было)
                     window.location.href = 'payment.html';
@@ -269,6 +289,69 @@
                 } catch (error) {
                     console.error('Ошибка обработки оплаты Cardlink:', error);
                     alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз или выберите оплату через СБП.');
+                }
+            }
+            
+            // Функция для обработки оплаты через Enot.io
+            async function processEnotPayment(name, email) {
+                try {
+                    const cart = JSON.parse(localStorage.getItem('benefideal_cart') || '[]');
+                    if (cart.length === 0) {
+                        alert('Корзина пуста');
+                        return;
+                    }
+                    
+                    const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+                    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    // Сохраняем данные заказа для callback
+                    localStorage.setItem('benefideal_pending_order', JSON.stringify({
+                        orderId,
+                        name,
+                        email,
+                        cart,
+                        total,
+                        timestamp: Date.now()
+                    }));
+                    
+                    // Определяем API URL
+                    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+                    const apiUrl = isLocalhost
+                        ? 'http://localhost:3000/api/enot/create-payment'
+                        : `${window.location.origin}/api/enot/create-payment`;
+                    
+                    // Создаем платеж через API
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                name,
+                                email,
+                                cart,
+                                orderId
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success && result.payment_url) {
+                            // Перенаправляем на страницу оплаты Enot.io
+                            window.location.href = result.payment_url;
+                            return;
+                        } else {
+                            alert(result.error || 'Не удалось создать платеж. Попробуйте еще раз или выберите другой способ оплаты.');
+                        }
+                    } catch (apiError) {
+                        console.error('Ошибка создания платежа Enot.io:', apiError);
+                        alert('Произошла ошибка при создании платежа. Попробуйте еще раз или выберите другой способ оплаты.');
+                    }
+                    
+                } catch (error) {
+                    console.error('Ошибка обработки оплаты Enot.io:', error);
+                    alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз или выберите другой способ оплаты.');
                 }
             }
 

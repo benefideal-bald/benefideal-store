@@ -17,6 +17,7 @@ const CHAT_ID = 8334777900;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true })); // Для обработки form-urlencoded (нужно для enot.io webhook)
 
 // Initialize SQLite database FIRST
 // КРИТИЧЕСКИ ВАЖНО: На Render нужно использовать персистентное хранилище
@@ -2879,6 +2880,176 @@ app.get('/api/cardlink/payment-link', (req, res) => {
         success: true,
         payment_link_template: CARDLINK_PAYMENT_LINK
     });
+});
+
+// ==================== ENOT.IO INTEGRATION ====================
+
+// API endpoint для создания платежа через Enot.io
+app.post('/api/enot/create-payment', async (req, res) => {
+    const { name, email, cart, orderId } = req.body;
+    
+    if (!name || !email || !cart || !orderId) {
+        return res.status(400).json({ 
+            success: false,
+            error: 'Отсутствуют обязательные поля' 
+        });
+    }
+    
+    // ВАЖНО: Используйте переменные окружения для безопасности
+    // API ключ из личного кабинета enot.io
+    const ENOT_API_KEY = process.env.ENOT_API_KEY || 'e5dfc78ad933765a202115997e4e478a1f133305';
+    // Секретный ключ для проверки webhook
+    const ENOT_SECRET_KEY = process.env.ENOT_SECRET_KEY || '1ae7bdfde1fb25df06264c69de48e4add14d20fc';
+    // ID магазина (обычно это часть API ключа или отдельный параметр)
+    // Если у вас есть отдельный merchant_id, укажите его в переменной окружения ENOT_MERCHANT_ID
+    const ENOT_MERCHANT_ID = process.env.ENOT_MERCHANT_ID || ENOT_API_KEY;
+    // API endpoint Enot.io
+    const ENOT_API_URL = process.env.ENOT_API_URL || 'https://enot.io/api/v1/invoice/create';
+    
+    if (!ENOT_API_KEY || ENOT_API_KEY === 'YOUR_API_KEY') {
+        return res.status(500).json({
+            success: false,
+            error: 'Enot.io не настроен. Установите ENOT_API_KEY и ENOT_SECRET_KEY в переменных окружения.'
+        });
+    }
+    
+    try {
+        const crypto = require('crypto');
+        const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+        const callbackUrl = `${req.protocol}://${req.get('host')}/api/enot/callback`;
+        const successUrl = `${req.protocol}://${req.get('host')}/payment-success.html?order_id=${orderId}`;
+        const failUrl = `${req.protocol}://${req.get('host')}/payment-fail.html?order_id=${orderId}`;
+        
+        // Описание заказа
+        const description = `Заказ #${orderId} - ${cart.map(i => i.title).join(', ')}`;
+        
+        // Формируем параметры для создания инвойса
+        const invoiceParams = {
+            merchant: ENOT_MERCHANT_ID,
+            amount: total, // Сумма в рублях
+            order_id: orderId,
+            description: description,
+            callback_url: callbackUrl,
+            success_url: successUrl,
+            fail_url: failUrl,
+            email: email,
+            custom_field: JSON.stringify({ name, email, cart }) // Дополнительные данные
+        };
+        
+        // Создаем подпись для запроса (обычно MD5 или SHA256)
+        // Формат подписи может отличаться, проверьте документацию enot.io
+        // Обычно: MD5(merchant + amount + order_id + secret_key)
+        const signString = `${invoiceParams.merchant}${invoiceParams.amount}${invoiceParams.order_id}${ENOT_SECRET_KEY}`;
+        const sign = crypto.createHash('md5').update(signString).digest('hex');
+        invoiceParams.sign = sign;
+        
+        console.log('💳 Creating Enot.io payment:', {
+            orderId,
+            amount: total,
+            customer: name,
+            email: email
+        });
+        
+        // Отправляем запрос на создание инвойса
+        // Преобразуем объект в form-urlencoded формат
+        const formData = new URLSearchParams();
+        Object.keys(invoiceParams).forEach(key => {
+            formData.append(key, invoiceParams[key]);
+        });
+        
+        const response = await axios.post(ENOT_API_URL, formData.toString(), {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        });
+        
+        // Enot.io обычно возвращает URL для оплаты
+        const paymentUrl = response.data?.url || response.data?.payment_url || response.data?.invoice_url;
+        
+        if (paymentUrl) {
+            console.log('✅ Enot.io payment created successfully:', paymentUrl);
+            res.json({
+                success: true,
+                payment_url: paymentUrl
+            });
+        } else {
+            console.error('❌ Invalid response from Enot.io:', response.data);
+            res.status(500).json({
+                success: false,
+                error: 'Неверный ответ от Enot.io',
+                details: response.data
+            });
+        }
+    } catch (error) {
+        console.error('❌ Error creating Enot.io payment:', error.response?.data || error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Ошибка при создании платежа',
+            details: error.response?.data || error.message
+        });
+    }
+});
+
+// API endpoint для обработки webhook от Enot.io
+app.post('/api/enot/callback', (req, res) => {
+    const crypto = require('crypto');
+    
+    console.log('📞 Enot.io callback received:', req.body);
+    
+    // Enot.io отправляет данные о статусе платежа
+    // Структура может отличаться, проверьте документацию
+    const status = req.body.status || req.body.Status;
+    const orderId = req.body.order_id || req.body.orderId || req.body.InvId;
+    const amount = req.body.amount || req.body.Amount;
+    const transactionId = req.body.transaction_id || req.body.TransactionId || req.body.id;
+    const receivedSign = req.body.sign || req.body.Sign || req.body.signature;
+    
+    // ВАЖНО: Проверяем подпись запроса для безопасности
+    const ENOT_SECRET_KEY = process.env.ENOT_SECRET_KEY || '1ae7bdfde1fb25df06264c69de48e4add14d20fc';
+    const ENOT_MERCHANT_ID = process.env.ENOT_MERCHANT_ID || process.env.ENOT_API_KEY || 'e5dfc78ad933765a202115997e4e478a1f133305';
+    
+    // Проверка подписи (формат может отличаться, проверьте документацию)
+    // Обычно: MD5(merchant + amount + order_id + secret_key)
+    if (receivedSign && orderId && amount) {
+        const expectedSignString = `${ENOT_MERCHANT_ID}${amount}${orderId}${ENOT_SECRET_KEY}`;
+        const expectedSign = crypto.createHash('md5').update(expectedSignString).digest('hex');
+        
+        if (receivedSign.toLowerCase() !== expectedSign.toLowerCase()) {
+            console.error('❌ Invalid signature in Enot.io callback:', {
+                received: receivedSign,
+                expected: expectedSign
+            });
+            return res.status(400).json({ success: false, error: 'Invalid signature' });
+        }
+    }
+    
+    // Проверяем статус платежа
+    // Обычно статусы: success, paid, success_payment и т.д.
+    if (status === 'success' || status === 'paid' || status === 'success_payment' || 
+        status === 'SUCCESS' || status === 'PAID' || status === 'SUCCESS_PAYMENT') {
+        // Платеж успешен - обрабатываем заказ
+        console.log('✅ Enot.io payment successful:', { orderId, amount, transactionId });
+        
+        // Получаем дополнительные данные из custom_field, если они есть
+        let orderData = {};
+        if (req.body.custom_field) {
+            try {
+                orderData = JSON.parse(req.body.custom_field);
+            } catch (e) {
+                console.log('Could not parse custom_field:', e);
+            }
+        }
+        
+        // Здесь можно обновить статус заказа в базе данных
+        // Или отправить данные в Telegram
+        // Обычно заказ уже обрабатывается на странице payment-success.html,
+        // но можно также обработать здесь для надежности
+        
+        res.status(200).json({ success: true, message: 'Callback processed' });
+    } else {
+        console.log('❌ Enot.io payment failed:', { orderId, status });
+        res.status(200).json({ success: false, message: 'Payment failed' });
+    }
 });
 
 // Debug endpoint to check all reviews in JSON file (for finding lost reviews like Влад, Таня)
