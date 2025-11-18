@@ -2821,6 +2821,16 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
             customer: name
         });
         
+        // Логируем данные, которые отправляем в CardLink
+        console.log('📤 Sending to CardLink API:', {
+            url: CARDLINK_API_URL,
+            shop_id: CARDLINK_SHOP_ID,
+            amount: total * 100,
+            currency: paymentData.currency,
+            currency_in: paymentData.currency_in,
+            payment_data: JSON.stringify(paymentData, null, 2)
+        });
+        
         // Сохраняем данные заказа в базу данных для последующей обработки в callback
         const normalizedEmail = email.toLowerCase().trim();
         const cartData = JSON.stringify(cart);
@@ -2842,6 +2852,12 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${CARDLINK_API_TOKEN}`
             }
+        });
+        
+        // Логируем ответ от CardLink
+        console.log('📥 Response from CardLink:', {
+            status: response.status,
+            data: JSON.stringify(response.data, null, 2)
         });
         
         // Cardlink может возвращать payment_url или link_page_url
