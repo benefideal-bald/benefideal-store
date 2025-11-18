@@ -2863,6 +2863,20 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
         // Cardlink может возвращать payment_url или link_page_url
         const paymentUrl = response.data?.payment_url || response.data?.link_page_url || response.data?.link;
         
+        // Проверяем, есть ли ошибка в ответе
+        if (response.data?.error || response.data?.message) {
+            console.error('❌ Cardlink returned error:', {
+                error: response.data.error,
+                message: response.data.message,
+                full_response: JSON.stringify(response.data, null, 2)
+            });
+            return res.status(500).json({
+                success: false,
+                error: response.data.error || response.data.message || 'Ошибка от Cardlink',
+                details: response.data
+            });
+        }
+        
         if (paymentUrl) {
             console.log('✅ Cardlink payment created successfully:', paymentUrl);
             res.json({
@@ -2870,15 +2884,23 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
                 payment_url: paymentUrl
             });
         } else {
-            console.error('❌ Invalid response from Cardlink:', response.data);
+            console.error('❌ Invalid response from Cardlink - no payment URL:', {
+                status: response.status,
+                data: JSON.stringify(response.data, null, 2)
+            });
             res.status(500).json({
                 success: false,
-                error: 'Неверный ответ от Cardlink',
+                error: 'Неверный ответ от Cardlink - отсутствует ссылка на оплату',
                 details: response.data
             });
         }
     } catch (error) {
-        console.error('❌ Error creating Cardlink payment:', error.response?.data || error.message);
+        console.error('❌ Error creating Cardlink payment:', {
+            message: error.message,
+            response_data: error.response?.data ? JSON.stringify(error.response.data, null, 2) : 'No response data',
+            status: error.response?.status,
+            full_error: error
+        });
         res.status(500).json({
             success: false,
             error: 'Ошибка при создании платежа',
