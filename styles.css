@@ -1392,9 +1392,9 @@ body {
    ======================================== */
 
 .product-page {
-    padding: var(--space-8) 0 var(--space-24) 0;
+    padding: 0 0 var(--space-24) 0;
     min-height: 80vh;
-    margin-top: 20px;
+    margin-top: 80px;
     background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%);
 }
 
@@ -1410,6 +1410,8 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--space-6);
+    padding-top: 0;
+    margin-top: 0;
 }
 
 .product-layout {
@@ -1417,6 +1419,8 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: var(--space-16);
     align-items: start;
+    margin-top: 0;
+    padding-top: 0;
 }
 
 @media (max-width: 968px) {
@@ -1435,6 +1439,8 @@ body {
     flex-direction: column;
     gap: var(--space-6);
     align-self: start;
+    margin-top: 0;
+    padding-top: 0;
 }
 
 .product-gallery .product-image {
