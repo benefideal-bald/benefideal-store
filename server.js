@@ -2796,9 +2796,14 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
         
         console.log('💳 Creating Cardlink payment:', {
             orderId,
-            amount: total,
+            amount_rubles: total,
+            amount_kopecks: Math.round(total * 100),
+            currency: paymentData.currency,
             customer: name
         });
+        
+        // Логируем полные данные запроса
+        console.log('📤 Full payment data to CardLink:', JSON.stringify(paymentData, null, 2));
         
         // Отправляем запрос на создание платежа
         const response = await axios.post(CARDLINK_API_URL, paymentData, {
