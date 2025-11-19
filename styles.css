@@ -1440,6 +1440,7 @@ body {
     align-self: start;
     margin-top: 0;
     padding-top: 0;
+    height: fit-content;
 }
 
 .product-gallery .product-image {
@@ -1503,15 +1504,15 @@ body {
 
 .product-purchase {
     background: var(--white);
-    padding: var(--space-10);
+    padding: var(--space-8);
     border-radius: var(--radius-2xl);
     border: 2px solid var(--gray-200);
     box-shadow: var(--shadow-lg);
-    min-height: 400px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     width: 100%;
+    height: auto;
 }
 
 @media (max-width: 968px) {
