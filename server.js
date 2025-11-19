@@ -2774,14 +2774,13 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
         const failUrl = `${req.protocol}://${req.get('host')}/payment-fail.html?order_id=${orderId}`;
         
         // Формируем данные для оплаты
-        // ВАЖНО: CardLink может ожидать сумму в рублях или копейках - проверьте документацию
+        // ВАЖНО: CardLink ожидает сумму в рублях (не в копейках) для валюты RUB
         // Также важно: после 50,000 рублей доступна только криптовалюта
-        // Пробуем оба варианта: сначала копейки (стандарт для платежных систем)
-        const amountInKopecks = Math.round(total * 100);
+        const amountInRubles = Math.round(total * 100) / 100; // Округляем до 2 знаков после запятой
         
         const paymentData = {
             shop_id: CARDLINK_SHOP_ID,
-            amount: amountInKopecks, // Сумма в копейках
+            amount: amountInRubles, // Сумма в рублях (CardLink ожидает рубли для RUB)
             currency: 'RUB', // Валюта платежа
             currency_in: 'RUB', // Входящая валюта (для приема платежей в рублях)
             order_id: orderId,
@@ -2796,7 +2795,7 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
         // Логируем для отладки
         console.log('💰 Amount calculation:', {
             total_rubles: total,
-            amount_kopecks: amountInKopecks,
+            amount_sent_to_cardlink: amountInRubles,
             currency: 'RUB',
             exceeds_50k_limit: total > 50000
         });
