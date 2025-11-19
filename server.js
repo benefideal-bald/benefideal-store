@@ -2779,7 +2779,8 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
         const paymentData = {
             shop_id: CARDLINK_SHOP_ID,
             amount: Math.round(total * 100), // Сумма в копейках (округляем для точности)
-            currency: 'RUB', // Валюта платежа (RUB для рублей)
+            currency: 'RUB', // Валюта платежа
+            currency_in: 'RUB', // Входящая валюта (для приема платежей в рублях)
             order_id: orderId,
             description: `Заказ #${orderId} - ${cart.map(i => i.title).join(', ')}`,
             customer_name: name,
