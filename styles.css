@@ -1392,7 +1392,7 @@ body {
    ======================================== */
 
 .product-page {
-    padding: 0 0 var(--space-24) 0;
+    padding: var(--space-4) 0 var(--space-24) 0;
     min-height: 80vh;
     margin-top: 80px;
     background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%);
