@@ -1434,6 +1434,12 @@ body {
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
+    align-self: start;
+}
+
+.product-gallery .product-image {
+    margin-top: 0;
+    padding-top: 0;
 }
 
 @media (max-width: 968px) {
@@ -1513,6 +1519,12 @@ body {
 
 .product-info {
     padding-left: var(--space-4);
+    align-self: start;
+}
+
+.product-info .product-title {
+    margin-top: 0;
+    padding-top: 0;
 }
 
 @media (max-width: 968px) {
