@@ -1434,13 +1434,15 @@ body {
 
 .product-gallery {
     position: sticky;
-    top: 100px;
+    top: 20px;
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
     align-self: start;
     margin-top: 0;
     padding-top: 0;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
 }
 
 .product-gallery .product-image {
@@ -1508,7 +1510,7 @@ body {
     border-radius: var(--radius-2xl);
     border: 2px solid var(--gray-200);
     box-shadow: var(--shadow-lg);
-    height: 400px;
+    min-height: 400px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
