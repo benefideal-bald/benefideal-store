@@ -1438,6 +1438,7 @@ body {
     gap: var(--space-6);
     padding-top: 0;
     margin-top: 0;
+    align-items: flex-start;
 }
 
 @media (max-width: 968px) {
@@ -1480,6 +1481,8 @@ body {
     padding: 0;
     box-shadow: var(--shadow-xl);
     overflow: hidden;
+    margin-top: 0;
+    padding-top: 0;
 }
 
 .product-image img {
@@ -1650,6 +1653,8 @@ body {
     font-size: clamp(2rem, 5vw, 3rem);
     font-weight: 700;
     margin-bottom: var(--space-3);
+    margin-top: 0;
+    padding-top: 0;
     color: var(--gray-900);
     letter-spacing: -0.02em;
 }
