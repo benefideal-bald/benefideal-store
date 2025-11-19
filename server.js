@@ -2790,6 +2790,17 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
     
     try {
         const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+        
+        // ВАЖНО: CardLink ограничивает оплату картами до 50,000 рублей
+        // Если сумма больше, будет доступна только криптовалюта
+        if (total > 50000) {
+            return res.status(400).json({
+                success: false,
+                error: 'Сумма заказа превышает 50,000 рублей. Для оплаты картой сумма не должна превышать 50,000 рублей. Пожалуйста, разделите заказ на несколько частей или используйте другой способ оплаты.',
+                maxAmount: 50000
+            });
+        }
+        
         const callbackUrl = `${req.protocol}://${req.get('host')}/api/cardlink/callback`;
         const successUrl = `${req.protocol}://${req.get('host')}/payment-success.html?order_id=${orderId}`;
         const failUrl = `${req.protocol}://${req.get('host')}/payment-fail.html?order_id=${orderId}`;
@@ -2797,12 +2808,10 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
         // Формируем данные для оплаты
         // ВАЖНО: Структура данных может отличаться в зависимости от версии API Cardlink
         // Если не работает, проверьте документацию API в личном кабинете Cardlink
-        // Формируем данные для оплаты
-        // ВАЖНО: CardLink может требовать разные форматы параметров
         const paymentData = {
             shop_id: CARDLINK_SHOP_ID,
-            amount: total * 100, // Сумма в копейках
-            currency: 'RUB', // Валюта платежа
+            amount: Math.round(total * 100), // Сумма в копейках (округляем для точности)
+            currency: 'RUB', // Валюта платежа - РУБЛИ
             order_id: orderId,
             description: `Заказ #${orderId} - ${cart.map(i => i.title).join(', ')}`,
             customer_name: name,
@@ -2810,7 +2819,6 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
             success_url: successUrl,
             fail_url: failUrl,
             callback_url: callbackUrl
-            // Убираем лишние параметры, которые могут вызывать ошибки
         };
         
         console.log('💳 Creating Cardlink payment:', {
@@ -2823,9 +2831,9 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
         console.log('📤 Sending to CardLink API:', {
             url: CARDLINK_API_URL,
             shop_id: CARDLINK_SHOP_ID,
-            amount: total * 100,
+            total_rubles: total,
+            amount_kopeks: paymentData.amount,
             currency: paymentData.currency,
-            currency_in: paymentData.currency_in,
             payment_data: JSON.stringify(paymentData, null, 2)
         });
         
@@ -3034,7 +3042,7 @@ app.post('/api/cardlink/callback', (req, res) => {
             });
             
             // Отвечаем CardLink сразу, чтобы не было повторных запросов
-            res.status(200).json({ success: true, message: 'Callback processed' });
+        res.status(200).json({ success: true, message: 'Callback processed' });
         });
     } else {
         console.log('❌ Payment failed:', { orderId, status });
