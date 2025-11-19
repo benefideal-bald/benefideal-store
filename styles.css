@@ -1392,9 +1392,9 @@ body {
    ======================================== */
 
 .product-page {
-    padding: var(--space-24) 0;
+    padding: var(--space-8) 0 var(--space-24) 0;
     min-height: 80vh;
-    margin-top: 80px;
+    margin-top: 20px;
     background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%);
 }
 
@@ -1402,7 +1402,7 @@ body {
 @media (max-width: 768px) {
     .product-page {
         padding: var(--space-4) 0 !important;
-        margin-top: 60px !important; /* Уменьшено с 80px */
+        margin-top: 20px !important;
     }
 }
 
