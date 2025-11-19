@@ -193,27 +193,6 @@ db.serialize(() => {
         )
     `);
     
-    // Таблица для хранения данных заказов CardLink (временное хранилище до подтверждения платежа)
-    db.run(`
-        CREATE TABLE IF NOT EXISTS pending_orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            order_id TEXT UNIQUE NOT NULL,
-            customer_name TEXT NOT NULL,
-            customer_email TEXT NOT NULL,
-            cart_data TEXT NOT NULL,
-            total_amount REAL NOT NULL,
-            payment_method TEXT DEFAULT 'cardlink',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            processed INTEGER DEFAULT 0
-        )
-    `, (err) => {
-        if (err) {
-            console.error('❌ Error creating pending_orders table:', err);
-        } else {
-            console.log('✅ Pending orders table created/verified');
-        }
-    });
-    
     // КРИТИЧЕСКИ ВАЖНО: Создаем таблицу отзывов с защитой от удаления
     // НИКОГДА не используем DROP TABLE или DELETE FROM reviews в коде!
     // UNIQUE constraint (customer_email, order_id) позволяет обновлять отзывы через ON CONFLICT
@@ -2790,28 +2769,17 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
     
     try {
         const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
-        
-        // ВАЖНО: CardLink ограничивает оплату картами до 50,000 рублей
-        // Если сумма больше, будет доступна только криптовалюта
-        if (total > 50000) {
-            return res.status(400).json({
-                success: false,
-                error: 'Сумма заказа превышает 50,000 рублей. Для оплаты картой сумма не должна превышать 50,000 рублей. Пожалуйста, разделите заказ на несколько частей или используйте другой способ оплаты.',
-                maxAmount: 50000
-            });
-        }
-        
         const callbackUrl = `${req.protocol}://${req.get('host')}/api/cardlink/callback`;
         const successUrl = `${req.protocol}://${req.get('host')}/payment-success.html?order_id=${orderId}`;
         const failUrl = `${req.protocol}://${req.get('host')}/payment-fail.html?order_id=${orderId}`;
         
         // Формируем данные для оплаты
-        // ВАЖНО: Структура данных может отличаться в зависимости от версии API Cardlink
-        // Если не работает, проверьте документацию API в личном кабинете Cardlink
+        // ВАЖНО: CardLink может ожидать сумму в рублях или копейках - проверьте документацию
+        // Также важно: после 50,000 рублей доступна только криптовалюта
         const paymentData = {
             shop_id: CARDLINK_SHOP_ID,
             amount: Math.round(total * 100), // Сумма в копейках (округляем для точности)
-            currency: 'RUB', // Валюта платежа - РУБЛИ
+            currency: 'RUB', // Валюта платежа (RUB для рублей)
             order_id: orderId,
             description: `Заказ #${orderId} - ${cart.map(i => i.title).join(', ')}`,
             customer_name: name,
@@ -2821,35 +2789,15 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
             callback_url: callbackUrl
         };
         
+        // Проверяем, не превышает ли сумма лимит для карт (50,000 рублей)
+        if (total > 50000) {
+            console.warn('⚠️ Сумма превышает 50,000 рублей - CardLink может предложить только криптовалюту');
+        }
+        
         console.log('💳 Creating Cardlink payment:', {
             orderId,
             amount: total,
             customer: name
-        });
-        
-        // Логируем данные, которые отправляем в CardLink
-        console.log('📤 Sending to CardLink API:', {
-            url: CARDLINK_API_URL,
-            shop_id: CARDLINK_SHOP_ID,
-            total_rubles: total,
-            amount_kopeks: paymentData.amount,
-            currency: paymentData.currency,
-            payment_data: JSON.stringify(paymentData, null, 2)
-        });
-        
-        // Сохраняем данные заказа в базу данных для последующей обработки в callback
-        const normalizedEmail = email.toLowerCase().trim();
-        const cartData = JSON.stringify(cart);
-        
-        db.run(`
-            INSERT OR REPLACE INTO pending_orders (order_id, customer_name, customer_email, cart_data, total_amount, payment_method, processed)
-            VALUES (?, ?, ?, ?, ?, 'cardlink', 0)
-        `, [orderId, name, normalizedEmail, cartData, total], (err) => {
-            if (err) {
-                console.error('❌ Error saving pending order:', err);
-            } else {
-                console.log('✅ Pending order saved to database:', orderId);
-            }
         });
         
         // Отправляем запрос на создание платежа
@@ -2860,28 +2808,8 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
             }
         });
         
-        // Логируем ответ от CardLink
-        console.log('📥 Response from CardLink:', {
-            status: response.status,
-            data: JSON.stringify(response.data, null, 2)
-        });
-        
         // Cardlink может возвращать payment_url или link_page_url
         const paymentUrl = response.data?.payment_url || response.data?.link_page_url || response.data?.link;
-        
-        // Проверяем, есть ли ошибка в ответе
-        if (response.data?.error || response.data?.message) {
-            console.error('❌ Cardlink returned error:', {
-                error: response.data.error,
-                message: response.data.message,
-                full_response: JSON.stringify(response.data, null, 2)
-            });
-            return res.status(500).json({
-                success: false,
-                error: response.data.error || response.data.message || 'Ошибка от Cardlink',
-                details: response.data
-            });
-        }
         
         if (paymentUrl) {
             console.log('✅ Cardlink payment created successfully:', paymentUrl);
@@ -2890,23 +2818,15 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
                 payment_url: paymentUrl
             });
         } else {
-            console.error('❌ Invalid response from Cardlink - no payment URL:', {
-                status: response.status,
-                data: JSON.stringify(response.data, null, 2)
-            });
+            console.error('❌ Invalid response from Cardlink:', response.data);
             res.status(500).json({
                 success: false,
-                error: 'Неверный ответ от Cardlink - отсутствует ссылка на оплату',
+                error: 'Неверный ответ от Cardlink',
                 details: response.data
             });
         }
     } catch (error) {
-        console.error('❌ Error creating Cardlink payment:', {
-            message: error.message,
-            response_data: error.response?.data ? JSON.stringify(error.response.data, null, 2) : 'No response data',
-            status: error.response?.status,
-            full_error: error
-        });
+        console.error('❌ Error creating Cardlink payment:', error.response?.data || error.message);
         res.status(500).json({
             success: false,
             error: 'Ошибка при создании платежа',
@@ -2915,7 +2835,7 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
     }
 });
 
-// API endpoint для обработки callback от Cardlink (Result URL)
+// API endpoint для обработки callback от Cardlink
 app.post('/api/cardlink/callback', (req, res) => {
     console.log('📞 Cardlink callback received:', req.body);
     
@@ -2936,171 +2856,15 @@ app.post('/api/cardlink/callback', (req, res) => {
         // Платеж успешен - обрабатываем заказ
         console.log('✅ Payment successful:', { orderId, amount, transactionId });
         
-        if (!orderId) {
-            console.error('❌ Order ID not found in callback');
-            return res.status(400).json({ success: false, error: 'Order ID not found' });
-        }
+        // Здесь можно обновить статус заказа в базе данных
+        // Или отправить данные в Telegram
         
-        // Получаем данные заказа из базы данных
-        db.get('SELECT * FROM pending_orders WHERE order_id = ? AND processed = 0', [orderId], (err, order) => {
-            if (err) {
-                console.error('❌ Error fetching pending order:', err);
-                return res.status(500).json({ success: false, error: 'Database error' });
-            }
-            
-            if (!order) {
-                console.log('⚠️ Order not found or already processed:', orderId);
-                // Возвращаем успех, чтобы CardLink не повторял запрос
-                return res.status(200).json({ success: true, message: 'Order not found or already processed' });
-            }
-            
-            // Парсим данные корзины
-            let cart;
-            try {
-                cart = JSON.parse(order.cart_data);
-            } catch (e) {
-                console.error('❌ Error parsing cart data:', e);
-                return res.status(500).json({ success: false, error: 'Invalid cart data' });
-            }
-            
-            const { customer_name, customer_email } = order;
-            
-            console.log('📦 Processing order:', {
-                orderId,
-                customer: customer_name,
-                email: customer_email,
-                items: cart.length
-            });
-            
-            // Сохраняем каждый товар в subscriptions и отправляем в Telegram
-            let processedCount = 0;
-            const totalItems = cart.length;
-            
-            cart.forEach((item, index) => {
-                // Сохраняем в subscriptions
-                const stmt = db.prepare(`
-                    INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                `);
-                
-                const purchaseDate = new Date();
-                stmt.run([customer_name, customer_email, item.title, item.id, item.months || 1, purchaseDate.toISOString(), orderId], function(insertErr) {
-                    if (insertErr) {
-                        console.error(`❌ Error saving subscription for ${item.title}:`, insertErr);
-                    } else {
-                        console.log(`✅ Subscription saved: ${item.title} (ID: ${this.lastID})`);
-                        
-                        // Генерируем напоминания для ChatGPT, CapCut, Adobe
-                        if (item.id === 1 || item.id === 3 || item.id === 7) {
-                            generateReminders(this.lastID, item.id, item.months || 1, purchaseDate);
-                        }
-                    }
-                    stmt.finalize();
-                    
-                    // Отправляем в Telegram
-                    const months = item.months || 'Не указано';
-                    const message = `
-🛒 Новый заказ через CardLink ${index + 1}/${totalItems}
-
-👤 Имя: ${customer_name}
-📧 Email: ${customer_email}
-📦 Товар: ${item.title}
-🔢 Количество: ${item.quantity}
-⏱ Срок подписки: ${months} ${typeof months === 'number' ? 'месяцев' : ''}
-💰 Сумма: ${item.price.toLocaleString()} ₽
-🆔 Номер заказа: ${orderId}
-                    `.trim();
-                    
-                    axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                        chat_id: CHAT_ID,
-                        text: message,
-                        parse_mode: 'HTML'
-                    }).then(() => {
-                        console.log(`✅ Telegram notification sent for ${item.title}`);
-                    }).catch((telegramErr) => {
-                        console.error(`❌ Error sending Telegram notification:`, telegramErr);
-                    });
-                    
-                    // Отправляем расписание продлений для ChatGPT, CapCut, Adobe
-                    if (item.id === 1 || item.id === 3 || item.id === 7) {
-                        sendRenewalScheduleTelegram(item, customer_name, customer_email);
-                    }
-                    
-                    processedCount++;
-                    
-                    // Если все товары обработаны, помечаем заказ как обработанный
-                    if (processedCount === totalItems) {
-                        db.run('UPDATE pending_orders SET processed = 1 WHERE order_id = ?', [orderId], (updateErr) => {
-                            if (updateErr) {
-                                console.error('❌ Error updating pending order:', updateErr);
-                            } else {
-                                console.log('✅ Order marked as processed:', orderId);
-                            }
-                        });
-                    }
-                });
-            });
-            
-            // Отвечаем CardLink сразу, чтобы не было повторных запросов
         res.status(200).json({ success: true, message: 'Callback processed' });
-        });
     } else {
         console.log('❌ Payment failed:', { orderId, status });
         res.status(200).json({ success: false, message: 'Payment failed' });
     }
 });
-
-// Функция для отправки расписания продлений в Telegram
-function sendRenewalScheduleTelegram(item, name, email) {
-    const months = item.months || 1;
-    const purchaseDate = new Date();
-    const productName = item.id === 1 ? 'Chat-GPT' : (item.id === 3 ? 'Adobe' : (item.id === 7 ? 'CapCut' : item.title));
-    
-    let scheduleMessage = `\n\n📅 Расписание продлений ${productName}:\n`;
-    scheduleMessage += `👤 ${name} (${email})\n\n`;
-    
-    if (item.id === 3) {
-        // Adobe: fixed subscription periods
-        if (months === 12) {
-            const firstRenewal = new Date(purchaseDate);
-            firstRenewal.setMonth(firstRenewal.getMonth() + 6);
-            const firstDateStr = firstRenewal.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-            scheduleMessage += `${firstDateStr} - Продлить подписку (6 месяцев до окончания)\n`;
-            
-            const secondRenewal = new Date(purchaseDate);
-            secondRenewal.setMonth(secondRenewal.getMonth() + 12);
-            const secondDateStr = secondRenewal.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-            scheduleMessage += `${secondDateStr} - 🔴 Подписка заканчивается\n`;
-        } else {
-            const renewalDate = new Date(purchaseDate);
-            renewalDate.setMonth(renewalDate.getMonth() + months);
-            const dateStr = renewalDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-            scheduleMessage += `${dateStr} - 🔴 Подписка заканчивается\n`;
-        }
-    } else {
-        // ChatGPT and CapCut: monthly renewals
-        for (let i = 1; i <= months; i++) {
-            const renewalDate = new Date(purchaseDate);
-            renewalDate.setMonth(renewalDate.getMonth() + i);
-            
-            const monthsRemaining = months - i;
-            const dateStr = renewalDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-            
-            if (monthsRemaining > 0) {
-                scheduleMessage += `${dateStr} - Продлить подписку ${monthsRemaining} ${monthsRemaining === 1 ? 'месяц' : 'месяцев'} до окончания\n`;
-            } else {
-                scheduleMessage += `${dateStr} - 🔴 Подписка заканчивается\n`;
-            }
-        }
-    }
-    
-    axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        chat_id: CHAT_ID,
-        text: scheduleMessage
-    }).catch((error) => {
-        console.error('Error sending renewal schedule:', error);
-    });
-}
 
 // API endpoint для получения платежной ссылки Cardlink (без верификации)
 // Используется, если API недоступно
