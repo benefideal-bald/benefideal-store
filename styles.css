@@ -1564,6 +1564,13 @@ body {
     transition: all var(--transition-base);
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
+    content-visibility: auto;
+}
+
+/* Оптимизация загрузки изображений */
+.product-image {
+    content-visibility: auto;
+    contain-intrinsic-size: 600px 600px;
 }
 
 /* Оптимизация для мобильных устройств */
