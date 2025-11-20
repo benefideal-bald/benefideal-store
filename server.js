@@ -2789,10 +2789,7 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
             customer_email: email,
             success_url: successUrl,
             fail_url: failUrl,
-            callback_url: callbackUrl,
-            // Попытка задать порядок способов оплаты: СБП, карта, криптовалюта
-            payment_methods: ['sbp', 'card', 'crypto'],
-            payment_methods_order: ['sbp', 'card', 'crypto']
+            callback_url: callbackUrl
         };
         
         // Логируем для отладки
