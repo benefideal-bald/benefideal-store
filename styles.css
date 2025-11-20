@@ -1296,12 +1296,10 @@ body {
 
 /* Отключаем backdrop-filter на слабых устройствах */
 @media (prefers-reduced-motion: reduce), (max-width: 768px) {
-    .cart-overlay {
-        backdrop-filter: none;
-        background: rgba(0, 0, 0, 0.7);
-    z-index: 10000;
-    align-items: center;
-    justify-content: center;
+    .cart-modal {
+        backdrop-filter: none !important;
+        background: rgba(0, 0, 0, 0.7) !important;
+    }
     padding: var(--space-4);
     animation: fadeInUp 0.3s ease-out;
 }
