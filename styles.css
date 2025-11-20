@@ -1448,7 +1448,7 @@ body {
 @media (max-width: 968px) {
     .product-layout {
         grid-template-columns: 1fr;
-        gap: var(--space-4);
+        gap: var(--space-2) !important; /* Уменьшено с var(--space-4) в 2 раза */
         display: flex;
         flex-direction: column;
     }
