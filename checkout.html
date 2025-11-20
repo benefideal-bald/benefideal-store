@@ -114,7 +114,7 @@
                             return `<div class="cart-item">
                                 <div>
                                     <h4>${item.title}</h4>
-                                    <p>${item.price.toLocaleString()} ₽ × ${item.quantity}${durationText ? ` • ${durationText}` : ''}</p>
+                                    <p>${item.price.toLocaleString()} ₽${durationText ? ` • ${durationText}` : ''}</p>
                                 </div>
                             </div>`;
                         }).join('');

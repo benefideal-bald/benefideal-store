@@ -678,7 +678,7 @@ function updateCartUI() {
             <div class="cart-item">
                 <div>
                     <h4>${item.title}</h4>
-                    <p>${item.price.toLocaleString()} ₽${durationText ? ` • ${durationText}` : ''}</p>
+                    <p>${item.price.toLocaleString()} ₽${durationText ? ` • ${durationText}` : ''}${item.quantity > 1 ? ` × ${item.quantity}` : ''}</p>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <button onclick="updateCartQuantityByIndex(${index}, ${item.quantity - 1})" 
