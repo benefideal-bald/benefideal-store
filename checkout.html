@@ -130,25 +130,15 @@
 
             // Save name/email for convenience
             const form = document.getElementById('checkoutForm');
-            
-            // Валидация email: только буквы (a-z), цифры (0-9) и точки (.)
-            const emailInput = document.getElementById('email');
-            emailInput.addEventListener('input', function(e) {
-                let value = e.target.value;
-                // Удаляем все символы, кроме букв (a-z), цифр (0-9), точек (.) и @
-                value = value.replace(/[^a-z0-9.@]/gi, '');
-                e.target.value = value;
-            });
-            
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const name = document.getElementById('fullName').value.trim();
                 let email = document.getElementById('email').value.trim().toLowerCase(); // Normalize email to lowercase
                 
-                // Дополнительная валидация email
+                // Валидация email: только буквы (a-z), цифры (0-9) и точки (.)
                 const emailPattern = /^[a-z0-9.]+@[a-z0-9.]+$/;
                 if (!emailPattern.test(email)) {
-                    alert('Email может содержать только буквы (a-z), цифры (0-9) и точки (.)');
+                    alert('Sorry, only letters (a-z), numbers (0-9), and periods (.) are allowed.');
                     return;
                 }
                 
