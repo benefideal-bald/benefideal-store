@@ -29,7 +29,8 @@
                     </div>
                     <div class="form-group">
                         <label for="email">Электронная почта</label>
-                        <input type="email" id="email" name="email" required placeholder="you@example.com" pattern="[a-z0-9.]+@[a-z0-9.]+" title="Только буквы (a-z), цифры (0-9) и точки (.)">
+                        <input type="text" id="email" name="email" required placeholder="you@example.com">
+                        <div id="emailError" style="display: none; color: var(--error); font-size: 0.875rem; margin-top: var(--space-1);">Извините, разрешены только буквы (a-z), цифры (0-9), и точки (.)</div>
                     </div>
                     <div class="checkout-total">
                         <div class="label">Итого к оплате:</div>
@@ -130,17 +131,30 @@
 
             // Save name/email for convenience
             const form = document.getElementById('checkoutForm');
+            const emailInput = document.getElementById('email');
+            const emailError = document.getElementById('emailError');
+            
+            // Скрываем ошибку при вводе
+            emailInput.addEventListener('input', function() {
+                emailError.style.display = 'none';
+            });
+            
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const name = document.getElementById('fullName').value.trim();
                 let email = document.getElementById('email').value.trim().toLowerCase(); // Normalize email to lowercase
+                const emailError = document.getElementById('emailError');
                 
                 // Валидация email: только буквы (a-z), цифры (0-9) и точки (.)
                 const emailPattern = /^[a-z0-9.]+@[a-z0-9.]+$/;
                 if (!emailPattern.test(email)) {
-                    alert('Sorry, only letters (a-z), numbers (0-9), and periods (.) are allowed.');
+                    emailError.style.display = 'block';
+                    document.getElementById('email').focus();
                     return;
                 }
+                
+                // Скрываем ошибку, если email валиден
+                emailError.style.display = 'none';
                 
                 localStorage.setItem('benefideal_checkout_name', name);
                 localStorage.setItem('benefideal_checkout_email', email);
