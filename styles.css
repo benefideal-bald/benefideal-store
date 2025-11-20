@@ -1300,8 +1300,6 @@ body {
         backdrop-filter: none !important;
         background: rgba(0, 0, 0, 0.7) !important;
     }
-    padding: var(--space-4);
-    animation: fadeInUp 0.3s ease-out;
 }
 
 .cart-modal.active {
