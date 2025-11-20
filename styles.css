@@ -1496,6 +1496,17 @@ body {
     display: block;
     border-radius: var(--radius-2xl);
     transition: all var(--transition-base);
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+/* Оптимизация для мобильных устройств */
+@media (max-width: 768px) {
+    .product-image img {
+        max-width: 100%;
+        height: auto;
+        object-fit: cover;
+    }
 }
 
 .product-image:hover img {
