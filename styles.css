@@ -352,6 +352,17 @@ body {
     .header {
         box-shadow: none !important;
     }
+    
+    /* Перенос текста способа оплаты на 2 строки */
+    .payment-method-text {
+        white-space: normal !important;
+        line-height: 1.4 !important;
+    }
+    
+    .payment-method-text span {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+    }
 }
 
 .nav {
