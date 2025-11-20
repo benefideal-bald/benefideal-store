@@ -1465,6 +1465,13 @@ body {
     height: fit-content;
 }
 
+/* Уменьшаем расстояние между фото и карточкой на мобильных */
+@media (max-width: 768px) {
+    .product-gallery {
+        gap: var(--space-3) !important; /* Уменьшено с var(--space-6) в 2 раза */
+    }
+}
+
 .product-gallery .product-image {
     margin-top: 0;
     padding-top: 0;
