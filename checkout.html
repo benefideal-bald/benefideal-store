@@ -39,25 +39,7 @@
                         </div>
                     </div>
                     
-                    <div class="form-group" style="margin-bottom: var(--space-4);">
-                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
-                               onmouseover="this.style.background='var(--gray-100)'" 
-                               onmouseout="this.style.background='var(--gray-50)'">
-                            <input type="radio" 
-                                   name="paymentMethod" 
-                                   id="paymentSBP" 
-                                   value="sbp" 
-                                   checked 
-                                   required
-                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
-                            <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2); white-space: nowrap;">
-                                <i class="fas fa-mobile-alt" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
-                                <span>Оплата переводом по СБП</span>
-                            </span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: var(--space-4);">
+                    <div class="form-group" style="margin-bottom: var(--space-6);">
                         <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
                                onmouseover="this.style.background='var(--gray-100)'" 
                                onmouseout="this.style.background='var(--gray-50)'">
@@ -65,28 +47,12 @@
                                    name="paymentMethod" 
                                    id="paymentCardlink" 
                                    value="cardlink" 
+                                   checked
                                    required
                                    style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
                             <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2); white-space: nowrap;">
                                 <i class="fas fa-credit-card" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
-                                <span>Оплата картой (Cardlink)</span>
-                            </span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: var(--space-6);">
-                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
-                               onmouseover="this.style.background='var(--gray-100)'" 
-                               onmouseout="this.style.background='var(--gray-50)'">
-                            <input type="radio" 
-                                   name="paymentMethod" 
-                                   id="paymentEnot" 
-                                   value="enot" 
-                                   required
-                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
-                            <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2); white-space: nowrap;">
-                                <i class="fas fa-wallet" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
-                                <span>Оплата через Enot.io</span>
+                                <span>Оплата через Cardlink (картой, СБП, криптовалютой)</span>
                             </span>
                         </label>
                     </div>
@@ -168,22 +134,13 @@
                 e.preventDefault();
                 const name = document.getElementById('fullName').value.trim();
                 const email = document.getElementById('email').value.trim().toLowerCase(); // Normalize email to lowercase
-                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
                 
                 localStorage.setItem('benefideal_checkout_name', name);
                 localStorage.setItem('benefideal_checkout_email', email);
-                console.log('💾 Saved to localStorage:', { name, email, paymentMethod });
+                console.log('💾 Saved to localStorage:', { name, email, paymentMethod: 'cardlink' });
                 
-                if (paymentMethod === 'cardlink') {
-                    // Оплата через Cardlink
-                    processCardlinkPayment(name, email);
-                } else if (paymentMethod === 'enot') {
-                    // Оплата через Enot.io
-                    processEnotPayment(name, email);
-                } else {
-                    // Оплата через СБП (как было)
-                    window.location.href = 'payment.html';
-                }
+                // Оплата через Cardlink
+                processCardlinkPayment(name, email);
             });
             
             // Функция для обработки оплаты через Cardlink
