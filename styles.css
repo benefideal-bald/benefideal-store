@@ -98,6 +98,13 @@ html {
     scroll-behavior: smooth;
 }
 
+/* Отключаем плавную прокрутку на слабых устройствах */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+}
+
 html, body {
     height: 100%;
     margin: 0;
@@ -113,6 +120,18 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+}
+
+/* Оптимизация для слабых устройств */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 /* Container */
@@ -1273,6 +1292,13 @@ body {
     bottom: 0;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
+}
+
+/* Отключаем backdrop-filter на слабых устройствах */
+@media (prefers-reduced-motion: reduce), (max-width: 768px) {
+    .cart-overlay {
+        backdrop-filter: none;
+        background: rgba(0, 0, 0, 0.7);
     z-index: 10000;
     align-items: center;
     justify-content: center;
@@ -1509,8 +1535,54 @@ body {
     }
 }
 
+/* Дополнительные оптимизации для слабых устройств */
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+    /* Упрощаем тени на мобильных */
+    .product-image {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .product-purchase {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    /* Отключаем сложные анимации */
+    .subscription-card:hover {
+        transform: none !important;
+    }
+    
+    .benefit-card:hover {
+        transform: none !important;
+    }
+    
+    /* Упрощаем transitions */
+    * {
+        transition-duration: 0.15s !important;
+    }
+    
+    /* Отключаем pulse анимации */
+    .btn-primary:hover {
+        animation: none !important;
+    }
+}
+
 .product-image:hover img {
     transform: scale(1.05);
+}
+
+/* Отключаем hover эффекты на слабых устройствах и мобильных */
+@media (hover: none) or (pointer: coarse) {
+    .product-image:hover img {
+        transform: none;
+    }
+}
+
+/* Упрощаем анимации на слабых устройствах */
+@media (prefers-reduced-motion: reduce) {
+    .product-image:hover img {
+        transform: none;
+        transition: none;
+    }
 }
 
 .product-purchase {
