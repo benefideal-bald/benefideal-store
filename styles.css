@@ -1486,6 +1486,7 @@ body {
     .product-image {
         height: 300px;
         order: 1 !important;
+        margin-bottom: var(--space-3) !important; /* Уменьшено расстояние до карточки */
     }
     
     .product-title-card {
