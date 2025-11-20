@@ -1307,7 +1307,7 @@ body {
 }
 
 .cart-content {
-    background: var(--white);
+    background: var(--white) !important;
     border-radius: var(--radius-2xl);
     width: 100%;
     max-width: 520px;
@@ -1317,6 +1317,8 @@ body {
     animation: scaleIn 0.3s ease-out;
     display: flex;
     flex-direction: column;
+    position: relative;
+    z-index: 10001;
 }
 
 .cart-header {
@@ -1359,6 +1361,9 @@ body {
     overflow-y: auto;
     flex: 1;
     min-height: 200px;
+    position: relative;
+    z-index: 1;
+    background: var(--white) !important;
 }
 
 .cart-item {
