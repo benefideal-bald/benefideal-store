@@ -343,6 +343,17 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
+/* Убираем тень/линию над хедером при открытии корзины на мобильных */
+@media (max-width: 768px) {
+    .header.scrolled {
+        box-shadow: none !important;
+    }
+    
+    .header {
+        box-shadow: none !important;
+    }
+}
+
 .nav {
     display: flex;
     align-items: center;
@@ -1321,6 +1332,15 @@ body {
     display: flex;
     flex-direction: column;
     margin: auto;
+}
+
+/* Корзина на мобильных - такой же размер как фото товара */
+@media (max-width: 768px) {
+    .cart-content {
+        max-width: 100%;
+        width: calc(100% - var(--space-6) * 2);
+        margin: auto;
+    }
 }
 
 .cart-header {
