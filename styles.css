@@ -348,12 +348,25 @@ body {
     .header.scrolled {
         box-shadow: none !important;
         border-top: none !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
     }
     
     .header {
         box-shadow: none !important;
         border-top: none !important;
         border-bottom: 1px solid #e2e8f0 !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        top: 0 !important;
+    }
+    
+    /* Убираем любые полосы над хедером */
+    body::before,
+    html::before,
+    .header::before {
+        display: none !important;
+        content: none !important;
     }
     
     /* Перенос текста способа оплаты на 2 строки */
