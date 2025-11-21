@@ -1928,12 +1928,15 @@ body {
     font-size: 1.1em;
     vertical-align: top;
     line-height: 1.5;
+    margin-right: 0.3em;
+    flex-shrink: 0;
 }
 
 @media (max-width: 968px) {
     .product-description .paragraph-marker {
         width: 1em;
         font-size: 1em;
+        margin-right: 0.3em;
     }
 }
 
