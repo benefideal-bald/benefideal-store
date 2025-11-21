@@ -425,7 +425,24 @@ function toggleCart() {
         return;
     }
     
+    const isOpening = !cartModalElement.classList.contains('active');
     cartModalElement.classList.toggle('active');
+    
+    // Block/unblock body scroll
+    if (isOpening) {
+        document.body.classList.add('cart-open');
+        // Save current scroll position
+        const scrollY = window.scrollY;
+        document.body.style.top = `-${scrollY}px`;
+    } else {
+        document.body.classList.remove('cart-open');
+        // Restore scroll position
+        const scrollY = document.body.style.top;
+        document.body.style.top = '';
+        if (scrollY) {
+            window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        }
+    }
     
     // Add animation class
     if (cartModalElement.classList.contains('active')) {
