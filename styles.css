@@ -1724,11 +1724,14 @@ body {
         width: 100%;
     }
     
-    .product-description h2,
+    .product-description h2 {
+        text-align: center !important;
+    }
+    
     .product-description p,
     .product-description ul,
     .product-description li {
-        text-align: center !important;
+        text-align: left !important;
     }
     
     .product-title-in-description {
