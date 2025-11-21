@@ -1923,8 +1923,8 @@ body {
     display: inline-block;
     width: 1.2em;
     text-align: left;
-    color: var(--primary);
-    font-weight: 600;
+    color: var(--black);
+    font-weight: 900;
     font-size: 1.1em;
     vertical-align: top;
     line-height: 1.5;
@@ -1937,6 +1937,8 @@ body {
         width: 1em;
         font-size: 1em;
         margin-right: 0.3em;
+        color: var(--black);
+        font-weight: 900;
     }
 }
 
