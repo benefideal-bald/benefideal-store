@@ -428,19 +428,23 @@ function toggleCart() {
     const isOpening = !cartModalElement.classList.contains('active');
     cartModalElement.classList.toggle('active');
     
-    // Block/unblock body scroll
+    // Block/unblock body scroll without changing scroll position
     if (isOpening) {
+        // Save current scroll position before blocking
+        const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+        document.body.dataset.scrollY = scrollY;
         document.body.classList.add('cart-open');
-        // Save current scroll position
-        const scrollY = window.scrollY;
+        // Set top to maintain visual position
         document.body.style.top = `-${scrollY}px`;
     } else {
-        document.body.classList.remove('cart-open');
         // Restore scroll position
-        const scrollY = document.body.style.top;
+        const scrollY = parseInt(document.body.dataset.scrollY || '0');
+        document.body.classList.remove('cart-open');
         document.body.style.top = '';
-        if (scrollY) {
-            window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        document.body.removeAttribute('data-scroll-y');
+        // Restore scroll position without animation
+        if (scrollY > 0) {
+            window.scrollTo(0, scrollY);
         }
     }
     
