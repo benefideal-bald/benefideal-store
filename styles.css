@@ -353,7 +353,7 @@ body {
     .header {
         box-shadow: none !important;
         border-top: none !important;
-        border-bottom: none !important;
+        border-bottom: 1px solid #e2e8f0 !important;
     }
     
     /* Перенос текста способа оплаты на 2 строки */
