@@ -1915,6 +1915,25 @@ body {
     font-size: 1.05rem;
 }
 
+/* Маркеры параграфов - выравнивание на одном вертикальном уровне */
+.product-description .paragraph-marker {
+    display: inline-block;
+    width: 1.2em;
+    text-align: left;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 1.1em;
+    vertical-align: top;
+    line-height: 1.5;
+}
+
+@media (max-width: 968px) {
+    .product-description .paragraph-marker {
+        width: 1em;
+        font-size: 1em;
+    }
+}
+
 .subscription-selector {
     margin-bottom: var(--space-5);
     padding-bottom: var(--space-5);
