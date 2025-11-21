@@ -347,10 +347,13 @@ body {
 @media (max-width: 768px) {
     .header.scrolled {
         box-shadow: none !important;
+        border-top: none !important;
     }
     
     .header {
         box-shadow: none !important;
+        border-top: none !important;
+        border-bottom: none !important;
     }
     
     /* Перенос текста способа оплаты на 2 строки */
