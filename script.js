@@ -418,39 +418,27 @@ function initReviewsAutoScroll() {
 }
 
 // Toggle cart modal
-function toggleCart() {
+function toggleCart(event) {
+    // Prevent any default behavior
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
     const cartModalElement = document.getElementById('cartModal');
     if (!cartModalElement) {
         console.error('Cart modal not found!');
-        return;
+        return false;
     }
     
     const isOpening = !cartModalElement.classList.contains('active');
     cartModalElement.classList.toggle('active');
     
-    // Block/unblock body scroll without changing scroll position
+    // Simply block/unblock body scroll - no position saving
     if (isOpening) {
-        // Save current scroll position
-        const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
-        document.body.dataset.scrollY = scrollY.toString();
-        // Add class to block scroll
         document.body.classList.add('cart-open');
-        // Set top to maintain visual position
-        document.body.style.top = `-${scrollY}px`;
     } else {
-        // Get saved scroll position
-        const scrollY = parseInt(document.body.dataset.scrollY || '0');
-        // Remove class to unblock scroll
         document.body.classList.remove('cart-open');
-        // Clear inline style
-        document.body.style.top = '';
-        document.body.removeAttribute('data-scroll-y');
-        // Restore scroll position after a brief delay to ensure layout is ready
-        setTimeout(() => {
-            if (scrollY > 0) {
-                window.scrollTo(0, scrollY);
-            }
-        }, 0);
     }
     
     // Add animation class
@@ -462,6 +450,8 @@ function toggleCart() {
         // Update cart UI when opening
         updateCartUI();
     }
+    
+    return false;
 }
 
 // Make toggleCart available globally
