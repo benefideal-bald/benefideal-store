@@ -869,6 +869,40 @@ app.post('/api/admin/auto-restore-nikita', (req, res) => {
     }, 5000); // Wait 5 seconds for database to be ready
 })();
 
+// DEBUG: Check all orders in database (temporary, no password)
+app.get('/debug-orders', (req, res) => {
+    console.log('🔍 DEBUG: Fetching all orders from database...');
+    
+    db.all(`
+        SELECT 
+            id,
+            customer_name,
+            customer_email,
+            product_name,
+            product_id,
+            subscription_months,
+            purchase_date,
+            order_id,
+            amount,
+            is_active
+        FROM subscriptions
+        ORDER BY purchase_date DESC
+    `, (err, rows) => {
+        if (err) {
+            console.error('❌ Error:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        
+        console.log(`📊 Found ${rows ? rows.length : 0} subscriptions`);
+        
+        res.json({
+            success: true,
+            count: rows ? rows.length : 0,
+            orders: rows || []
+        });
+    });
+});
+
 // ONE-TIME RESTORE: Simple endpoint to restore Nikita order (no password required, one-time use)
 app.get('/restore-nikita-now', (req, res) => {
     console.log('🔧 ONE-TIME: Restoring Nikita order via simple endpoint...');
