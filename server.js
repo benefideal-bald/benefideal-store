@@ -529,6 +529,7 @@ app.get('/api/admin/orders', (req, res) => {
         }));
         
         console.log(`✅ Returning ${formattedOrders.length} grouped orders (from ${rows.length} subscriptions)`);
+        console.log('📋 Sample order:', formattedOrders.length > 0 ? JSON.stringify(formattedOrders[0], null, 2) : 'No orders');
         
         res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
     });
