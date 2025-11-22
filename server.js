@@ -903,6 +903,60 @@ app.get('/debug-orders', (req, res) => {
     });
 });
 
+// FORCE INSERT: Directly insert Nikita order into database (no checks)
+app.get('/force-insert-nikita', (req, res) => {
+    console.log('🔧 FORCE INSERT: Inserting Nikita order directly...');
+    
+    const stmt = db.prepare(`
+        INSERT OR REPLACE INTO subscriptions (id, customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
+        VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `);
+    
+    stmt.run([
+        'Никита',
+        'kitchenusefulproducts@gmail.com',
+        'Adobe Creative Cloud',
+        3,
+        12,
+        '2025-11-22T18:16:19.000Z',
+        'ORDER_1763835378659_pmen785dd',
+        29700
+    ], function(err) {
+        if (err) {
+            console.error('❌ Error:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        
+        console.log(`✅ FORCE INSERTED: Subscription ID=${this.lastID}`);
+        
+        // Generate reminders
+        const purchaseDate = new Date('2025-11-22T18:16:19.000Z');
+        try {
+            generateReminders(this.lastID, 3, 12, purchaseDate);
+            console.log(`✅ Reminders generated`);
+        } catch (e) {
+            console.error('⚠️ Reminder error:', e);
+        }
+        
+        // Verify
+        db.get(`SELECT * FROM subscriptions WHERE id = ?`, [this.lastID], (verifyErr, saved) => {
+            if (verifyErr || !saved) {
+                return res.status(500).json({ error: 'Verification failed' });
+            }
+            
+            res.json({
+                success: true,
+                message: 'Заказ принудительно добавлен!',
+                subscription_id: saved.id,
+                order_id: saved.order_id,
+                customer_name: saved.customer_name
+            });
+        });
+        
+        stmt.finalize();
+    });
+});
+
 // ONE-TIME RESTORE: Simple endpoint to restore Nikita order (no password required, one-time use)
 app.get('/restore-nikita-now', (req, res) => {
     console.log('🔧 ONE-TIME: Restoring Nikita order via simple endpoint...');
