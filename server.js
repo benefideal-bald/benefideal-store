@@ -178,9 +178,19 @@ db.serialize(() => {
             subscription_months INTEGER NOT NULL,
             purchase_date DATETIME NOT NULL,
             order_id TEXT,
+            amount REAL,
             is_active INTEGER DEFAULT 1
         )
     `);
+    
+    // Add amount column if it doesn't exist (migration)
+    db.run(`ALTER TABLE subscriptions ADD COLUMN amount REAL`, (err) => {
+        if (err && !err.message.includes('duplicate column')) {
+            console.error('Error adding amount column:', err);
+        } else if (!err) {
+            console.log('✅ Added amount column to subscriptions table');
+        }
+    });
     
     db.run(`
         CREATE TABLE IF NOT EXISTS reminders (
@@ -408,8 +418,53 @@ db.serialize(() => {
 
 // API endpoint to receive subscription purchases
 // КРИТИЧЕСКИ ВАЖНО: Этот endpoint должен ВСЕГДА сохранять заказы в базу данных!
+// Admin API - Get all orders
+app.get('/api/admin/orders', (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const providedPassword = req.query.password || req.headers['x-admin-password'];
+    
+    if (providedPassword !== adminPassword) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    db.all(`
+        SELECT 
+            id,
+            customer_name,
+            customer_email,
+            product_name,
+            product_id,
+            subscription_months,
+            purchase_date,
+            order_id,
+            amount,
+            is_active
+        FROM subscriptions
+        ORDER BY purchase_date DESC
+    `, (err, rows) => {
+        if (err) {
+            console.error('Error fetching orders:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        // Format dates and format amount
+        const formattedOrders = rows.map(order => ({
+            ...order,
+            purchase_date: order.purchase_date,
+            purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
+            purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
+            amount_formatted: order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
+            duration_text: order.subscription_months === 1 ? '1 месяц' : 
+                          order.subscription_months >= 2 && order.subscription_months <= 4 ? `${order.subscription_months} месяца` : 
+                          `${order.subscription_months} месяцев`
+        }));
+        
+        res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
+    });
+});
+
 app.post('/api/subscription', (req, res) => {
-    const { item, name, email, order_id } = req.body;
+    const { item, name, email, order_id, amount } = req.body;
     
     console.log('🔔 /api/subscription endpoint called');
     console.log('   Request body:', JSON.stringify(req.body, null, 2));
@@ -437,13 +492,14 @@ app.post('/api/subscription', (req, res) => {
     const purchaseDate = new Date();
     
     // Insert subscription into database - ВСЕГДА, для ВСЕХ товаров!
+    const itemAmount = amount || (item.price * (item.quantity || 1)) || 0;
     const stmt = db.prepare(`
-        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     console.log('💾 About to INSERT into database...');
-    stmt.run([name, normalizedEmail, item.title, item.id, item.months || 1, purchaseDate.toISOString(), order_id || null], function(err) {
+    stmt.run([name, normalizedEmail, item.title, item.id, item.months || 1, purchaseDate.toISOString(), order_id || null, itemAmount], function(err) {
         if (err) {
             console.error('❌ CRITICAL ERROR inserting subscription:', err);
             console.error('   Error message:', err.message);

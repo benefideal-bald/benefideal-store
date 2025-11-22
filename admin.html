@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель - Заказы</title>
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--space-6);
+            margin-top: 80px;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-4);
+            border-bottom: 2px solid var(--gray-200);
+        }
+        
+        .admin-title {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+        
+        .stat-card {
+            background: var(--white);
+            padding: var(--space-5);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .stat-label {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+        
+        .admin-filters {
+            background: var(--white);
+            padding: var(--space-5);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--space-6);
+            display: flex;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+        
+        .filter-group label {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+        
+        .filter-group input,
+        .filter-group select {
+            padding: var(--space-2) var(--space-3);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+        }
+        
+        .orders-table {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        
+        .table-header {
+            display: grid;
+            grid-template-columns: 60px 1fr 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr;
+            gap: var(--space-4);
+            padding: var(--space-4) var(--space-5);
+            background: var(--gray-50);
+            font-weight: 600;
+            color: var(--gray-700);
+            border-bottom: 2px solid var(--gray-200);
+            font-size: 0.9rem;
+        }
+        
+        .table-row {
+            display: grid;
+            grid-template-columns: 60px 1fr 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr;
+            gap: var(--space-4);
+            padding: var(--space-4) var(--space-5);
+            border-bottom: 1px solid var(--gray-100);
+            align-items: center;
+            transition: background 0.2s;
+        }
+        
+        .table-row:hover {
+            background: var(--gray-50);
+        }
+        
+        .table-cell {
+            font-size: 0.9rem;
+            color: var(--gray-700);
+        }
+        
+        .order-id {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--primary);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background: var(--success);
+            color: white;
+        }
+        
+        .status-inactive {
+            background: var(--gray-300);
+            color: var(--gray-700);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: var(--space-12);
+            color: var(--gray-500);
+        }
+        
+        .error {
+            text-align: center;
+            padding: var(--space-12);
+            color: var(--error);
+        }
+        
+        .refresh-btn {
+            padding: var(--space-2) var(--space-4);
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .password-prompt {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: var(--space-8);
+            background: var(--white);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-xl);
+            text-align: center;
+        }
+        
+        .password-input {
+            width: 100%;
+            padding: var(--space-3);
+            margin: var(--space-4) 0;
+            border: 2px solid var(--gray-300);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+        }
+        
+        .password-btn {
+            width: 100%;
+            padding: var(--space-3);
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        @media (max-width: 968px) {
+            .table-header,
+            .table-row {
+                grid-template-columns: 1fr;
+                gap: var(--space-2);
+            }
+            
+            .table-header {
+                display: none;
+            }
+            
+            .table-cell::before {
+                content: attr(data-label) ": ";
+                font-weight: 600;
+                color: var(--gray-600);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="nav">
+                <a href="index.html" class="logo">Benefideal</a>
+                <nav class="nav-links">
+                    <a href="index.html">Главная</a>
+                    <a href="index.html#subscriptions">Товары</a>
+                    <a href="index.html#about">О нас</a>
+                    <a href="index.html#contact">Контакты</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Password Prompt -->
+    <div id="passwordPrompt" class="password-prompt" style="display: none;">
+        <h2>Вход в админ-панель</h2>
+        <input type="password" id="adminPassword" class="password-input" placeholder="Введите пароль" autocomplete="off">
+        <button class="password-btn" onclick="checkPassword()">Войти</button>
+        <p id="passwordError" style="color: var(--error); margin-top: var(--space-2); display: none;">Неверный пароль</p>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="admin-container" style="display: none;">
+        <div class="admin-header">
+            <h1 class="admin-title">Админ-панель - Заказы</h1>
+            <button class="refresh-btn" onclick="loadOrders()">
+                <i class="fas fa-sync-alt"></i> Обновить
+            </button>
+        </div>
+
+        <div class="admin-stats" id="statsContainer">
+            <!-- Stats will be loaded here -->
+        </div>
+
+        <div class="admin-filters">
+            <div class="filter-group">
+                <label>Поиск по имени/email</label>
+                <input type="text" id="searchInput" placeholder="Имя или email..." oninput="filterOrders()">
+            </div>
+            <div class="filter-group">
+                <label>Товар</label>
+                <select id="productFilter" onchange="filterOrders()">
+                    <option value="">Все товары</option>
+                    <option value="Chat-GPT Plus">Chat-GPT Plus</option>
+                    <option value="Adobe Creative Cloud">Adobe Creative Cloud</option>
+                    <option value="CapCut Pro">CapCut Pro</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Дата от</label>
+                <input type="date" id="dateFrom" onchange="filterOrders()">
+            </div>
+            <div class="filter-group">
+                <label>Дата до</label>
+                <input type="date" id="dateTo" onchange="filterOrders()">
+            </div>
+        </div>
+
+        <div class="orders-table">
+            <div class="table-header">
+                <div>ID</div>
+                <div>Имя</div>
+                <div>Email</div>
+                <div>Товар</div>
+                <div>Срок</div>
+                <div>Сумма</div>
+                <div>Дата</div>
+                <div>Время</div>
+                <div>Статус</div>
+            </div>
+            <div id="ordersContainer">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Загрузка заказов...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allOrders = [];
+        let adminPassword = '';
+
+        // Check if password is in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlPassword = urlParams.get('password');
+        
+        if (urlPassword) {
+            adminPassword = urlPassword;
+            document.getElementById('passwordPrompt').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            loadOrders();
+        } else {
+            document.getElementById('passwordPrompt').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+        }
+
+        function checkPassword() {
+            const input = document.getElementById('adminPassword').value;
+            adminPassword = input;
+            
+            // Try to load orders with this password
+            loadOrders();
+        }
+
+        function loadOrders() {
+            const container = document.getElementById('ordersContainer');
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка заказов...</div>';
+            
+            fetch(`/api/admin/orders?password=${encodeURIComponent(adminPassword)}`)
+                .then(res => {
+                    if (res.status === 401) {
+                        document.getElementById('passwordPrompt').style.display = 'block';
+                        document.getElementById('adminPanel').style.display = 'none';
+                        document.getElementById('passwordError').style.display = 'block';
+                        throw new Error('Unauthorized');
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        allOrders = data.orders;
+                        displayOrders(allOrders);
+                        updateStats(allOrders);
+                        document.getElementById('passwordPrompt').style.display = 'none';
+                        document.getElementById('adminPanel').style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading orders:', err);
+                    container.innerHTML = '<div class="error">Ошибка загрузки заказов. Проверьте пароль.</div>';
+                });
+        }
+
+        function displayOrders(orders) {
+            const container = document.getElementById('ordersContainer');
+            
+            if (orders.length === 0) {
+                container.innerHTML = '<div class="loading">Заказы не найдены</div>';
+                return;
+            }
+            
+            container.innerHTML = orders.map(order => `
+                <div class="table-row">
+                    <div class="table-cell">${order.id}</div>
+                    <div class="table-cell" data-label="Имя">${order.customer_name}</div>
+                    <div class="table-cell" data-label="Email">${order.customer_email}</div>
+                    <div class="table-cell" data-label="Товар">${order.product_name}</div>
+                    <div class="table-cell" data-label="Срок">${order.duration_text}</div>
+                    <div class="table-cell" data-label="Сумма">${order.amount_formatted}</div>
+                    <div class="table-cell" data-label="Дата">${order.purchase_date_formatted}</div>
+                    <div class="table-cell" data-label="Время">${order.purchase_time}</div>
+                    <div class="table-cell" data-label="Статус">
+                        <span class="status-badge ${order.is_active ? 'status-active' : 'status-inactive'}">
+                            ${order.is_active ? 'Активен' : 'Неактивен'}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats(orders) {
+            const total = orders.length;
+            const totalAmount = orders.reduce((sum, o) => sum + (o.amount || 0), 0);
+            const active = orders.filter(o => o.is_active).length;
+            const today = new Date().toISOString().split('T')[0];
+            const todayOrders = orders.filter(o => o.purchase_date && o.purchase_date.startsWith(today)).length;
+            
+            document.getElementById('statsContainer').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${total}</div>
+                    <div class="stat-label">Всего заказов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${totalAmount.toLocaleString('ru-RU')} ₽</div>
+                    <div class="stat-label">Общая сумма</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${active}</div>
+                    <div class="stat-label">Активных</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${todayOrders}</div>
+                    <div class="stat-label">Сегодня</div>
+                </div>
+            `;
+        }
+
+        function filterOrders() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const product = document.getElementById('productFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            
+            let filtered = allOrders.filter(order => {
+                const matchSearch = !search || 
+                    order.customer_name.toLowerCase().includes(search) ||
+                    order.customer_email.toLowerCase().includes(search);
+                
+                const matchProduct = !product || order.product_name === product;
+                
+                const matchDateFrom = !dateFrom || (order.purchase_date && order.purchase_date >= dateFrom);
+                const matchDateTo = !dateTo || (order.purchase_date && order.purchase_date <= dateTo + 'T23:59:59');
+                
+                return matchSearch && matchProduct && matchDateFrom && matchDateTo;
+            });
+            
+            displayOrders(filtered);
+        }
+
+        // Allow Enter key in password input
+        document.getElementById('adminPassword')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+    </script>
+</body>
+</html>
+
