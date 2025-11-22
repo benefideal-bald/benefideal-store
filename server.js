@@ -4277,26 +4277,125 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
             });
         }
         
-        // Send Telegram notification
+        // Send Telegram notification (same format as regular orders)
         const botToken = process.env.TELEGRAM_BOT_TOKEN || '8460494431:AAFOmSEPrzQ1j4_L-4vBG_c38iL2rfx41us';
         const chatId = process.env.TELEGRAM_CHAT_ID || '8334777900';
         
-        let telegramMessage = `🧪 Тестовая оплата (СБП)\n\n`;
-        telegramMessage += `👤 Имя: ${name}\n`;
-        telegramMessage += `📧 Email: ${email}\n`;
-        telegramMessage += `🆔 Order ID: ${order_id}\n`;
-        telegramMessage += `💰 Сумма: ${totalAmount.toLocaleString('ru-RU')} ₽\n\n`;
-        telegramMessage += `📦 Товары:\n`;
-        
-        cartArray.forEach((item, index) => {
-            telegramMessage += `${index + 1}. ${item.title} - ${item.price.toLocaleString('ru-RU')} ₽`;
-            if (item.months) {
-                telegramMessage += ` (${item.months} ${item.months === 1 ? 'месяц' : item.months >= 2 && item.months <= 4 ? 'месяца' : 'месяцев'})`;
+        // Send each item as separate message (same format as payment.html)
+        for (let index = 0; index < cartArray.length; index++) {
+            const item = cartArray[index];
+            const messageNum = index + 1;
+            const totalMessages = cartArray.length;
+            
+            const months = item.months || 1;
+            const monthsText = months === 1 ? '1 месяц' : 
+                              months >= 2 && months <= 4 ? `${months} месяца` : 
+                              `${months} месяцев`;
+            
+            const telegramMessage = `
+🛒 Новый заказ ${messageNum}/${totalMessages}
+
+👤 Имя: ${name}
+📧 Email: ${email}
+📦 Товар: ${item.title}
+🔢 Количество: ${item.quantity || 1}
+⏱ Срок подписки: ${monthsText}
+💰 Сумма: ${item.price.toLocaleString('ru-RU')} ₽
+            `.trim();
+            
+            try {
+                // Send text message
+                await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    chat_id: chatId,
+                    text: telegramMessage,
+                    parse_mode: 'HTML'
+                });
+                
+                // If this is the first item and we have a receipt, send it
+                if (index === 0 && receiptFile) {
+                    const receiptPath = receiptFile.path;
+                    const formData = new FormData();
+                    formData.append('chat_id', chatId);
+                    formData.append('document', fs.createReadStream(receiptPath), {
+                        filename: receiptFile.originalname,
+                        contentType: receiptFile.mimetype
+                    });
+                    
+                    await axios.post(`https://api.telegram.org/bot${botToken}/sendDocument`, formData, {
+                        headers: formData.getHeaders()
+                    });
+                }
+                
+                // Send renewal schedule for ChatGPT, CapCut, and Adobe
+                if (item.id === 1 || item.id === 3 || item.id === 7) {
+                    // Generate renewal schedule message
+                    const purchaseDate = new Date();
+                    const productName = item.id === 1 ? 'Chat-GPT' : (item.id === 3 ? 'Adobe' : (item.id === 7 ? 'CapCut' : item.title));
+                    
+                    let scheduleMessage = `\n\n📅 Расписание продлений ${productName}:\n`;
+                    scheduleMessage += `👤 ${name} (${email})\n\n`;
+                    
+                    if (item.id === 3) {
+                        // Adobe logic
+                        if (item.months === 12) {
+                            for (let i = 1; i <= 4; i++) {
+                                const renewalDate = new Date(purchaseDate);
+                                renewalDate.setMonth(renewalDate.getMonth() + (i * 3));
+                                const dateStr = renewalDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                                const monthsRemaining = 12 - (i * 3);
+                                
+                                if (monthsRemaining > 0) {
+                                    scheduleMessage += `${dateStr} - Продлить подписку (${monthsRemaining} ${monthsRemaining === 1 ? 'месяц' : monthsRemaining >= 2 && monthsRemaining <= 4 ? 'месяца' : 'месяцев'} до окончания)\n`;
+                                } else {
+                                    scheduleMessage += `${dateStr} - 🔴 Подписка заканчивается\n`;
+                                }
+                            }
+                        } else if (item.months === 6) {
+                            const firstRenewal = new Date(purchaseDate);
+                            firstRenewal.setMonth(firstRenewal.getMonth() + 3);
+                            const firstDateStr = firstRenewal.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                            scheduleMessage += `${firstDateStr} - Продлить подписку (3 месяца до окончания)\n`;
+                            
+                            const secondRenewal = new Date(purchaseDate);
+                            secondRenewal.setMonth(secondRenewal.getMonth() + 6);
+                            const secondDateStr = secondRenewal.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                            scheduleMessage += `${secondDateStr} - 🔴 Подписка заканчивается\n`;
+                        } else {
+                            const renewalDate = new Date(purchaseDate);
+                            renewalDate.setMonth(renewalDate.getMonth() + item.months);
+                            const dateStr = renewalDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                            scheduleMessage += `${dateStr} - 🔴 Подписка заканчивается\n`;
+                        }
+                    } else {
+                        // ChatGPT and CapCut: monthly renewals
+                        for (let i = 1; i <= item.months; i++) {
+                            const renewalDate = new Date(purchaseDate);
+                            renewalDate.setMonth(renewalDate.getMonth() + i);
+                            const monthsRemaining = item.months - i;
+                            const dateStr = renewalDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                            
+                            if (monthsRemaining > 0) {
+                                scheduleMessage += `${dateStr} - Продлить подписку ${monthsRemaining} ${monthsRemaining === 1 ? 'месяц' : 'месяцев'} до окончания\n`;
+                            } else {
+                                scheduleMessage += `${dateStr} - 🔴 Подписка заканчивается\n`;
+                            }
+                        }
+                    }
+                    
+                    await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        chat_id: chatId,
+                        text: scheduleMessage
+                    });
+                }
+                
+                // Add delay between messages
+                if (index < cartArray.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            } catch (telegramError) {
+                console.error(`❌ Error sending Telegram message for item ${index + 1}:`, telegramError);
             }
-            telegramMessage += `\n`;
-        });
-        
-        telegramMessage += `\n📎 Чек загружен: ${receiptFile.originalname}`;
+        }
         
         try {
             // Send text message
@@ -4306,20 +4405,7 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
                 parse_mode: 'HTML'
             });
             
-            // Send receipt as document
-            const receiptPath = receiptFile.path;
-            const formData = new FormData();
-            formData.append('chat_id', chatId);
-            formData.append('document', fs.createReadStream(receiptPath), {
-                filename: receiptFile.originalname,
-                contentType: receiptFile.mimetype
-            });
-            
-            await axios.post(`https://api.telegram.org/bot${botToken}/sendDocument`, formData, {
-                headers: formData.getHeaders()
-            });
-            
-            console.log('✅ Telegram notification sent');
+            console.log('✅ Telegram notifications sent');
         } catch (telegramError) {
             console.error('❌ Error sending Telegram notification:', telegramError);
         }
