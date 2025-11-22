@@ -51,7 +51,6 @@
                                    checked
                                    required
                                    style="cursor: pointer; accent-color: var(--primary);" class="payment-radio"
-                                   onchange="toggleReceiptUpload(false)">
                             <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2);">
                                 <i class="fas fa-credit-card" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
                                 <span style="line-height: 1.4;">Оплата картой, СБП, или криптовалютой</span>
@@ -66,38 +65,12 @@
                                    id="paymentTest" 
                                    value="test" 
                                    required
-                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio"
-                                   onchange="toggleReceiptUpload(true)">
+                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
                             <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2);">
                                 <i class="fas fa-mobile-alt" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
                                 <span style="line-height: 1.4;">Тест (перевод по СБП)</span>
                             </span>
                         </label>
-                    </div>
-                    
-                    <!-- Receipt upload (only for test payment) -->
-                    <div id="receiptUploadSection" style="display: none; margin-bottom: var(--space-6);">
-                        <div class="form-group">
-                            <label for="receiptFile" style="display: block; margin-bottom: var(--space-2); font-weight: 600; color: var(--gray-700);">
-                                <i class="fas fa-file-upload" style="margin-right: var(--space-2);"></i>
-                                Загрузить чек об оплате
-                            </label>
-                            <input type="file" 
-                                   id="receiptFile" 
-                                   name="receiptFile" 
-                                   accept="image/*,.pdf"
-                                   style="width: 100%; padding: var(--space-3); border: 2px dashed var(--gray-300); border-radius: var(--radius-md); background: var(--gray-50); cursor: pointer;"
-                                   onchange="handleReceiptUpload(event)">
-                            <div id="receiptPreview" style="margin-top: var(--space-3); display: none;">
-                                <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--gray-50); border-radius: var(--radius-md);">
-                                    <i class="fas fa-file-check" style="color: var(--success);"></i>
-                                    <span id="receiptFileName" style="font-size: 0.9rem; color: var(--gray-700);"></span>
-                                    <button type="button" onclick="removeReceipt()" style="margin-left: auto; background: none; border: none; color: var(--error); cursor: pointer; padding: var(--space-1);">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                     
                     <button type="submit" id="payButton" class="btn btn-primary">Перейти к оплате</button>
