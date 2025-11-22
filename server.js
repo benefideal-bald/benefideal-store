@@ -495,6 +495,72 @@ app.get('/api/admin/orders', (req, res) => {
     });
 });
 
+// Admin API - Search for specific customer order
+app.get('/api/admin/search-order', (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const providedPassword = req.query.password || req.headers['x-admin-password'];
+    
+    if (providedPassword !== adminPassword) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    const searchTerm = req.query.q || req.query.search || '';
+    
+    if (!searchTerm) {
+        return res.status(400).json({ error: 'Search term required' });
+    }
+    
+    console.log(`🔍 Searching for orders with term: "${searchTerm}"`);
+    
+    // Search by name or email (case-insensitive)
+    db.all(`
+        SELECT 
+            id,
+            customer_name,
+            customer_email,
+            product_name,
+            product_id,
+            subscription_months,
+            purchase_date,
+            order_id,
+            amount,
+            is_active
+        FROM subscriptions
+        WHERE LOWER(customer_name) LIKE LOWER(?) 
+           OR LOWER(customer_email) LIKE LOWER(?)
+           OR order_id LIKE ?
+        ORDER BY purchase_date DESC
+    `, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`], (err, rows) => {
+        if (err) {
+            console.error('❌ Error searching orders:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        console.log(`📊 Found ${rows ? rows.length : 0} matching orders`);
+        
+        const formattedOrders = rows.map(order => ({
+            id: order.id,
+            order_id: order.order_id,
+            customer_name: order.customer_name,
+            customer_email: order.customer_email,
+            product_name: order.product_name,
+            product_id: order.product_id,
+            subscription_months: order.subscription_months,
+            purchase_date: order.purchase_date,
+            purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
+            purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
+            amount: order.amount,
+            amount_formatted: order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
+            duration_text: order.subscription_months === 1 ? '1 месяц' : 
+                          order.subscription_months >= 2 && order.subscription_months <= 4 ? `${order.subscription_months} месяца` : 
+                          `${order.subscription_months} месяцев`,
+            is_active: order.is_active
+        }));
+        
+        res.json({ success: true, orders: formattedOrders, total: formattedOrders.length, search_term: searchTerm });
+    });
+});
+
 // Admin API - Get renewals/reminders
 app.get('/api/admin/renewals', (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
