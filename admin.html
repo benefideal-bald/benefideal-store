@@ -542,23 +542,27 @@
                 return;
             }
             
-            container.innerHTML = orders.map(order => `
-                <div class="table-row" onclick="openRenewalsModal(${order.id})">
-                    <div class="table-cell">${order.id}</div>
-                    <div class="table-cell" data-label="Имя">${order.customer_name}</div>
-                    <div class="table-cell" data-label="Email">${order.customer_email}</div>
-                    <div class="table-cell" data-label="Товар">${order.product_name}</div>
-                    <div class="table-cell" data-label="Срок">${order.duration_text}</div>
-                    <div class="table-cell" data-label="Сумма">${order.amount_formatted}</div>
-                    <div class="table-cell" data-label="Дата">${order.purchase_date_formatted}</div>
-                    <div class="table-cell" data-label="Время">${order.purchase_time}</div>
+            container.innerHTML = orders.map(order => {
+                // Use first subscription_id for renewals modal if available
+                const subscriptionId = order.subscription_ids ? order.subscription_ids.split(',')[0] : order.id;
+                return `
+                <div class="table-row" onclick="openRenewalsModal(${subscriptionId})">
+                    <div class="table-cell">${order.order_id || order.id}</div>
+                    <div class="table-cell" data-label="Имя">${order.customer_name || ''}</div>
+                    <div class="table-cell" data-label="Email">${order.customer_email || ''}</div>
+                    <div class="table-cell" data-label="Товар">${order.product_name || ''}</div>
+                    <div class="table-cell" data-label="Срок">${order.duration_text || (order.items_count ? `${order.items_count} товаров` : '')}</div>
+                    <div class="table-cell" data-label="Сумма">${order.amount_formatted || '0 ₽'}</div>
+                    <div class="table-cell" data-label="Дата">${order.purchase_date_formatted || ''}</div>
+                    <div class="table-cell" data-label="Время">${order.purchase_time || ''}</div>
                     <div class="table-cell" data-label="Статус">
                         <span class="status-badge ${order.is_active ? 'status-active' : 'status-inactive'}">
                             ${order.is_active ? 'Активен' : 'Неактивен'}
                         </span>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function updateStats(orders) {
