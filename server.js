@@ -1042,8 +1042,8 @@ app.post('/api/subscription', (req, res) => {
     // Insert subscription into database - ВСЕГДА, для ВСЕХ товаров!
     const itemAmount = amount || (item.price * (item.quantity || 1)) || 0;
     const stmt = db.prepare(`
-        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
     `);
     
     console.log('💾 About to INSERT into database...');
@@ -3476,10 +3476,32 @@ app.post('/api/cardlink/callback', (req, res) => {
         // Платеж успешен - обрабатываем заказ
         console.log('✅ Payment successful:', { orderId, amount, transactionId });
         
-        // Здесь можно обновить статус заказа в базе данных
-        // Или отправить данные в Telegram
-        
-        res.status(200).json({ success: true, message: 'Callback processed' });
+        // КРИТИЧЕСКИ ВАЖНО: Проверяем, сохранен ли заказ в базу данных
+        db.all(`SELECT * FROM subscriptions WHERE order_id = ?`, [orderId], (err, existingOrders) => {
+            if (err) {
+                console.error('❌ Error checking existing orders:', err);
+                // Продолжаем - возможно заказ еще не сохранен
+            } else if (existingOrders && existingOrders.length > 0) {
+                console.log(`✅ Order ${orderId} already exists in database (${existingOrders.length} subscription(s))`);
+                console.log(`   Subscription IDs: ${existingOrders.map(o => o.id).join(', ')}`);
+                return res.status(200).json({ 
+                    success: true, 
+                    message: 'Callback processed - order already in database',
+                    subscriptions_count: existingOrders.length
+                });
+            }
+            
+            // Заказ не найден - это нормально, если он еще не был сохранен через payment-success.html
+            // Но логируем предупреждение
+            console.warn(`⚠️ Order ${orderId} not found in database yet. It should be saved via /api/subscription from payment-success.html`);
+            console.warn(`   If order is not saved within 5 minutes, check payment-success.html logic!`);
+            
+            res.status(200).json({ 
+                success: true, 
+                message: 'Callback processed - order will be saved via payment-success.html',
+                note: 'Order not in database yet - this is normal if payment-success.html has not run yet'
+            });
+        });
     } else {
         console.log('❌ Payment failed:', { orderId, status });
         res.status(200).json({ success: false, message: 'Payment failed' });
@@ -4449,35 +4471,80 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
         const purchaseDate = new Date();
         const normalizedEmail = email.toLowerCase().trim();
         
+        // КРИТИЧЕСКИ ВАЖНО: Сохраняем все заказы синхронно и проверяем результат
+        const savePromises = [];
+        const savedSubscriptionIds = [];
+        
         for (const item of cartArray) {
             const itemAmount = item.price * (item.quantity || 1);
-            const stmt = db.prepare(`
-                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-            `);
             
-            stmt.run([
-                name,
-                normalizedEmail,
-                item.title,
-                item.id,
-                item.months || 1,
-                purchaseDate.toISOString(),
-                order_id,
-                itemAmount
-            ], function(err) {
-                if (err) {
-                    console.error('❌ Error saving subscription:', err);
-                } else {
-                    const subscriptionId = this.lastID;
-                    console.log(`✅ Subscription saved: ID=${subscriptionId}`);
-                    
-                    // Generate reminders
-                    if (item.id === 1 || item.id === 3 || item.id === 7) {
-                        generateReminders(subscriptionId, item.id, item.months || 1, purchaseDate);
+            const savePromise = new Promise((resolve, reject) => {
+                const stmt = db.prepare(`
+                    INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                `);
+                
+                stmt.run([
+                    name,
+                    normalizedEmail,
+                    item.title,
+                    item.id,
+                    item.months || 1,
+                    purchaseDate.toISOString(),
+                    order_id,
+                    itemAmount
+                ], function(err) {
+                    if (err) {
+                        console.error('❌ Error saving subscription:', err);
+                        console.error('   Item:', item.title);
+                        console.error('   Order ID:', order_id);
+                        stmt.finalize();
+                        reject(err);
+                    } else {
+                        const subscriptionId = this.lastID;
+                        console.log(`✅ Subscription saved: ID=${subscriptionId}, Order: ${order_id}, Item: ${item.title}`);
+                        
+                        // ВАЖНО: Проверяем, что заказ действительно сохранился
+                        db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (verifyErr, savedOrder) => {
+                            if (verifyErr) {
+                                console.error('❌ Error verifying subscription:', verifyErr);
+                                stmt.finalize();
+                                reject(verifyErr);
+                            } else if (!savedOrder) {
+                                console.error('❌ CRITICAL: Subscription was not saved! ID:', subscriptionId);
+                                stmt.finalize();
+                                reject(new Error('Subscription verification failed'));
+                            } else {
+                                console.log(`✅ VERIFIED: Subscription ${subscriptionId} exists in database`);
+                                savedSubscriptionIds.push(subscriptionId);
+                                
+                                // Generate reminders
+                                if (item.id === 1 || item.id === 3 || item.id === 7) {
+                                    generateReminders(subscriptionId, item.id, item.months || 1, purchaseDate);
+                                }
+                                
+                                stmt.finalize();
+                                resolve(subscriptionId);
+                            }
+                        });
                     }
-                }
-                stmt.finalize();
+                });
+            });
+            
+            savePromises.push(savePromise);
+        }
+        
+        // Ждем сохранения ВСЕХ заказов перед отправкой ответа
+        try {
+            await Promise.all(savePromises);
+            console.log(`✅ ALL ${cartArray.length} subscriptions saved successfully! IDs: ${savedSubscriptionIds.join(', ')}`);
+        } catch (saveError) {
+            console.error('❌ CRITICAL ERROR: Failed to save subscriptions:', saveError);
+            return res.status(500).json({
+                success: false,
+                error: 'Ошибка сохранения заказа в базу данных',
+                details: saveError.message,
+                note: 'Заказ НЕ был сохранен! Проверьте логи сервера.'
             });
         }
         
@@ -4612,12 +4679,41 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
             console.log('✅ Telegram notifications sent');
         } catch (telegramError) {
             console.error('❌ Error sending Telegram notification:', telegramError);
+            // НЕ прерываем выполнение - заказ уже сохранен
         }
         
-        res.json({
-            success: true,
-            message: 'Test payment processed successfully',
-            order_id: order_id
+        // КРИТИЧЕСКИ ВАЖНО: Финальная проверка перед отправкой ответа
+        db.all(`SELECT * FROM subscriptions WHERE order_id = ?`, [order_id], (finalVerifyErr, finalOrders) => {
+            if (finalVerifyErr) {
+                console.error('❌ CRITICAL: Error in final verification:', finalVerifyErr);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Ошибка проверки сохраненных заказов',
+                    details: finalVerifyErr.message,
+                    note: 'Проверьте логи сервера'
+                });
+            }
+            
+            if (!finalOrders || finalOrders.length === 0) {
+                console.error('❌ CRITICAL: No orders found in database after save! Order ID:', order_id);
+                console.error('   This should NEVER happen if code above worked correctly!');
+                return res.status(500).json({
+                    success: false,
+                    error: 'Заказы не были сохранены в базу данных',
+                    note: 'КРИТИЧЕСКАЯ ОШИБКА: Заказы не найдены после сохранения. Проверьте логи сервера.'
+                });
+            }
+            
+            console.log(`✅ FINAL VERIFICATION: ${finalOrders.length} order(s) confirmed in database for Order ID: ${order_id}`);
+            console.log(`   Subscription IDs: ${finalOrders.map(o => o.id).join(', ')}`);
+            
+            res.json({
+                success: true,
+                message: 'Test payment processed successfully',
+                order_id: order_id,
+                subscriptions_saved: finalOrders.length,
+                subscription_ids: finalOrders.map(o => o.id)
+            });
         });
     } catch (error) {
         console.error('❌ Error processing test payment:', error);
