@@ -439,19 +439,20 @@ app.get('/api/admin/orders', (req, res) => {
     
     console.log('✅ Admin access granted');
     
+    // Group by order_id to show unique orders
     db.all(`
         SELECT 
-            id,
+            order_id,
             customer_name,
             customer_email,
-            product_name,
-            product_id,
-            subscription_months,
-            purchase_date,
-            order_id,
-            amount,
-            is_active
+            MIN(purchase_date) as purchase_date,
+            SUM(amount) as total_amount,
+            COUNT(*) as items_count,
+            GROUP_CONCAT(product_name, '; ') as products,
+            GROUP_CONCAT(id) as subscription_ids
         FROM subscriptions
+        WHERE order_id IS NOT NULL
+        GROUP BY order_id
         ORDER BY purchase_date DESC
     `, (err, rows) => {
         if (err) {
@@ -461,14 +462,17 @@ app.get('/api/admin/orders', (req, res) => {
         
         // Format dates and format amount
         const formattedOrders = rows.map(order => ({
-            ...order,
+            order_id: order.order_id,
+            customer_name: order.customer_name,
+            customer_email: order.customer_email,
+            products: order.products,
+            items_count: order.items_count,
             purchase_date: order.purchase_date,
             purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
             purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
-            amount_formatted: order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
-            duration_text: order.subscription_months === 1 ? '1 месяц' : 
-                          order.subscription_months >= 2 && order.subscription_months <= 4 ? `${order.subscription_months} месяца` : 
-                          `${order.subscription_months} месяцев`
+            amount: order.total_amount,
+            amount_formatted: order.total_amount ? order.total_amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
+            is_active: 1 // Assume active if order exists
         }));
         
         res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });

@@ -100,7 +100,7 @@
         
         .table-header {
             display: grid;
-            grid-template-columns: 60px 1fr 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr;
+            grid-template-columns: 1.5fr 1fr 1.5fr 2fr 80px 1fr 1fr 1fr 120px;
             gap: var(--space-4);
             padding: var(--space-4) var(--space-5);
             background: var(--gray-50);
@@ -112,7 +112,7 @@
         
         .table-row {
             display: grid;
-            grid-template-columns: 60px 1fr 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr;
+            grid-template-columns: 1.5fr 1fr 1.5fr 2fr 80px 1fr 1fr 1fr 120px;
             gap: var(--space-4);
             padding: var(--space-4) var(--space-5);
             border-bottom: 1px solid var(--gray-100);
@@ -422,15 +422,15 @@
 
         <div class="orders-table">
             <div class="table-header">
-                <div>ID</div>
+                <div>Order ID</div>
                 <div>Имя</div>
                 <div>Email</div>
-                <div>Товар</div>
-                <div>Срок</div>
+                <div>Товары</div>
+                <div>Кол-во</div>
                 <div>Сумма</div>
                 <div>Дата</div>
                 <div>Время</div>
-                <div>Статус</div>
+                <div>Действия</div>
             </div>
             <div id="ordersContainer">
                 <div class="loading">
@@ -521,23 +521,26 @@
                 return;
             }
             
-            container.innerHTML = orders.map(order => `
-                <div class="table-row" onclick="openRenewalsModal(${order.id})">
-                    <div class="table-cell">${order.id}</div>
+            container.innerHTML = orders.map(order => {
+                // Get first subscription ID from the comma-separated list
+                const firstSubscriptionId = order.subscription_ids ? order.subscription_ids.split(',')[0] : null;
+                
+                return `
+                <div class="table-row" ${firstSubscriptionId ? `onclick="openRenewalsModal(${firstSubscriptionId})"` : ''}>
+                    <div class="table-cell order-id" data-label="Order ID">${order.order_id || 'N/A'}</div>
                     <div class="table-cell" data-label="Имя">${order.customer_name}</div>
                     <div class="table-cell" data-label="Email">${order.customer_email}</div>
-                    <div class="table-cell" data-label="Товар">${order.product_name}</div>
-                    <div class="table-cell" data-label="Срок">${order.duration_text}</div>
+                    <div class="table-cell" data-label="Товары">${order.products || 'N/A'}</div>
+                    <div class="table-cell" data-label="Кол-во">${order.items_count || 1}</div>
                     <div class="table-cell" data-label="Сумма">${order.amount_formatted}</div>
                     <div class="table-cell" data-label="Дата">${order.purchase_date_formatted}</div>
                     <div class="table-cell" data-label="Время">${order.purchase_time}</div>
-                    <div class="table-cell" data-label="Статус">
-                        <span class="status-badge ${order.is_active ? 'status-active' : 'status-inactive'}">
-                            ${order.is_active ? 'Активен' : 'Неактивен'}
-                        </span>
+                    <div class="table-cell" data-label="Действия">
+                        ${firstSubscriptionId ? '<span style="color: var(--primary); cursor: pointer;">Продления</span>' : '-'}
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function updateStats(orders) {
