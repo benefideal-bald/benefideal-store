@@ -423,9 +423,18 @@ app.get('/api/admin/orders', (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
     const providedPassword = req.query.password || req.headers['x-admin-password'];
     
+    // Debug logging (remove in production if needed)
+    console.log('🔐 Admin panel access attempt:');
+    console.log('   Expected password (from env):', adminPassword ? '***' : 'NOT SET');
+    console.log('   Provided password:', providedPassword ? '***' : 'NOT PROVIDED');
+    console.log('   ADMIN_PASSWORD env var exists:', !!process.env.ADMIN_PASSWORD);
+    
     if (providedPassword !== adminPassword) {
+        console.log('❌ Admin access denied: password mismatch');
         return res.status(401).json({ error: 'Unauthorized' });
     }
+    
+    console.log('✅ Admin access granted');
     
     db.all(`
         SELECT 
