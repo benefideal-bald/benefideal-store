@@ -333,7 +333,14 @@
                     // Получаем загруженный чек
                     const receiptFile = document.getElementById('receiptFile').files[0];
                     if (!receiptFile) {
-                        alert('Пожалуйста, загрузите чек об оплате');
+                        const fileInput = document.getElementById('receiptFile');
+                        fileInput.focus();
+                        fileInput.style.borderColor = 'var(--error)';
+                        fileInput.style.borderWidth = '2px';
+                        setTimeout(() => {
+                            fileInput.style.borderColor = '';
+                            fileInput.style.borderWidth = '';
+                        }, 3000);
                         return;
                     }
                     
