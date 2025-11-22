@@ -465,8 +465,17 @@
         const urlParams = new URLSearchParams(window.location.search);
         const urlPassword = urlParams.get('password');
         
+        // Check localStorage for saved password
+        const savedPassword = localStorage.getItem('admin_password');
+        
         if (urlPassword) {
             adminPassword = urlPassword;
+            localStorage.setItem('admin_password', urlPassword); // Save to localStorage
+            document.getElementById('passwordPrompt').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            loadOrders();
+        } else if (savedPassword) {
+            adminPassword = savedPassword;
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             loadOrders();
@@ -477,8 +486,14 @@
 
         function checkPassword() {
             const input = document.getElementById('adminPassword').value;
-            adminPassword = input;
-            localStorage.setItem('admin_password', input);
+            if (!input || input.trim() === '') {
+                document.getElementById('passwordError').textContent = 'Введите пароль';
+                document.getElementById('passwordError').style.display = 'block';
+                return;
+            }
+            
+            adminPassword = input.trim();
+            localStorage.setItem('admin_password', adminPassword);
             
             // Try to load orders with this password
             loadOrders();
