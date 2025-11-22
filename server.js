@@ -517,11 +517,14 @@ app.get('/api/admin/renewals', (req, res) => {
             // For Adobe (product_id === 3), the logic is different
             if (row.product_id === 3) {
                 // Adobe: fixed subscription periods
-                // 1, 3, 6 months -> one expiry reminder (0 months remaining)
-                // 12 months -> renewal_6months (6 months remaining) or expiry (0 months)
-                if (row.reminder_type === 'renewal_6months') {
-                    // For 12-month subscription, first reminder is at 6 months, meaning 6 months left
-                    remainingMonths = 6;
+                // 1, 3 months -> expiry (0 months remaining)
+                // 6 months -> renewal_3months (3 months remaining) or expiry (0 months)
+                // 12 months -> renewal_9months, renewal_6months, renewal_3months, or expiry
+                if (row.reminder_type && row.reminder_type.startsWith('renewal_')) {
+                    const match = row.reminder_type.match(/renewal_(\d+)months/);
+                    if (match) {
+                        remainingMonths = parseInt(match[1]);
+                    }
                 } else if (row.reminder_type === 'expiry') {
                     remainingMonths = 0;
                 } else {
@@ -3787,19 +3790,36 @@ function generateReminders(subscriptionId, productId, months, purchaseDate) {
     
     if (productId === 3) {
         // Adobe: fixed subscription periods
+        // 1 month -> 1 purchase (expiry)
+        // 3 months -> 1 purchase (expiry)
+        // 6 months -> 2 purchases of 3 months each
+        // 12 months -> 4 purchases of 3 months each
+        
         if (months === 12) {
-            // Year subscription: two 6-month purchases
+            // Year subscription: 4 purchases of 3 months each
+            for (let i = 1; i <= 4; i++) {
+                const renewalDate = new Date(purchaseDate);
+                renewalDate.setMonth(renewalDate.getMonth() + (i * 3));
+                renewalDate.setHours(reminderHour, reminderMinute, 0, 0);
+                
+                const monthsRemaining = 12 - (i * 3);
+                const reminderType = monthsRemaining > 0 ? `renewal_${monthsRemaining}months` : 'expiry';
+                
+                insertReminder(subscriptionId, renewalDate, reminderType);
+            }
+        } else if (months === 6) {
+            // 6 months: 2 purchases of 3 months each
             const firstRenewal = new Date(purchaseDate);
-            firstRenewal.setMonth(firstRenewal.getMonth() + 6);
+            firstRenewal.setMonth(firstRenewal.getMonth() + 3);
             firstRenewal.setHours(reminderHour, reminderMinute, 0, 0);
-            insertReminder(subscriptionId, firstRenewal, 'renewal_6months');
+            insertReminder(subscriptionId, firstRenewal, 'renewal_3months');
             
             const secondRenewal = new Date(purchaseDate);
-            secondRenewal.setMonth(secondRenewal.getMonth() + 12);
+            secondRenewal.setMonth(secondRenewal.getMonth() + 6);
             secondRenewal.setHours(reminderHour, reminderMinute, 0, 0);
             insertReminder(subscriptionId, secondRenewal, 'expiry');
         } else {
-            // 1, 3, or 6 months: one purchase
+            // 1 or 3 months: one purchase
             const expiry = new Date(purchaseDate);
             expiry.setMonth(expiry.getMonth() + months);
             expiry.setHours(reminderHour, reminderMinute, 0, 0);
