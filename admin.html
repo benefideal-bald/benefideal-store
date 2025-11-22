@@ -578,8 +578,25 @@
                         
                         if (allOrders.length > 0) {
                             updateDebugInfo(`✅ Первый заказ: ${allOrders[0].customer_name} (${allOrders[0].order_id})`);
-                            sortOrdersList(allOrders);
+                            updateDebugInfo(`📋 Отображаю заказы...`);
+                            
+                            // Update stats first
                             updateStats(allOrders);
+                            
+                            // Then sort and display
+                            sortOrdersList(allOrders);
+                            
+                            updateDebugInfo(`✅ Заказы должны быть отображены!`);
+                            
+                            // Double-check: force display if container is empty
+                            setTimeout(() => {
+                                const ordersContainer = document.getElementById('ordersContainer');
+                                if (ordersContainer && (ordersContainer.innerHTML.includes('не найдены') || ordersContainer.innerHTML.includes('Загрузка'))) {
+                                    updateDebugInfo('⚠️ Контейнер пуст, принудительно отображаю заказы...');
+                                    displayOrders(allOrders);
+                                }
+                            }, 500);
+                            
                             // Hide debug after success
                             setTimeout(() => {
                                 const debugEl = document.getElementById('debugInfo');
@@ -606,32 +623,50 @@
         function displayOrders(orders) {
             const container = document.getElementById('ordersContainer');
             
-            if (orders.length === 0) {
-                container.innerHTML = '<div class="loading">Заказы не найдены</div>';
+            if (!container) {
+                console.error('❌ Container not found!');
+                updateDebugInfo('❌ ОШИБКА: Контейнер ordersContainer не найден!');
                 return;
             }
             
-            container.innerHTML = orders.map(order => {
-                // Use first subscription_id for renewals modal if available
-                const subscriptionId = order.subscription_ids ? order.subscription_ids.split(',')[0] : order.id;
-                return `
-                <div class="table-row" onclick="openRenewalsModal(${subscriptionId})">
-                    <div class="table-cell">${order.order_id || order.id}</div>
-                    <div class="table-cell" data-label="Имя">${order.customer_name || ''}</div>
-                    <div class="table-cell" data-label="Email">${order.customer_email || ''}</div>
-                    <div class="table-cell" data-label="Товар">${order.product_name || ''}</div>
-                    <div class="table-cell" data-label="Срок">${order.duration_text || (order.items_count ? `${order.items_count} товаров` : '')}</div>
-                    <div class="table-cell" data-label="Сумма">${order.amount_formatted || '0 ₽'}</div>
-                    <div class="table-cell" data-label="Дата">${order.purchase_date_formatted || ''}</div>
-                    <div class="table-cell" data-label="Время">${order.purchase_time || ''}</div>
-                    <div class="table-cell" data-label="Статус">
-                        <span class="status-badge ${order.is_active ? 'status-active' : 'status-inactive'}">
-                            ${order.is_active ? 'Активен' : 'Неактивен'}
-                        </span>
+            if (orders.length === 0) {
+                container.innerHTML = '<div class="loading">Заказы не найдены</div>';
+                updateDebugInfo('⚠️ displayOrders вызван с пустым массивом');
+                return;
+            }
+            
+            updateDebugInfo(`📋 displayOrders вызван с ${orders.length} заказами`);
+            
+            try {
+                const html = orders.map(order => {
+                    // Use first subscription_id for renewals modal if available
+                    const subscriptionId = order.subscription_ids ? order.subscription_ids.split(',')[0] : order.id;
+                    return `
+                    <div class="table-row" onclick="openRenewalsModal(${subscriptionId})">
+                        <div class="table-cell">${order.order_id || order.id || 'N/A'}</div>
+                        <div class="table-cell" data-label="Имя">${order.customer_name || ''}</div>
+                        <div class="table-cell" data-label="Email">${order.customer_email || ''}</div>
+                        <div class="table-cell" data-label="Товар">${order.product_name || ''}</div>
+                        <div class="table-cell" data-label="Кол-во">${order.items_count || 1}</div>
+                        <div class="table-cell" data-label="Сумма">${order.amount_formatted || (order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽')}</div>
+                        <div class="table-cell" data-label="Дата">${order.purchase_date_formatted || ''}</div>
+                        <div class="table-cell" data-label="Время">${order.purchase_time || ''}</div>
+                        <div class="table-cell" data-label="Статус">
+                            <span class="status-badge ${order.is_active ? 'status-active' : 'status-inactive'}">
+                                ${order.is_active ? 'Активен' : 'Неактивен'}
+                            </span>
+                        </div>
                     </div>
-                </div>
-            `;
-            }).join('');
+                `;
+                }).join('');
+                
+                container.innerHTML = html;
+                updateDebugInfo(`✅ HTML сгенерирован и вставлен в контейнер (${html.length} символов)`);
+            } catch (error) {
+                console.error('Error in displayOrders:', error);
+                updateDebugInfo(`❌ ОШИБКА в displayOrders: ${error.message}`);
+                container.innerHTML = '<div class="error">Ошибка отображения заказов: ' + error.message + '</div>';
+            }
         }
 
         function updateStats(orders) {
