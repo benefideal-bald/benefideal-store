@@ -605,31 +605,31 @@
                         updateDebugInfo(`📦 Загружено заказов: ${allOrders.length}`);
                         
                         if (allOrders.length > 0) {
-                            updateDebugInfo(`✅ Первый заказ: ${allOrders[0].customer_name} (${allOrders[0].order_id})`);
-                            updateDebugInfo(`📋 Отображаю заказы...`);
+                            updateDebugInfo(`✅ Первый заказ найден: ${allOrders[0].customer_name} (${allOrders[0].order_id})`);
                             
-                            // Update stats first
+                            // CRITICAL: Display orders DIRECTLY first
+                            displayOrders(allOrders);
+                            updateDebugInfo('✅ displayOrders вызван напрямую');
+                            
+                            // Update stats
                             updateStats(allOrders);
+                            updateDebugInfo('✅ Статистика обновлена');
                             
-                            // Then sort and display
+                            // Also call sortOrdersList (it calls displayOrders again)
                             sortOrdersList(allOrders);
+                            updateDebugInfo('✅ sortOrdersList вызван');
                             
-                            updateDebugInfo(`✅ Заказы должны быть отображены!`);
-                            
-                            // Double-check: force display if container is empty
+                            // Triple-check after delay
                             setTimeout(() => {
-                                const ordersContainer = document.getElementById('ordersContainer');
-                                if (ordersContainer && (ordersContainer.innerHTML.includes('не найдены') || ordersContainer.innerHTML.includes('Загрузка'))) {
-                                    updateDebugInfo('⚠️ Контейнер пуст, принудительно отображаю заказы...');
-                                    displayOrders(allOrders);
+                                const container = document.getElementById('ordersContainer');
+                                if (container) {
+                                    const html = container.innerHTML;
+                                    if (!html || html.includes('не найдены') || html.includes('Загрузка')) {
+                                        updateDebugInfo('⚠️ Контейнер пуст! Принудительно отображаю...');
+                                        displayOrders(allOrders);
+                                    }
                                 }
-                            }, 500);
-                            
-                            // Hide debug after success
-                            setTimeout(() => {
-                                const debugEl = document.getElementById('debugInfo');
-                                if (debugEl) debugEl.style.display = 'none';
-                            }, 5000);
+                            }, 1000);
                         } else {
                             updateDebugInfo('⚠️ В ответе нет заказов (пустой массив)');
                             displayOrders([]);
