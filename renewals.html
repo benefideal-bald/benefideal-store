@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Продления подписок - Админ-панель</title>
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--space-6);
+            margin-top: 80px;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-4);
+            border-bottom: 2px solid var(--gray-200);
+        }
+        
+        .admin-title {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .back-btn {
+            padding: var(--space-2) var(--space-4);
+            background: var(--gray-200);
+            color: var(--gray-700);
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .refresh-btn {
+            padding: var(--space-2) var(--space-4);
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .today-section {
+            background: var(--white);
+            padding: var(--space-6);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--space-6);
+        }
+        
+        .today-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: var(--space-4);
+            color: var(--primary);
+        }
+        
+        .today-count {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: 0.9rem;
+            margin-left: var(--space-2);
+        }
+        
+        .renewals-list {
+            display: grid;
+            gap: var(--space-3);
+        }
+        
+        .renewal-item {
+            background: var(--gray-50);
+            padding: var(--space-4);
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--primary);
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr;
+            gap: var(--space-4);
+            align-items: center;
+        }
+        
+        .renewal-time {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .renewal-customer {
+            font-weight: 500;
+        }
+        
+        .renewal-email {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+        
+        .renewal-product {
+            font-weight: 500;
+        }
+        
+        .renewal-amount {
+            font-weight: 600;
+            color: var(--success);
+        }
+        
+        .calendar-section {
+            background: var(--white);
+            padding: var(--space-6);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .calendar-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: var(--space-4);
+        }
+        
+        .calendar-grid {
+            display: grid;
+            gap: var(--space-4);
+        }
+        
+        .calendar-day {
+            background: var(--gray-50);
+            padding: var(--space-4);
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--primary);
+        }
+        
+        .calendar-day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-3);
+        }
+        
+        .calendar-day-date {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .calendar-day-count {
+            background: var(--primary);
+            color: white;
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+        }
+        
+        .calendar-day-renewals {
+            display: grid;
+            gap: var(--space-2);
+        }
+        
+        .calendar-renewal-item {
+            background: var(--white);
+            padding: var(--space-3);
+            border-radius: var(--radius-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: var(--space-12);
+            color: var(--gray-500);
+        }
+        
+        .error {
+            text-align: center;
+            padding: var(--space-12);
+            color: var(--error);
+        }
+        
+        .empty {
+            text-align: center;
+            padding: var(--space-8);
+            color: var(--gray-500);
+        }
+        
+        @media (max-width: 968px) {
+            .renewal-item {
+                grid-template-columns: 1fr;
+                gap: var(--space-2);
+            }
+            
+            .renewal-item > div::before {
+                content: attr(data-label) ": ";
+                font-weight: 600;
+                color: var(--gray-600);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="nav">
+                <a href="index.html" class="logo">Benefideal</a>
+                <nav class="nav-links">
+                    <a href="index.html">Главная</a>
+                    <a href="index.html#subscriptions">Товары</a>
+                    <a href="index.html#about">О нас</a>
+                    <a href="index.html#contact">Контакты</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Admin Panel -->
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1 class="admin-title">Календарь продлений</h1>
+            <div style="display: flex; gap: var(--space-3);">
+                <a href="admin.html?password=2728276" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Назад к заказам
+                </a>
+                <button class="refresh-btn" onclick="loadRenewals()">
+                    <i class="fas fa-sync-alt"></i> Обновить
+                </button>
+            </div>
+        </div>
+
+        <!-- Today's Renewals -->
+        <div class="today-section">
+            <h2 class="today-title">
+                Продления на сегодня
+                <span class="today-count" id="todayCount">0</span>
+            </h2>
+            <div id="todayRenewals" class="renewals-list">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Загрузка...
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="calendar-section">
+            <h2 class="calendar-title">Календарь продлений (30 дней)</h2>
+            <div id="calendarContainer" class="calendar-grid">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Загрузка календаря...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let adminPassword = '';
+
+        // Get password from URL or localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlPassword = urlParams.get('password');
+        const savedPassword = localStorage.getItem('admin_password');
+        
+        if (urlPassword) {
+            adminPassword = urlPassword;
+            localStorage.setItem('admin_password', urlPassword);
+        } else if (savedPassword) {
+            adminPassword = savedPassword;
+        } else {
+            // Try to get from prompt
+            adminPassword = prompt('Введите пароль админ-панели:') || '';
+            if (adminPassword) {
+                localStorage.setItem('admin_password', adminPassword);
+            }
+        }
+
+        function loadRenewals() {
+            loadTodayRenewals();
+            loadCalendar();
+        }
+
+        function loadTodayRenewals() {
+            const container = document.getElementById('todayRenewals');
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
+            
+            const today = new Date().toISOString().split('T')[0];
+            
+            fetch(`/api/admin/renewals?password=${encodeURIComponent(adminPassword)}&date=${today}`)
+                .then(res => {
+                    if (res.status === 401) {
+                        container.innerHTML = '<div class="error">Неверный пароль. Обновите страницу и введите пароль снова.</div>';
+                        throw new Error('Unauthorized');
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('todayCount').textContent = data.total;
+                        displayTodayRenewals(data.renewals);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading today renewals:', err);
+                    if (!err.message.includes('Unauthorized')) {
+                        container.innerHTML = '<div class="error">Ошибка загрузки продлений</div>';
+                    }
+                });
+        }
+
+        function displayTodayRenewals(renewals) {
+            const container = document.getElementById('todayRenewals');
+            
+            if (renewals.length === 0) {
+                container.innerHTML = '<div class="empty">На сегодня продлений нет</div>';
+                return;
+            }
+            
+            container.innerHTML = renewals.map(renewal => `
+                <div class="renewal-item">
+                    <div class="renewal-time" data-label="Время">${renewal.reminder_time}</div>
+                    <div data-label="Клиент">
+                        <div class="renewal-customer">${renewal.customer_name}</div>
+                        <div class="renewal-email">${renewal.customer_email}</div>
+                    </div>
+                    <div class="renewal-product" data-label="Товар">${renewal.product_name}</div>
+                    <div data-label="Срок">${renewal.subscription_months} мес.</div>
+                    <div class="renewal-amount" data-label="Сумма">${renewal.amount_formatted}</div>
+                </div>
+            `).join('');
+        }
+
+        function loadCalendar() {
+            const container = document.getElementById('calendarContainer');
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка календаря...</div>';
+            
+            fetch(`/api/admin/renewals-calendar?password=${encodeURIComponent(adminPassword)}&days=30`)
+                .then(res => {
+                    if (res.status === 401) {
+                        container.innerHTML = '<div class="error">Неверный пароль</div>';
+                        throw new Error('Unauthorized');
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        displayCalendar(data.calendar);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading calendar:', err);
+                    if (!err.message.includes('Unauthorized')) {
+                        container.innerHTML = '<div class="error">Ошибка загрузки календаря</div>';
+                    }
+                });
+        }
+
+        function displayCalendar(calendar) {
+            const container = document.getElementById('calendarContainer');
+            
+            if (calendar.length === 0) {
+                container.innerHTML = '<div class="empty">Нет предстоящих продлений</div>';
+                return;
+            }
+            
+            container.innerHTML = calendar.map(day => `
+                <div class="calendar-day">
+                    <div class="calendar-day-header">
+                        <div class="calendar-day-date">${day.date_formatted}</div>
+                        <div class="calendar-day-count">${day.count} продлений</div>
+                    </div>
+                    <div class="calendar-day-renewals">
+                        ${day.renewals.map(renewal => `
+                            <div class="calendar-renewal-item">
+                                <div>
+                                    <div style="font-weight: 600;">${renewal.customer_name}</div>
+                                    <div style="font-size: 0.85rem; color: var(--gray-600);">${renewal.customer_email}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: 500;">${renewal.product_name}</div>
+                                    <div style="font-size: 0.85rem; color: var(--primary);">${renewal.reminder_time}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load on page load
+        if (adminPassword) {
+            loadRenewals();
+        }
+    </script>
+</body>
+</html>
+

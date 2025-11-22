@@ -258,9 +258,14 @@
     <div id="adminPanel" class="admin-container" style="display: none;">
         <div class="admin-header">
             <h1 class="admin-title">Админ-панель - Заказы</h1>
-            <button class="refresh-btn" onclick="loadOrders()">
-                <i class="fas fa-sync-alt"></i> Обновить
-            </button>
+            <div style="display: flex; gap: var(--space-3);">
+                <a href="renewals.html" class="refresh-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-2);">
+                    <i class="fas fa-calendar-alt"></i> Продления
+                </a>
+                <button class="refresh-btn" onclick="loadOrders()">
+                    <i class="fas fa-sync-alt"></i> Обновить
+                </button>
+            </div>
         </div>
 
         <div class="admin-stats" id="statsContainer">
@@ -335,6 +340,7 @@
         function checkPassword() {
             const input = document.getElementById('adminPassword').value;
             adminPassword = input;
+            localStorage.setItem('admin_password', input);
             
             // Try to load orders with this password
             loadOrders();

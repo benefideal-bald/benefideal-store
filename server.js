@@ -472,6 +472,171 @@ app.get('/api/admin/orders', (req, res) => {
     });
 });
 
+// Admin API - Get renewals/reminders
+app.get('/api/admin/renewals', (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const providedPassword = req.query.password || req.headers['x-admin-password'];
+    
+    if (providedPassword !== adminPassword) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    const date = req.query.date || new Date().toISOString().split('T')[0]; // Today by default
+    
+    // Get reminders for the specified date
+    db.all(`
+        SELECT 
+            r.id as reminder_id,
+            r.reminder_date,
+            r.reminder_type,
+            r.is_sent,
+            s.id as subscription_id,
+            s.customer_name,
+            s.customer_email,
+            s.product_name,
+            s.product_id,
+            s.subscription_months,
+            s.purchase_date,
+            s.order_id,
+            s.amount
+        FROM reminders r
+        INNER JOIN subscriptions s ON r.subscription_id = s.id
+        WHERE DATE(r.reminder_date) = DATE(?)
+        ORDER BY r.reminder_date ASC
+    `, [date], (err, rows) => {
+        if (err) {
+            console.error('Error fetching renewals:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        // Format data
+        const formattedRenewals = rows.map(row => ({
+            reminder_id: row.reminder_id,
+            reminder_date: row.reminder_date,
+            reminder_time: row.reminder_date ? new Date(row.reminder_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '',
+            reminder_date_formatted: row.reminder_date ? new Date(row.reminder_date).toLocaleDateString('ru-RU') : '',
+            reminder_type: row.reminder_type,
+            is_sent: row.is_sent === 1,
+            subscription_id: row.subscription_id,
+            customer_name: row.customer_name,
+            customer_email: row.customer_email,
+            product_name: row.product_name,
+            product_id: row.product_id,
+            subscription_months: row.subscription_months,
+            purchase_date: row.purchase_date,
+            purchase_date_formatted: row.purchase_date ? new Date(row.purchase_date).toLocaleDateString('ru-RU') : '',
+            order_id: row.order_id,
+            amount: row.amount,
+            amount_formatted: row.amount ? row.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽'
+        }));
+        
+        res.json({ success: true, renewals: formattedRenewals, date: date, total: formattedRenewals.length });
+    });
+});
+
+// Admin API - Get renewals calendar (all upcoming renewals grouped by date)
+app.get('/api/admin/renewals-calendar', (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const providedPassword = req.query.password || req.headers['x-admin-password'];
+    
+    if (providedPassword !== adminPassword) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    const daysAhead = parseInt(req.query.days) || 30; // Next 30 days by default
+    const startDate = new Date().toISOString().split('T')[0];
+    const endDate = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    // Get all reminders in the date range
+    db.all(`
+        SELECT 
+            DATE(r.reminder_date) as reminder_day,
+            COUNT(*) as count,
+            r.reminder_date,
+            r.reminder_type,
+            r.is_sent,
+            s.customer_name,
+            s.customer_email,
+            s.product_name,
+            s.product_id
+        FROM reminders r
+        INNER JOIN subscriptions s ON r.subscription_id = s.id
+        WHERE DATE(r.reminder_date) >= DATE(?) AND DATE(r.reminder_date) <= DATE(?)
+        GROUP BY DATE(r.reminder_date)
+        ORDER BY reminder_day ASC
+    `, [startDate, endDate], (err, rows) => {
+        if (err) {
+            console.error('Error fetching renewals calendar:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        // Get detailed data for each date
+        db.all(`
+            SELECT 
+                DATE(r.reminder_date) as reminder_day,
+                r.id as reminder_id,
+                r.reminder_date,
+                r.reminder_type,
+                r.is_sent,
+                s.id as subscription_id,
+                s.customer_name,
+                s.customer_email,
+                s.product_name,
+                s.product_id,
+                s.subscription_months,
+                s.purchase_date,
+                s.order_id,
+                s.amount
+            FROM reminders r
+            INNER JOIN subscriptions s ON r.subscription_id = s.id
+            WHERE DATE(r.reminder_date) >= DATE(?) AND DATE(r.reminder_date) <= DATE(?)
+            ORDER BY r.reminder_date ASC
+        `, [startDate, endDate], (err2, detailedRows) => {
+            if (err2) {
+                console.error('Error fetching detailed renewals:', err2);
+                return res.status(500).json({ error: 'Database error', details: err2.message });
+            }
+            
+            // Group by date
+            const calendar = {};
+            detailedRows.forEach(row => {
+                const day = row.reminder_day;
+                if (!calendar[day]) {
+                    calendar[day] = {
+                        date: day,
+                        date_formatted: new Date(day).toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                        count: 0,
+                        renewals: []
+                    };
+                }
+                calendar[day].count++;
+                calendar[day].renewals.push({
+                    reminder_id: row.reminder_id,
+                    reminder_time: row.reminder_date ? new Date(row.reminder_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '',
+                    reminder_type: row.reminder_type,
+                    is_sent: row.is_sent === 1,
+                    customer_name: row.customer_name,
+                    customer_email: row.customer_email,
+                    product_name: row.product_name,
+                    product_id: row.product_id,
+                    subscription_months: row.subscription_months,
+                    purchase_date_formatted: row.purchase_date ? new Date(row.purchase_date).toLocaleDateString('ru-RU') : '',
+                    order_id: row.order_id,
+                    amount_formatted: row.amount ? row.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽'
+                });
+            });
+            
+            res.json({ 
+                success: true, 
+                calendar: Object.values(calendar),
+                start_date: startDate,
+                end_date: endDate,
+                total: detailedRows.length
+            });
+        });
+    });
+});
+
 app.post('/api/subscription', (req, res) => {
     const { item, name, email, order_id, amount } = req.body;
     
