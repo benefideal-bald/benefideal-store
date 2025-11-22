@@ -503,49 +503,88 @@
             const container = document.getElementById('ordersContainer');
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка заказов...</div>';
             
+            // Debug: Log password being used
+            console.log('🔐 Loading orders...');
+            console.log('   Password provided:', adminPassword ? 'YES (length: ' + adminPassword.length + ')' : 'NO - EMPTY!');
+            console.log('   Password value:', adminPassword ? '***' + adminPassword.slice(-3) : 'NONE');
+            
+            if (!adminPassword || adminPassword.trim() === '') {
+                console.error('❌ CRITICAL: No password! Redirecting to login...');
+                container.innerHTML = '<div class="error">Ошибка: пароль не указан. Пожалуйста, войдите снова.</div>';
+                document.getElementById('passwordPrompt').style.display = 'block';
+                document.getElementById('adminPanel').style.display = 'none';
+                return;
+            }
+            
             // Add timeout
             const timeoutPromise = new Promise((_, reject) => 
                 setTimeout(() => reject(new Error('Timeout')), 10000)
             );
             
+            const apiUrl = `/api/admin/orders?password=${encodeURIComponent(adminPassword)}`;
+            console.log('📡 Fetching from API:', apiUrl.replace(/password=[^&]+/, 'password=***'));
+            
             Promise.race([
-                fetch(`/api/admin/orders?password=${encodeURIComponent(adminPassword)}`),
+                fetch(apiUrl),
                 timeoutPromise
             ])
                 .then(res => {
+                    console.log('📥 Response received:', {
+                        status: res.status,
+                        statusText: res.statusText,
+                        ok: res.ok
+                    });
+                    
                     if (res.status === 401) {
+                        console.error('❌ Unauthorized - wrong password!');
                         document.getElementById('passwordPrompt').style.display = 'block';
                         document.getElementById('adminPanel').style.display = 'none';
                         document.getElementById('passwordError').style.display = 'block';
+                        document.getElementById('passwordError').textContent = 'Неверный пароль. Пожалуйста, введите правильный пароль: 2728276';
                         throw new Error('Unauthorized');
                     }
                     if (!res.ok) {
-                        throw new Error(`HTTP ${res.status}`);
+                        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
                     }
                     return res.json();
                 })
                 .then(data => {
-                    console.log('Orders data received:', data);
+                    console.log('✅ JSON data received:', data);
+                    console.log('📊 Data structure:', {
+                        success: data.success,
+                        ordersCount: data.orders ? data.orders.length : 0,
+                        total: data.total,
+                        hasError: !!data.error
+                    });
+                    
                     if (data.success) {
                         allOrders = data.orders || [];
-                        console.log('Total orders:', allOrders.length);
+                        console.log('📦 Orders array:', allOrders);
+                        console.log('📦 Total orders loaded:', allOrders.length);
+                        
                         if (allOrders.length > 0) {
+                            console.log('📋 First order sample:', JSON.stringify(allOrders[0], null, 2));
                             sortOrdersList(allOrders);
                             updateStats(allOrders);
                         } else {
+                            console.warn('⚠️ No orders in response array');
                             displayOrders([]);
                             updateStats([]);
                         }
                         document.getElementById('passwordPrompt').style.display = 'none';
                         document.getElementById('adminPanel').style.display = 'block';
                     } else {
-                        console.error('API returned error:', data);
-                        container.innerHTML = '<div class="error">Ошибка: ' + (data.error || 'Неизвестная ошибка') + '</div>';
+                        console.error('❌ API returned error:', data);
+                        container.innerHTML = '<div class="error">Ошибка API: ' + (data.error || 'Неизвестная ошибка') + '</div>';
                     }
                 })
                 .catch(err => {
-                    console.error('Error loading orders:', err);
-                    container.innerHTML = '<div class="error">Ошибка загрузки заказов: ' + err.message + '. Проверьте консоль браузера и логи сервера.</div>';
+                    console.error('❌ Error loading orders:', err);
+                    console.error('   Error details:', {
+                        message: err.message,
+                        stack: err.stack
+                    });
+                    container.innerHTML = '<div class="error">Ошибка загрузки заказов: ' + err.message + '<br><small>Откройте консоль браузера (F12 → Console) для подробностей</small></div>';
                 });
         }
 
