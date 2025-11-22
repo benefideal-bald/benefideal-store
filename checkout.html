@@ -41,7 +41,7 @@
                     </div>
                     
                     <div class="form-group" style="margin-bottom: var(--space-6);">
-                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
+                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease; margin-bottom: var(--space-3);" 
                                onmouseover="this.style.background='var(--gray-100)'" 
                                onmouseout="this.style.background='var(--gray-50)'">
                             <input type="radio" 
@@ -50,12 +50,54 @@
                                    value="cardlink" 
                                    checked
                                    required
-                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
+                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio"
+                                   onchange="toggleReceiptUpload(false)">
                             <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2);">
                                 <i class="fas fa-credit-card" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
                                 <span style="line-height: 1.4;">Оплата картой, СБП, или криптовалютой</span>
                             </span>
                         </label>
+                        
+                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
+                               onmouseover="this.style.background='var(--gray-100)'" 
+                               onmouseout="this.style.background='var(--gray-50)'">
+                            <input type="radio" 
+                                   name="paymentMethod" 
+                                   id="paymentTest" 
+                                   value="test" 
+                                   required
+                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio"
+                                   onchange="toggleReceiptUpload(true)">
+                            <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2);">
+                                <i class="fas fa-mobile-alt" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
+                                <span style="line-height: 1.4;">Тест (перевод по СБП)</span>
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <!-- Receipt upload (only for test payment) -->
+                    <div id="receiptUploadSection" style="display: none; margin-bottom: var(--space-6);">
+                        <div class="form-group">
+                            <label for="receiptFile" style="display: block; margin-bottom: var(--space-2); font-weight: 600; color: var(--gray-700);">
+                                <i class="fas fa-file-upload" style="margin-right: var(--space-2);"></i>
+                                Загрузить чек об оплате
+                            </label>
+                            <input type="file" 
+                                   id="receiptFile" 
+                                   name="receiptFile" 
+                                   accept="image/*,.pdf"
+                                   style="width: 100%; padding: var(--space-3); border: 2px dashed var(--gray-300); border-radius: var(--radius-md); background: var(--gray-50); cursor: pointer;"
+                                   onchange="handleReceiptUpload(event)">
+                            <div id="receiptPreview" style="margin-top: var(--space-3); display: none;">
+                                <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--gray-50); border-radius: var(--radius-md);">
+                                    <i class="fas fa-file-check" style="color: var(--success);"></i>
+                                    <span id="receiptFileName" style="font-size: 0.9rem; color: var(--gray-700);"></span>
+                                    <button type="button" onclick="removeReceipt()" style="margin-left: auto; background: none; border: none; color: var(--error); cursor: pointer; padding: var(--space-1);">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <button type="submit" id="payButton" class="btn btn-primary">Перейти к оплате</button>
@@ -158,10 +200,16 @@
                 
                 localStorage.setItem('benefideal_checkout_name', name);
                 localStorage.setItem('benefideal_checkout_email', email);
-                console.log('💾 Saved to localStorage:', { name, email, paymentMethod: 'cardlink' });
                 
-                // Оплата через Cardlink
-                processCardlinkPayment(name, email);
+                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+                console.log('💾 Saved to localStorage:', { name, email, paymentMethod });
+                
+                // Выбираем способ оплаты
+                if (paymentMethod === 'test') {
+                    processTestPayment(name, email);
+                } else {
+                    processCardlinkPayment(name, email);
+                }
             });
             
             // Функция для обработки оплаты через Cardlink
@@ -268,6 +316,104 @@
                     console.error('Ошибка обработки оплаты Cardlink:', error);
                     alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз или выберите оплату через СБП.');
                 }
+            }
+            
+            // Функция для обработки тестовой оплаты (СБП)
+            async function processTestPayment(name, email) {
+                try {
+                    const cart = JSON.parse(localStorage.getItem('benefideal_cart') || '[]');
+                    if (cart.length === 0) {
+                        alert('Корзина пуста');
+                        return;
+                    }
+                    
+                    const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+                    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    // Получаем загруженный чек
+                    const receiptFile = document.getElementById('receiptFile').files[0];
+                    if (!receiptFile) {
+                        alert('Пожалуйста, загрузите чек об оплате');
+                        return;
+                    }
+                    
+                    // Сохраняем данные заказа
+                    localStorage.setItem('benefideal_pending_order', JSON.stringify({
+                        orderId,
+                        name,
+                        email,
+                        cart,
+                        total,
+                        paymentMethod: 'test',
+                        timestamp: Date.now()
+                    }));
+                    
+                    // Отправляем данные на сервер
+                    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+                    const apiUrl = isLocalhost
+                        ? 'http://localhost:3000/api/test-payment'
+                        : `${window.location.origin}/api/test-payment`;
+                    
+                    const formData = new FormData();
+                    formData.append('name', name);
+                    formData.append('email', email);
+                    formData.append('order_id', orderId);
+                    formData.append('cart', JSON.stringify(cart));
+                    formData.append('total', total);
+                    formData.append('receipt', receiptFile);
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Очищаем корзину
+                        localStorage.removeItem('benefideal_cart');
+                        localStorage.removeItem('benefideal_cart_timestamp');
+                        
+                        // Переходим на страницу успеха
+                        window.location.href = `payment-success.html?order_id=${orderId}`;
+                    } else {
+                        alert('Ошибка при обработке оплаты: ' + (result.error || 'Неизвестная ошибка'));
+                    }
+                } catch (error) {
+                    console.error('Ошибка при обработке тестовой оплаты:', error);
+                    alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз.');
+                }
+            }
+            
+            // Функции для работы с загрузкой чека
+            function toggleReceiptUpload(show) {
+                const section = document.getElementById('receiptUploadSection');
+                const fileInput = document.getElementById('receiptFile');
+                if (show) {
+                    section.style.display = 'block';
+                    fileInput.required = true;
+                } else {
+                    section.style.display = 'none';
+                    fileInput.required = false;
+                    removeReceipt();
+                }
+            }
+            
+            function handleReceiptUpload(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const preview = document.getElementById('receiptPreview');
+                    const fileName = document.getElementById('receiptFileName');
+                    fileName.textContent = file.name;
+                    preview.style.display = 'block';
+                }
+            }
+            
+            function removeReceipt() {
+                const fileInput = document.getElementById('receiptFile');
+                const preview = document.getElementById('receiptPreview');
+                fileInput.value = '';
+                preview.style.display = 'none';
             }
             
             // Функция для обработки оплаты через Enot.io

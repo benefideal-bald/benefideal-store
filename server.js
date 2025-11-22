@@ -6,6 +6,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const { exec } = require('child_process');
+const multer = require('multer');
+const FormData = require('form-data');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +20,7 @@ const CHAT_ID = 8334777900;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // Для обработки form-urlencoded (нужно для enot.io webhook)
+app.use(express.static('.')); // Для статических файлов
 
 // Initialize SQLite database FIRST
 // КРИТИЧЕСКИ ВАЖНО: На Render нужно использовать персистентное хранилище
@@ -4201,6 +4204,137 @@ app.listen(PORT, '0.0.0.0', () => {
     console.error('❌ Server error:', err);
     if (err.code === 'EADDRINUSE') {
         console.error(`Port ${PORT} is already in use`);
+    }
+});
+
+// Test payment endpoint (СБП с загрузкой чека)
+const upload = multer({ 
+    dest: 'uploads/receipts/',
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
+});
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads', 'receipts');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
+    try {
+        const { name, email, order_id, cart, total } = req.body;
+        const receiptFile = req.file;
+        
+        if (!name || !email || !order_id || !cart || !receiptFile) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Missing required fields' 
+            });
+        }
+        
+        const cartArray = typeof cart === 'string' ? JSON.parse(cart) : cart;
+        const totalAmount = parseFloat(total);
+        
+        console.log('🧪 Test payment received:');
+        console.log('   Name:', name);
+        console.log('   Email:', email);
+        console.log('   Order ID:', order_id);
+        console.log('   Total:', totalAmount);
+        console.log('   Receipt file:', receiptFile.filename);
+        
+        // Save subscriptions to database
+        const purchaseDate = new Date();
+        const normalizedEmail = email.toLowerCase().trim();
+        
+        for (const item of cartArray) {
+            const itemAmount = item.price * (item.quantity || 1);
+            const stmt = db.prepare(`
+                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+            
+            stmt.run([
+                name,
+                normalizedEmail,
+                item.title,
+                item.id,
+                item.months || 1,
+                purchaseDate.toISOString(),
+                order_id,
+                itemAmount
+            ], function(err) {
+                if (err) {
+                    console.error('❌ Error saving subscription:', err);
+                } else {
+                    const subscriptionId = this.lastID;
+                    console.log(`✅ Subscription saved: ID=${subscriptionId}`);
+                    
+                    // Generate reminders
+                    if (item.id === 1 || item.id === 3 || item.id === 7) {
+                        generateReminders(subscriptionId, item.id, item.months || 1, purchaseDate);
+                    }
+                }
+                stmt.finalize();
+            });
+        }
+        
+        // Send Telegram notification
+        const botToken = process.env.TELEGRAM_BOT_TOKEN || '8460494431:AAFOmSEPrzQ1j4_L-4vBG_c38iL2rfx41us';
+        const chatId = process.env.TELEGRAM_CHAT_ID || '8334777900';
+        
+        let telegramMessage = `🧪 Тестовая оплата (СБП)\n\n`;
+        telegramMessage += `👤 Имя: ${name}\n`;
+        telegramMessage += `📧 Email: ${email}\n`;
+        telegramMessage += `🆔 Order ID: ${order_id}\n`;
+        telegramMessage += `💰 Сумма: ${totalAmount.toLocaleString('ru-RU')} ₽\n\n`;
+        telegramMessage += `📦 Товары:\n`;
+        
+        cartArray.forEach((item, index) => {
+            telegramMessage += `${index + 1}. ${item.title} - ${item.price.toLocaleString('ru-RU')} ₽`;
+            if (item.months) {
+                telegramMessage += ` (${item.months} ${item.months === 1 ? 'месяц' : item.months >= 2 && item.months <= 4 ? 'месяца' : 'месяцев'})`;
+            }
+            telegramMessage += `\n`;
+        });
+        
+        telegramMessage += `\n📎 Чек загружен: ${receiptFile.originalname}`;
+        
+        try {
+            // Send text message
+            await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                chat_id: chatId,
+                text: telegramMessage,
+                parse_mode: 'HTML'
+            });
+            
+            // Send receipt as document
+            const receiptPath = receiptFile.path;
+            const formData = new FormData();
+            formData.append('chat_id', chatId);
+            formData.append('document', fs.createReadStream(receiptPath), {
+                filename: receiptFile.originalname,
+                contentType: receiptFile.mimetype
+            });
+            
+            await axios.post(`https://api.telegram.org/bot${botToken}/sendDocument`, formData, {
+                headers: formData.getHeaders()
+            });
+            
+            console.log('✅ Telegram notification sent');
+        } catch (telegramError) {
+            console.error('❌ Error sending Telegram notification:', telegramError);
+        }
+        
+        res.json({
+            success: true,
+            message: 'Test payment processed successfully',
+            order_id: order_id
+        });
+    } catch (error) {
+        console.error('❌ Error processing test payment:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
 });
 
