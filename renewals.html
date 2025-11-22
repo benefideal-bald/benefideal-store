@@ -342,7 +342,14 @@
                 return;
             }
             
-            container.innerHTML = renewals.map(renewal => `
+            container.innerHTML = renewals.map(renewal => {
+                const remainingMonths = renewal.remaining_months || 0;
+                const remainingText = remainingMonths === 0 ? 'Истекает' : 
+                                     remainingMonths === 1 ? '1 месяц' : 
+                                     remainingMonths >= 2 && remainingMonths <= 4 ? `${remainingMonths} месяца` : 
+                                     `${remainingMonths} месяцев`;
+                
+                return `
                 <div class="renewal-item">
                     <div class="renewal-time" data-label="Время">${renewal.reminder_time}</div>
                     <div data-label="Клиент">
@@ -352,8 +359,12 @@
                     <div class="renewal-product" data-label="Товар">${renewal.product_name}</div>
                     <div data-label="Срок">${renewal.subscription_months} мес.</div>
                     <div class="renewal-amount" data-label="Сумма">${renewal.amount_formatted}</div>
+                    <div class="renewal-remaining ${remainingMonths === 0 ? 'zero' : ''}" data-label="Осталось">
+                        ${remainingText}
+                    </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function loadCalendar() {

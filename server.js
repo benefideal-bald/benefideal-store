@@ -510,25 +510,48 @@ app.get('/api/admin/renewals', (req, res) => {
         }
         
         // Format data
-        const formattedRenewals = rows.map(row => ({
-            reminder_id: row.reminder_id,
-            reminder_date: row.reminder_date,
-            reminder_time: row.reminder_date ? new Date(row.reminder_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '',
-            reminder_date_formatted: row.reminder_date ? new Date(row.reminder_date).toLocaleDateString('ru-RU') : '',
-            reminder_type: row.reminder_type,
-            is_sent: row.is_sent === 1,
-            subscription_id: row.subscription_id,
-            customer_name: row.customer_name,
-            customer_email: row.customer_email,
-            product_name: row.product_name,
-            product_id: row.product_id,
-            subscription_months: row.subscription_months,
-            purchase_date: row.purchase_date,
-            purchase_date_formatted: row.purchase_date ? new Date(row.purchase_date).toLocaleDateString('ru-RU') : '',
-            order_id: row.order_id,
-            amount: row.amount,
-            amount_formatted: row.amount ? row.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽'
-        }));
+        const formattedRenewals = rows.map(row => {
+            // Calculate remaining months from reminder_type
+            let remainingMonths = 0;
+            if (row.reminder_type && row.reminder_type.startsWith('renewal_')) {
+                const match = row.reminder_type.match(/renewal_(\d+)months/);
+                if (match) {
+                    remainingMonths = parseInt(match[1]);
+                }
+            } else if (row.reminder_type === 'expiry') {
+                remainingMonths = 0;
+            } else {
+                // Fallback: calculate from purchase date and subscription months
+                const purchaseDate = new Date(row.purchase_date);
+                const endDate = new Date(purchaseDate);
+                endDate.setMonth(endDate.getMonth() + row.subscription_months);
+                const today = new Date();
+                const monthsDiff = (endDate.getFullYear() - today.getFullYear()) * 12 + 
+                                  (endDate.getMonth() - today.getMonth());
+                remainingMonths = Math.max(0, monthsDiff);
+            }
+            
+            return {
+                reminder_id: row.reminder_id,
+                reminder_date: row.reminder_date,
+                reminder_time: row.reminder_date ? new Date(row.reminder_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '',
+                reminder_date_formatted: row.reminder_date ? new Date(row.reminder_date).toLocaleDateString('ru-RU') : '',
+                reminder_type: row.reminder_type,
+                is_sent: row.is_sent === 1,
+                subscription_id: row.subscription_id,
+                customer_name: row.customer_name,
+                customer_email: row.customer_email,
+                product_name: row.product_name,
+                product_id: row.product_id,
+                subscription_months: row.subscription_months,
+                remaining_months: remainingMonths,
+                purchase_date: row.purchase_date,
+                purchase_date_formatted: row.purchase_date ? new Date(row.purchase_date).toLocaleDateString('ru-RU') : '',
+                order_id: row.order_id,
+                amount: row.amount,
+                amount_formatted: row.amount ? row.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽'
+            };
+        });
         
         res.json({ success: true, renewals: formattedRenewals, date: date, total: formattedRenewals.length });
     });
