@@ -546,7 +546,7 @@
         function updateStats(orders) {
             const total = orders.length;
             const totalAmount = orders.reduce((sum, o) => sum + (o.amount || 0), 0);
-            const active = orders.filter(o => o.is_active).length;
+            const active = orders.length; // All orders are active
             const today = new Date().toISOString().split('T')[0];
             const todayOrders = orders.filter(o => o.purchase_date && o.purchase_date.startsWith(today)).length;
             
@@ -579,9 +579,10 @@
             let filtered = allOrders.filter(order => {
                 const matchSearch = !search || 
                     order.customer_name.toLowerCase().includes(search) ||
-                    order.customer_email.toLowerCase().includes(search);
+                    order.customer_email.toLowerCase().includes(search) ||
+                    (order.order_id && order.order_id.toLowerCase().includes(search));
                 
-                const matchProduct = !product || order.product_name === product;
+                const matchProduct = !product || (order.products && order.products.includes(product));
                 
                 return matchSearch && matchProduct;
             });
