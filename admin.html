@@ -377,10 +377,10 @@
 
     <!-- Admin Panel -->
     <div id="adminPanel" class="admin-container" style="display: none;">
-        <!-- Debug Info (visible on page) -->
-        <div id="debugInfo" class="debug-info" style="display: block; background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
-            <strong>🔍 Отладочная информация:</strong><br>
-            <span id="debugText">Инициализация...</span>
+        <!-- Debug Info (ALWAYS VISIBLE) -->
+        <div id="debugInfo" style="display: block !important; background: #fff3cd !important; border: 3px solid #ffc107 !important; padding: 20px !important; margin: 20px 0 !important; border-radius: 8px !important; font-family: monospace !important; font-size: 14px !important; color: #000 !important; z-index: 9999 !important; position: relative !important;">
+            <strong style="font-size: 16px;">🔍 ОТЛАДОЧНАЯ ИНФОРМАЦИЯ:</strong><br><br>
+            <div id="debugText" style="line-height: 1.6;">Инициализация...</div>
         </div>
         
         <div class="admin-header">
@@ -467,6 +467,19 @@
         let allOrders = [];
         let adminPassword = '';
 
+        // Initialize debug info immediately
+        function initDebug() {
+            const debugEl = document.getElementById('debugInfo');
+            const debugText = document.getElementById('debugText');
+            if (debugEl && debugText) {
+                debugEl.style.display = 'block';
+                debugText.innerHTML = '🔧 Инициализация админ-панели...<br>';
+            }
+        }
+        
+        // Call immediately
+        initDebug();
+        
         // Check if password is in URL
         const urlParams = new URLSearchParams(window.location.search);
         const urlPassword = urlParams.get('password');
@@ -474,21 +487,26 @@
         // Check localStorage for saved password
         const savedPassword = localStorage.getItem('admin_password');
         
+        updateDebugInfo('🔍 Проверяю пароль...');
+        updateDebugInfo('   URL параметр: ' + (urlPassword ? 'ЕСТЬ' : 'НЕТ'));
+        updateDebugInfo('   Сохраненный пароль: ' + (savedPassword ? 'ЕСТЬ' : 'НЕТ'));
+        
         if (urlPassword) {
             adminPassword = urlPassword;
             localStorage.setItem('admin_password', urlPassword); // Save to localStorage
-            updateDebugInfo('✅ Пароль получен из URL');
+            updateDebugInfo('✅ Пароль получен из URL: ' + urlPassword.substring(0, 3) + '***');
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
-            loadOrders();
+            setTimeout(() => loadOrders(), 100);
         } else if (savedPassword) {
             adminPassword = savedPassword;
-            updateDebugInfo('✅ Пароль загружен из сохраненных данных');
+            updateDebugInfo('✅ Пароль загружен из сохраненных данных: ' + savedPassword.substring(0, 3) + '***');
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
-            loadOrders();
+            setTimeout(() => loadOrders(), 100);
         } else {
             updateDebugInfo('⚠️ Пароль не найден, требуется вход');
+            updateDebugInfo('💡 Подсказка: откройте страницу с ?password=2728276 в URL');
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
         }
