@@ -441,7 +441,7 @@ app.get('/api/admin/orders', (req, res) => {
     
     console.log('🔍 Fetching orders from database...');
     
-    // Get all subscriptions - show all records as separate orders
+    // Get all subscriptions - group by order_id on server side
     db.all(`
         SELECT 
             id,
@@ -469,27 +469,66 @@ app.get('/api/admin/orders', (req, res) => {
             return res.json({ success: true, orders: [], total: 0 });
         }
         
-        // Format dates and format amount - show all records as separate orders
-        const formattedOrders = rows.map(order => ({
+        // Group by order_id (or email + date if order_id is null)
+        const ordersMap = new Map();
+        
+        rows.forEach(row => {
+            // Use order_id if available, otherwise use email + date as key
+            const orderKey = row.order_id || `EMAIL_${row.customer_email}_${row.purchase_date ? row.purchase_date.split('T')[0] : 'NO_DATE'}`;
+            
+            if (!ordersMap.has(orderKey)) {
+                ordersMap.set(orderKey, {
+                    id: row.id, // Use first subscription ID
+                    order_id: row.order_id || `N/A (Sub ID: ${row.id})`,
+                    customer_name: row.customer_name,
+                    customer_email: row.customer_email,
+                    products: [],
+                    items_count: 0,
+                    purchase_date: row.purchase_date,
+                    total_amount: 0,
+                    subscription_ids: [],
+                    is_active: row.is_active
+                });
+            }
+            
+            const order = ordersMap.get(orderKey);
+            order.products.push(row.product_name);
+            order.items_count += 1;
+            order.total_amount += (row.amount || 0);
+            order.subscription_ids.push(row.id);
+            
+            // Use earliest purchase date
+            if (row.purchase_date && (!order.purchase_date || new Date(row.purchase_date) < new Date(order.purchase_date))) {
+                order.purchase_date = row.purchase_date;
+            }
+            
+            // Use earliest active status (if any is active, order is active)
+            if (row.is_active === 1) {
+                order.is_active = 1;
+            }
+        });
+        
+        // Convert map to array and format
+        const formattedOrders = Array.from(ordersMap.values()).map(order => ({
             id: order.id,
             order_id: order.order_id,
             customer_name: order.customer_name,
             customer_email: order.customer_email,
-            product_name: order.product_name,
-            product_id: order.product_id,
-            subscription_months: order.subscription_months,
+            product_name: order.products.join('; '),
+            product_id: null, // Multiple products possible
+            subscription_months: null, // Multiple subscriptions possible
             purchase_date: order.purchase_date,
             purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
             purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
-            amount: order.amount,
-            amount_formatted: order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
-            duration_text: order.subscription_months === 1 ? '1 месяц' : 
-                          order.subscription_months >= 2 && order.subscription_months <= 4 ? `${order.subscription_months} месяца` : 
-                          `${order.subscription_months} месяцев`,
+            amount: order.total_amount,
+            amount_formatted: order.total_amount ? order.total_amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
+            duration_text: order.items_count > 1 ? `${order.items_count} товаров` : '1 товар',
+            items_count: order.items_count,
+            subscription_ids: order.subscription_ids.join(','),
             is_active: order.is_active
         }));
         
-        console.log(`✅ Returning ${formattedOrders.length} orders`);
+        console.log(`✅ Returning ${formattedOrders.length} grouped orders (from ${rows.length} subscriptions)`);
         
         res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
     });
