@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата по СБП – Benefideal</title>
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .test-payment-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-4);
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .test-payment-card {
+            background: var(--white);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-8);
+            box-shadow: var(--shadow-xl);
+            width: 100%;
+        }
+        
+        .payment-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-6);
+            text-align: center;
+        }
+        
+        .phone-section {
+            background: var(--gray-50);
+            padding: var(--space-6);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-6);
+            text-align: center;
+        }
+        
+        .phone-label {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+            margin-bottom: var(--space-2);
+        }
+        
+        .phone-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: monospace;
+            letter-spacing: 2px;
+            margin-bottom: var(--space-4);
+        }
+        
+        .copy-btn {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+        
+        .copy-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .copy-btn.copied {
+            background: var(--success);
+        }
+        
+        .receipt-section {
+            margin-bottom: var(--space-6);
+        }
+        
+        .receipt-label {
+            display: block;
+            margin-bottom: var(--space-3);
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 1rem;
+        }
+        
+        .receipt-input {
+            width: 100%;
+            padding: var(--space-4);
+            border: 2px dashed var(--gray-300);
+            border-radius: var(--radius-md);
+            background: var(--gray-50);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+        
+        .receipt-input:hover {
+            border-color: var(--primary);
+            background: var(--white);
+        }
+        
+        .receipt-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--white);
+        }
+        
+        .receipt-preview {
+            margin-top: var(--space-3);
+            padding: var(--space-3);
+            background: var(--gray-50);
+            border-radius: var(--radius-md);
+            display: none;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .receipt-preview.show {
+            display: flex;
+        }
+        
+        .receipt-preview i {
+            color: var(--success);
+        }
+        
+        .receipt-preview span {
+            flex: 1;
+            font-size: 0.9rem;
+            color: var(--gray-700);
+        }
+        
+        .receipt-preview button {
+            background: none;
+            border: none;
+            color: var(--error);
+            cursor: pointer;
+            padding: var(--space-1);
+        }
+        
+        .confirm-btn {
+            width: 100%;
+            padding: var(--space-4);
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: var(--space-4);
+        }
+        
+        .confirm-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        
+        .confirm-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .order-info {
+            background: var(--gray-50);
+            padding: var(--space-4);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-6);
+        }
+        
+        .order-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--space-2);
+            font-size: 0.95rem;
+        }
+        
+        .order-info-item:last-child {
+            margin-bottom: 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+            padding-top: var(--space-2);
+            border-top: 1px solid var(--gray-200);
+        }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            color: var(--gray-600);
+            text-decoration: none;
+            margin-top: var(--space-4);
+            font-size: 0.9rem;
+        }
+        
+        .back-link:hover {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="nav">
+                <a href="index.html" class="logo">Benefideal</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="product-page" style="padding: var(--space-24) 0; background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%); min-height:80vh;">
+        <div class="test-payment-container">
+            <div class="test-payment-card">
+                <h1 class="payment-title">Оплата по СБП</h1>
+                
+                <div class="order-info" id="orderInfo">
+                    <!-- Order info will be loaded here -->
+                </div>
+                
+                <div class="phone-section">
+                    <div class="phone-label">Номер телефона для перевода:</div>
+                    <div class="phone-number" id="phoneNumber">010298762</div>
+                    <button class="copy-btn" onclick="copyPhoneNumber()">
+                        <i class="fas fa-copy"></i> Копировать номер
+                    </button>
+                </div>
+                
+                <form id="testPaymentForm">
+                    <div class="receipt-section">
+                        <label for="receiptFile" class="receipt-label">
+                            <i class="fas fa-file-upload"></i> Загрузите чек об оплате
+                        </label>
+                        <input type="file" 
+                               id="receiptFile" 
+                               name="receiptFile" 
+                               accept="image/*,.pdf"
+                               class="receipt-input"
+                               required
+                               onchange="handleReceiptUpload(event)">
+                        <div class="receipt-preview" id="receiptPreview">
+                            <i class="fas fa-file-check"></i>
+                            <span id="receiptFileName"></span>
+                            <button type="button" onclick="removeReceipt()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="confirm-btn" id="confirmBtn">
+                        Подтвердить оплату
+                    </button>
+                </form>
+                
+                <a href="checkout.html" class="back-link">
+                    <i class="fas fa-arrow-left"></i> Вернуться к выбору способа оплаты
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom" style="text-align:center;">
+                <p>&copy; 2024 Benefideal</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Load order info
+        (function() {
+            try {
+                const cart = JSON.parse(localStorage.getItem('benefideal_cart') || '[]');
+                const name = localStorage.getItem('benefideal_checkout_name') || 'Не указано';
+                const email = localStorage.getItem('benefideal_checkout_email') || 'Не указано';
+                
+                if (cart.length === 0) {
+                    window.location.href = 'checkout.html';
+                    return;
+                }
+                
+                const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+                
+                const orderInfo = document.getElementById('orderInfo');
+                orderInfo.innerHTML = `
+                    <div class="order-info-item">
+                        <span>Имя:</span>
+                        <span>${name}</span>
+                    </div>
+                    <div class="order-info-item">
+                        <span>Email:</span>
+                        <span>${email}</span>
+                    </div>
+                    <div class="order-info-item">
+                        <span>Товары:</span>
+                        <span>${cart.map(i => i.title).join(', ')}</span>
+                    </div>
+                    <div class="order-info-item">
+                        <span>Итого к оплате:</span>
+                        <span>${total.toLocaleString('ru-RU')} ₽</span>
+                    </div>
+                `;
+            } catch (e) {
+                console.error('Error loading order info:', e);
+            }
+        })();
+        
+        function copyPhoneNumber() {
+            const phoneNumber = '010298762';
+            navigator.clipboard.writeText(phoneNumber).then(() => {
+                const btn = event.target.closest('.copy-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Скопировано!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+        
+        function handleReceiptUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const preview = document.getElementById('receiptPreview');
+                const fileName = document.getElementById('receiptFileName');
+                fileName.textContent = file.name;
+                preview.classList.add('show');
+            }
+        }
+        
+        function removeReceipt() {
+            const fileInput = document.getElementById('receiptFile');
+            const preview = document.getElementById('receiptPreview');
+            fileInput.value = '';
+            preview.classList.remove('show');
+        }
+        
+        // Handle form submission
+        document.getElementById('testPaymentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const receiptFile = document.getElementById('receiptFile').files[0];
+            if (!receiptFile) {
+                const fileInput = document.getElementById('receiptFile');
+                fileInput.focus();
+                fileInput.style.borderColor = 'var(--error)';
+                setTimeout(() => {
+                    fileInput.style.borderColor = '';
+                }, 3000);
+                return;
+            }
+            
+            const confirmBtn = document.getElementById('confirmBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Обработка...';
+            
+            try {
+                const cart = JSON.parse(localStorage.getItem('benefideal_cart') || '[]');
+                const name = localStorage.getItem('benefideal_checkout_name') || '';
+                const email = localStorage.getItem('benefideal_checkout_email') || '';
+                
+                if (cart.length === 0) {
+                    alert('Корзина пуста');
+                    window.location.href = 'checkout.html';
+                    return;
+                }
+                
+                const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+                const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                
+                // Сохраняем данные заказа
+                localStorage.setItem('benefideal_pending_order', JSON.stringify({
+                    orderId,
+                    name,
+                    email,
+                    cart,
+                    total,
+                    paymentMethod: 'test',
+                    timestamp: Date.now()
+                }));
+                
+                // Отправляем данные на сервер
+                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+                const apiUrl = isLocalhost
+                    ? 'http://localhost:3000/api/test-payment'
+                    : `${window.location.origin}/api/test-payment`;
+                
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('email', email);
+                formData.append('order_id', orderId);
+                formData.append('cart', JSON.stringify(cart));
+                formData.append('total', total);
+                formData.append('receipt', receiptFile);
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Очищаем корзину
+                    localStorage.removeItem('benefideal_cart');
+                    localStorage.removeItem('benefideal_cart_timestamp');
+                    
+                    // Переходим на страницу успеха
+                    window.location.href = `payment-success.html?order_id=${orderId}`;
+                } else {
+                    alert('Ошибка при обработке оплаты: ' + (result.error || 'Неизвестная ошибка'));
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Подтвердить оплату';
+                }
+            } catch (error) {
+                console.error('Ошибка при обработке оплаты:', error);
+                alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз.');
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Подтвердить оплату';
+            }
+        });
+    </script>
+</body>
+</html>
+

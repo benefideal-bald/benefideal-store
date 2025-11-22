@@ -318,78 +318,14 @@
                 }
             }
             
-            // Функция для обработки тестовой оплаты (СБП)
-            async function processTestPayment(name, email) {
-                try {
-                    const cart = JSON.parse(localStorage.getItem('benefideal_cart') || '[]');
-                    if (cart.length === 0) {
-                        alert('Корзина пуста');
-                        return;
-                    }
-                    
-                    const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
-                    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                    
-                    // Получаем загруженный чек
-                    const receiptFile = document.getElementById('receiptFile').files[0];
-                    if (!receiptFile) {
-                        const fileInput = document.getElementById('receiptFile');
-                        fileInput.focus();
-                        fileInput.style.borderColor = 'var(--error)';
-                        fileInput.style.borderWidth = '2px';
-                        setTimeout(() => {
-                            fileInput.style.borderColor = '';
-                            fileInput.style.borderWidth = '';
-                        }, 3000);
-                        return;
-                    }
-                    
-                    // Сохраняем данные заказа
-                    localStorage.setItem('benefideal_pending_order', JSON.stringify({
-                        orderId,
-                        name,
-                        email,
-                        cart,
-                        total,
-                        paymentMethod: 'test',
-                        timestamp: Date.now()
-                    }));
-                    
-                    // Отправляем данные на сервер
-                    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
-                    const apiUrl = isLocalhost
-                        ? 'http://localhost:3000/api/test-payment'
-                        : `${window.location.origin}/api/test-payment`;
-                    
-                    const formData = new FormData();
-                    formData.append('name', name);
-                    formData.append('email', email);
-                    formData.append('order_id', orderId);
-                    formData.append('cart', JSON.stringify(cart));
-                    formData.append('total', total);
-                    formData.append('receipt', receiptFile);
-                    
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        // Очищаем корзину
-                        localStorage.removeItem('benefideal_cart');
-                        localStorage.removeItem('benefideal_cart_timestamp');
-                        
-                        // Переходим на страницу успеха
-                        window.location.href = `payment-success.html?order_id=${orderId}`;
-                    } else {
-                        alert('Ошибка при обработке оплаты: ' + (result.error || 'Неизвестная ошибка'));
-                    }
-                } catch (error) {
-                    console.error('Ошибка при обработке тестовой оплаты:', error);
-                    alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз.');
-                }
+            // Функция для обработки тестовой оплаты (СБП) - просто переходим на страницу оплаты
+            function processTestPayment(name, email) {
+                // Сохраняем данные для страницы оплаты
+                localStorage.setItem('benefideal_checkout_name', name);
+                localStorage.setItem('benefideal_checkout_email', email);
+                
+                // Переходим на страницу тестовой оплаты
+                window.location.href = 'test-payment.html';
             }
             
             // Функции для работы с загрузкой чека
