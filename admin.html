@@ -120,6 +120,10 @@
             transition: background 0.2s;
         }
         
+        .table-row {
+            cursor: pointer;
+        }
+        
         .table-row:hover {
             background: var(--gray-50);
         }
@@ -228,6 +232,138 @@
                 color: var(--gray-600);
             }
         }
+        
+        /* Modal styles */
+        .renewals-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-4);
+        }
+        
+        .renewals-modal.active {
+            display: flex;
+        }
+        
+        .renewals-modal-content {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-4);
+            border-bottom: 2px solid var(--gray-200);
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-600);
+            padding: var(--space-2);
+        }
+        
+        .modal-close:hover {
+            color: var(--gray-900);
+        }
+        
+        .subscription-info {
+            background: var(--gray-50);
+            padding: var(--space-4);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-6);
+        }
+        
+        .subscription-info-item {
+            margin-bottom: var(--space-2);
+        }
+        
+        .subscription-info-label {
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+        
+        .renewals-list {
+            display: grid;
+            gap: var(--space-3);
+        }
+        
+        .renewal-item-edit {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            padding: var(--space-4);
+            border-radius: var(--radius-md);
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: var(--space-4);
+            align-items: center;
+        }
+        
+        .renewal-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+        
+        .renewal-item-date {
+            display: flex;
+            gap: var(--space-2);
+            align-items: center;
+        }
+        
+        .renewal-item-date input {
+            padding: var(--space-2) var(--space-3);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+        }
+        
+        .renewal-item-date input[type="time"] {
+            width: 120px;
+        }
+        
+        .save-btn {
+            padding: var(--space-2) var(--space-4);
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .save-btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .save-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -319,6 +455,23 @@
         </div>
     </div>
 
+    <!-- Renewals Modal -->
+    <div id="renewalsModal" class="renewals-modal">
+        <div class="renewals-modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Продления подписки</h2>
+                <button class="modal-close" onclick="closeRenewalsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="modalContent">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Загрузка...
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let allOrders = [];
         let adminPassword = '';
@@ -384,7 +537,7 @@
             }
             
             container.innerHTML = orders.map(order => `
-                <div class="table-row">
+                <div class="table-row" onclick="openRenewalsModal(${order.id})">
                     <div class="table-cell">${order.id}</div>
                     <div class="table-cell" data-label="Имя">${order.customer_name}</div>
                     <div class="table-cell" data-label="Email">${order.customer_email}</div>
@@ -481,6 +634,176 @@
         document.getElementById('adminPassword')?.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 checkPassword();
+            }
+        });
+
+        // Renewals Modal
+        function openRenewalsModal(subscriptionId) {
+            const modal = document.getElementById('renewalsModal');
+            const content = document.getElementById('modalContent');
+            
+            modal.classList.add('active');
+            content.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка продлений...</div>';
+            
+            fetch(`/api/admin/subscription/${subscriptionId}/renewals?password=${encodeURIComponent(adminPassword)}`)
+                .then(res => {
+                    if (res.status === 401) {
+                        content.innerHTML = '<div class="error">Неверный пароль</div>';
+                        throw new Error('Unauthorized');
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        displayRenewalsModal(data.subscription, data.reminders);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading renewals:', err);
+                    if (!err.message.includes('Unauthorized')) {
+                        content.innerHTML = '<div class="error">Ошибка загрузки продлений</div>';
+                    }
+                });
+        }
+
+        function closeRenewalsModal() {
+            document.getElementById('renewalsModal').classList.remove('active');
+        }
+
+        function displayRenewalsModal(subscription, reminders) {
+            const content = document.getElementById('modalContent');
+            
+            const subscriptionInfo = `
+                <div class="subscription-info">
+                    <div class="subscription-info-item">
+                        <span class="subscription-info-label">Клиент:</span> ${subscription.customer_name}
+                    </div>
+                    <div class="subscription-info-item">
+                        <span class="subscription-info-label">Email:</span> ${subscription.customer_email}
+                    </div>
+                    <div class="subscription-info-item">
+                        <span class="subscription-info-label">Товар:</span> ${subscription.product_name}
+                    </div>
+                    <div class="subscription-info-item">
+                        <span class="subscription-info-label">Срок подписки:</span> ${subscription.subscription_months} ${subscription.subscription_months === 1 ? 'месяц' : subscription.subscription_months >= 2 && subscription.subscription_months <= 4 ? 'месяца' : 'месяцев'}
+                    </div>
+                    <div class="subscription-info-item">
+                        <span class="subscription-info-label">Дата покупки:</span> ${subscription.purchase_date_formatted}
+                    </div>
+                    <div class="subscription-info-item">
+                        <span class="subscription-info-label">Order ID:</span> ${subscription.order_id || 'Не указан'}
+                    </div>
+                </div>
+            `;
+            
+            if (reminders.length === 0) {
+                content.innerHTML = subscriptionInfo + '<div class="empty">Продления не найдены</div>';
+                return;
+            }
+            
+            const renewalsList = reminders.map(reminder => {
+                const reminderDate = new Date(reminder.reminder_date);
+                const dateStr = reminderDate.toISOString().split('T')[0];
+                const timeStr = reminderDate.toTimeString().slice(0, 5);
+                
+                const reminderTypeText = reminder.reminder_type === 'expiry' ? 'Окончание подписки' :
+                    reminder.reminder_type.startsWith('renewal_') ? 
+                    `Продление (${reminder.reminder_type.match(/renewal_(\d+)months/)?.[1] || '?'} мес. осталось)` :
+                    reminder.reminder_type;
+                
+                return `
+                    <div class="renewal-item-edit" data-reminder-id="${reminder.reminder_id}">
+                        <div class="renewal-item-info">
+                            <div style="font-weight: 600;">${reminderTypeText}</div>
+                            <div style="font-size: 0.85rem; color: var(--gray-600);">
+                                ${reminder.is_sent ? '✓ Отправлено' : '⏳ Ожидает отправки'}
+                            </div>
+                        </div>
+                        <div class="renewal-item-date">
+                            <input type="date" value="${dateStr}" id="date_${reminder.reminder_id}" onchange="updateReminderDate(${reminder.reminder_id})">
+                            <input type="time" value="${timeStr}" id="time_${reminder.reminder_id}" onchange="updateReminderDate(${reminder.reminder_id})">
+                        </div>
+                        <button class="save-btn" id="save_${reminder.reminder_id}" onclick="saveReminderDate(${reminder.reminder_id})" style="display: none;">
+                            Сохранить
+                        </button>
+                    </div>
+                `;
+            }).join('');
+            
+            content.innerHTML = subscriptionInfo + `
+                <h3 style="margin-bottom: var(--space-4); font-size: 1.2rem; font-weight: 600;">Продления (${reminders.length})</h3>
+                <div class="renewals-list">
+                    ${renewalsList}
+                </div>
+            `;
+        }
+
+        let pendingUpdates = {};
+
+        function updateReminderDate(reminderId) {
+            const dateInput = document.getElementById(`date_${reminderId}`);
+            const timeInput = document.getElementById(`time_${reminderId}`);
+            const saveBtn = document.getElementById(`save_${reminderId}`);
+            
+            const newDate = new Date(`${dateInput.value}T${timeInput.value}`);
+            pendingUpdates[reminderId] = newDate.toISOString();
+            saveBtn.style.display = 'block';
+        }
+
+        function saveReminderDate(reminderId) {
+            const saveBtn = document.getElementById(`save_${reminderId}`);
+            const newDate = pendingUpdates[reminderId];
+            
+            if (!newDate) {
+                return;
+            }
+            
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Сохранение...';
+            
+            fetch(`/api/admin/reminder/${reminderId}?password=${encodeURIComponent(adminPassword)}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    reminder_date: newDate
+                })
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    alert('Неверный пароль');
+                    throw new Error('Unauthorized');
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    saveBtn.textContent = '✓ Сохранено';
+                    saveBtn.style.background = 'var(--success)';
+                    delete pendingUpdates[reminderId];
+                    setTimeout(() => {
+                        saveBtn.style.display = 'none';
+                        saveBtn.textContent = 'Сохранить';
+                        saveBtn.style.background = '';
+                        saveBtn.disabled = false;
+                    }, 2000);
+                }
+            })
+            .catch(err => {
+                console.error('Error saving reminder:', err);
+                saveBtn.textContent = 'Ошибка';
+                saveBtn.disabled = false;
+                setTimeout(() => {
+                    saveBtn.textContent = 'Сохранить';
+                }, 2000);
+            });
+        }
+
+        // Close modal on outside click
+        document.getElementById('renewalsModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeRenewalsModal();
             }
         });
     </script>

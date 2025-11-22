@@ -585,6 +585,122 @@ app.get('/api/admin/renewals', (req, res) => {
     });
 });
 
+// Admin API - Get renewals for a specific subscription
+app.get('/api/admin/subscription/:subscriptionId/renewals', (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const providedPassword = req.query.password || req.headers['x-admin-password'];
+    
+    if (providedPassword !== adminPassword) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    const subscriptionId = parseInt(req.params.subscriptionId);
+    
+    if (!subscriptionId) {
+        return res.status(400).json({ error: 'Invalid subscription ID' });
+    }
+    
+    // Get subscription info
+    db.get(`
+        SELECT * FROM subscriptions WHERE id = ?
+    `, [subscriptionId], (err, subscription) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        if (!subscription) {
+            return res.status(404).json({ error: 'Subscription not found' });
+        }
+        
+        // Get all reminders for this subscription
+        db.all(`
+            SELECT 
+                r.id as reminder_id,
+                r.reminder_date,
+                r.reminder_type,
+                r.is_sent
+            FROM reminders r
+            WHERE r.subscription_id = ?
+            ORDER BY r.reminder_date ASC
+        `, [subscriptionId], (err2, reminders) => {
+            if (err2) {
+                return res.status(500).json({ error: 'Database error', details: err2.message });
+            }
+            
+            const formattedReminders = reminders.map(r => ({
+                reminder_id: r.reminder_id,
+                reminder_date: r.reminder_date,
+                reminder_date_formatted: r.reminder_date ? new Date(r.reminder_date).toLocaleDateString('ru-RU') : '',
+                reminder_time: r.reminder_date ? new Date(r.reminder_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '',
+                reminder_type: r.reminder_type,
+                is_sent: r.is_sent === 1
+            }));
+            
+            res.json({
+                success: true,
+                subscription: {
+                    id: subscription.id,
+                    customer_name: subscription.customer_name,
+                    customer_email: subscription.customer_email,
+                    product_name: subscription.product_name,
+                    product_id: subscription.product_id,
+                    subscription_months: subscription.subscription_months,
+                    purchase_date: subscription.purchase_date,
+                    purchase_date_formatted: subscription.purchase_date ? new Date(subscription.purchase_date).toLocaleDateString('ru-RU') : '',
+                    order_id: subscription.order_id,
+                    amount: subscription.amount
+                },
+                reminders: formattedReminders
+            });
+        });
+    });
+});
+
+// Admin API - Update reminder date
+app.put('/api/admin/reminder/:reminderId', (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const providedPassword = req.query.password || req.headers['x-admin-password'];
+    
+    if (providedPassword !== adminPassword) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    const reminderId = parseInt(req.params.reminderId);
+    const { reminder_date } = req.body;
+    
+    if (!reminderId || !reminder_date) {
+        return res.status(400).json({ error: 'Missing required fields: reminder_date' });
+    }
+    
+    // Validate date format
+    const newDate = new Date(reminder_date);
+    if (isNaN(newDate.getTime())) {
+        return res.status(400).json({ error: 'Invalid date format' });
+    }
+    
+    // Update reminder date
+    db.run(`
+        UPDATE reminders 
+        SET reminder_date = ?
+        WHERE id = ?
+    `, [newDate.toISOString(), reminderId], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'Reminder not found' });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Reminder date updated',
+            reminder_id: reminderId,
+            new_date: newDate.toISOString()
+        });
+    });
+});
+
 // Admin API - Get renewals calendar (all upcoming renewals grouped by date)
 app.get('/api/admin/renewals-calendar', (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
