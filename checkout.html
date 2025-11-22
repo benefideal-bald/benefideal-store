@@ -301,37 +301,6 @@
                 window.location.href = 'test-payment.html';
             }
             
-            // Функции для работы с загрузкой чека
-            function toggleReceiptUpload(show) {
-                const section = document.getElementById('receiptUploadSection');
-                const fileInput = document.getElementById('receiptFile');
-                if (show) {
-                    section.style.display = 'block';
-                    fileInput.required = true;
-                } else {
-                    section.style.display = 'none';
-                    fileInput.required = false;
-                    removeReceipt();
-                }
-            }
-            
-            function handleReceiptUpload(event) {
-                const file = event.target.files[0];
-                if (file) {
-                    const preview = document.getElementById('receiptPreview');
-                    const fileName = document.getElementById('receiptFileName');
-                    fileName.textContent = file.name;
-                    preview.style.display = 'block';
-                }
-            }
-            
-            function removeReceipt() {
-                const fileInput = document.getElementById('receiptFile');
-                const preview = document.getElementById('receiptPreview');
-                fileInput.value = '';
-                preview.style.display = 'none';
-            }
-            
             // Функция для обработки оплаты через Enot.io
             async function processEnotPayment(name, email) {
                 try {
