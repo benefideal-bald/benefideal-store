@@ -439,6 +439,8 @@ app.get('/api/admin/orders', (req, res) => {
     
     console.log('✅ Admin access granted');
     
+    console.log('🔍 Fetching orders from database...');
+    
     // Get all subscriptions - simple query first to see all data
     db.all(`
         SELECT 
@@ -456,62 +458,72 @@ app.get('/api/admin/orders', (req, res) => {
         ORDER BY purchase_date DESC
     `, (err, rows) => {
         if (err) {
-            console.error('Error fetching orders:', err);
+            console.error('❌ Error fetching orders:', err);
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
-        console.log(`📊 Found ${rows.length} subscriptions in database`);
+        console.log(`📊 Found ${rows ? rows.length : 0} subscriptions in database`);
+        
+        if (!rows || rows.length === 0) {
+            console.log('⚠️ No subscriptions found in database');
+            return res.json({ success: true, orders: [], total: 0 });
+        }
         
         // Group by order_id on the server side
         const ordersMap = new Map();
         
-        rows.forEach(row => {
-            const orderKey = row.order_id || `ORDER_${row.id}`;
+        try {
+            rows.forEach(row => {
+                const orderKey = row.order_id || `ORDER_${row.id}`;
+                
+                if (!ordersMap.has(orderKey)) {
+                    ordersMap.set(orderKey, {
+                        order_id: row.order_id || `ORDER_${row.id}`,
+                        customer_name: row.customer_name,
+                        customer_email: row.customer_email,
+                        products: [],
+                        items_count: 0,
+                        purchase_date: row.purchase_date,
+                        total_amount: 0,
+                        subscription_ids: []
+                    });
+                }
+                
+                const order = ordersMap.get(orderKey);
+                order.products.push(row.product_name);
+                order.items_count += 1;
+                order.total_amount += (row.amount || 0);
+                order.subscription_ids.push(row.id);
+                
+                // Use earliest purchase date
+                if (new Date(row.purchase_date) < new Date(order.purchase_date)) {
+                    order.purchase_date = row.purchase_date;
+                }
+            });
             
-            if (!ordersMap.has(orderKey)) {
-                ordersMap.set(orderKey, {
-                    order_id: row.order_id || `ORDER_${row.id}`,
-                    customer_name: row.customer_name,
-                    customer_email: row.customer_email,
-                    products: [],
-                    items_count: 0,
-                    purchase_date: row.purchase_date,
-                    total_amount: 0,
-                    subscription_ids: []
-                });
-            }
+            // Convert map to array and format
+            const formattedOrders = Array.from(ordersMap.values()).map(order => ({
+                order_id: order.order_id,
+                customer_name: order.customer_name,
+                customer_email: order.customer_email,
+                products: order.products.join('; '),
+                items_count: order.items_count,
+                purchase_date: order.purchase_date,
+                purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
+                purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
+                amount: order.total_amount,
+                amount_formatted: order.total_amount ? order.total_amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
+                subscription_ids: order.subscription_ids.join(','),
+                is_active: 1
+            }));
             
-            const order = ordersMap.get(orderKey);
-            order.products.push(row.product_name);
-            order.items_count += 1;
-            order.total_amount += (row.amount || 0);
-            order.subscription_ids.push(row.id);
+            console.log(`✅ Returning ${formattedOrders.length} grouped orders`);
             
-            // Use earliest purchase date
-            if (new Date(row.purchase_date) < new Date(order.purchase_date)) {
-                order.purchase_date = row.purchase_date;
-            }
-        });
-        
-        // Convert map to array and format
-        const formattedOrders = Array.from(ordersMap.values()).map(order => ({
-            order_id: order.order_id,
-            customer_name: order.customer_name,
-            customer_email: order.customer_email,
-            products: order.products.join('; '),
-            items_count: order.items_count,
-            purchase_date: order.purchase_date,
-            purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
-            purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
-            amount: order.total_amount,
-            amount_formatted: order.total_amount ? order.total_amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
-            subscription_ids: order.subscription_ids.join(','),
-            is_active: 1
-        }));
-        
-        console.log(`✅ Returning ${formattedOrders.length} grouped orders`);
-        
-        res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
+            res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
+        } catch (processingError) {
+            console.error('❌ Error processing orders:', processingError);
+            return res.status(500).json({ error: 'Processing error', details: processingError.message });
+        }
     });
 });
 

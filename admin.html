@@ -488,13 +488,24 @@
             const container = document.getElementById('ordersContainer');
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка заказов...</div>';
             
-            fetch(`/api/admin/orders?password=${encodeURIComponent(adminPassword)}`)
+            // Add timeout
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout')), 10000)
+            );
+            
+            Promise.race([
+                fetch(`/api/admin/orders?password=${encodeURIComponent(adminPassword)}`),
+                timeoutPromise
+            ])
                 .then(res => {
                     if (res.status === 401) {
                         document.getElementById('passwordPrompt').style.display = 'block';
                         document.getElementById('adminPanel').style.display = 'none';
                         document.getElementById('passwordError').style.display = 'block';
                         throw new Error('Unauthorized');
+                    }
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}`);
                     }
                     return res.json();
                 })
@@ -507,17 +518,19 @@
                             sortOrdersList(allOrders);
                             updateStats(allOrders);
                         } else {
+                            displayOrders([]);
                             updateStats([]);
                         }
                         document.getElementById('passwordPrompt').style.display = 'none';
                         document.getElementById('adminPanel').style.display = 'block';
                     } else {
                         console.error('API returned error:', data);
+                        container.innerHTML = '<div class="error">Ошибка: ' + (data.error || 'Неизвестная ошибка') + '</div>';
                     }
                 })
                 .catch(err => {
                     console.error('Error loading orders:', err);
-                    container.innerHTML = '<div class="error">Ошибка загрузки заказов. Проверьте пароль.</div>';
+                    container.innerHTML = '<div class="error">Ошибка загрузки заказов: ' + err.message + '. Проверьте консоль браузера и логи сервера.</div>';
                 });
         }
 
