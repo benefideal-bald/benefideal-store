@@ -439,10 +439,10 @@ app.get('/api/admin/orders', (req, res) => {
     
     console.log('✅ Admin access granted');
     
-    // Group by order_id to show unique orders
+    // Group by order_id to show unique orders, but also show orders without order_id
     db.all(`
         SELECT 
-            order_id,
+            COALESCE(order_id, 'ORDER_' || id) as order_id,
             customer_name,
             customer_email,
             MIN(purchase_date) as purchase_date,
@@ -451,8 +451,7 @@ app.get('/api/admin/orders', (req, res) => {
             GROUP_CONCAT(product_name, '; ') as products,
             GROUP_CONCAT(id) as subscription_ids
         FROM subscriptions
-        WHERE order_id IS NOT NULL
-        GROUP BY order_id
+        GROUP BY COALESCE(order_id, 'ORDER_' || id)
         ORDER BY purchase_date DESC
     `, (err, rows) => {
         if (err) {
