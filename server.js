@@ -652,17 +652,21 @@ app.post('/api/admin/restore-order', (req, res) => {
                 const productId = subscription.product_id;
                 const months = subscription.subscription_months;
                 
-                // Import generateReminders function (it's defined later in the file)
-                // For now, we'll generate reminders manually
                 console.log(`📅 Generating reminders for subscription ${subscriptionId}...`);
                 
-                // This will be handled by the generateReminders function when called
-                // For now, return success - reminders can be generated later if needed
+                // Call generateReminders function (defined later in the file)
+                try {
+                    generateReminders(subscriptionId, productId, months, purchaseDate);
+                    console.log(`✅ Reminders generated for subscription ${subscriptionId}`);
+                } catch (reminderErr) {
+                    console.error('⚠️ Error generating reminders:', reminderErr);
+                    // Continue anyway - order is restored
+                }
+                
                 res.json({ 
                     success: true, 
-                    message: 'Order restored successfully',
-                    subscription_id: subscriptionId,
-                    note: 'Reminders will be generated automatically on next server restart or can be generated manually'
+                    message: 'Order restored successfully with reminders',
+                    subscription_id: subscriptionId
                 });
             } else {
                 res.json({ 
