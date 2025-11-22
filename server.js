@@ -4452,8 +4452,8 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
         for (const item of cartArray) {
             const itemAmount = item.price * (item.quantity || 1);
             const stmt = db.prepare(`
-                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
             `);
             
             stmt.run([
