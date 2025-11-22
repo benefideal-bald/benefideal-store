@@ -513,22 +513,47 @@ app.get('/api/admin/renewals', (req, res) => {
         const formattedRenewals = rows.map(row => {
             // Calculate remaining months from reminder_type
             let remainingMonths = 0;
-            if (row.reminder_type && row.reminder_type.startsWith('renewal_')) {
-                const match = row.reminder_type.match(/renewal_(\d+)months/);
-                if (match) {
-                    remainingMonths = parseInt(match[1]);
+            
+            // For Adobe (product_id === 3), the logic is different
+            if (row.product_id === 3) {
+                // Adobe: fixed subscription periods
+                // 1, 3, 6 months -> one expiry reminder (0 months remaining)
+                // 12 months -> renewal_6months (6 months remaining) or expiry (0 months)
+                if (row.reminder_type === 'renewal_6months') {
+                    // For 12-month subscription, first reminder is at 6 months, meaning 6 months left
+                    remainingMonths = 6;
+                } else if (row.reminder_type === 'expiry') {
+                    remainingMonths = 0;
+                } else {
+                    // Fallback: calculate from purchase date and subscription months
+                    const purchaseDate = new Date(row.purchase_date);
+                    const endDate = new Date(purchaseDate);
+                    endDate.setMonth(endDate.getMonth() + row.subscription_months);
+                    const today = new Date();
+                    const monthsDiff = (endDate.getFullYear() - today.getFullYear()) * 12 + 
+                                      (endDate.getMonth() - today.getMonth());
+                    remainingMonths = Math.max(0, monthsDiff);
                 }
-            } else if (row.reminder_type === 'expiry') {
-                remainingMonths = 0;
             } else {
-                // Fallback: calculate from purchase date and subscription months
-                const purchaseDate = new Date(row.purchase_date);
-                const endDate = new Date(purchaseDate);
-                endDate.setMonth(endDate.getMonth() + row.subscription_months);
-                const today = new Date();
-                const monthsDiff = (endDate.getFullYear() - today.getFullYear()) * 12 + 
-                                  (endDate.getMonth() - today.getMonth());
-                remainingMonths = Math.max(0, monthsDiff);
+                // For ChatGPT and CapCut: monthly renewals
+                // reminder_type format: renewal_Xmonths where X is remaining months
+                if (row.reminder_type && row.reminder_type.startsWith('renewal_')) {
+                    const match = row.reminder_type.match(/renewal_(\d+)months/);
+                    if (match) {
+                        remainingMonths = parseInt(match[1]);
+                    }
+                } else if (row.reminder_type === 'expiry') {
+                    remainingMonths = 0;
+                } else {
+                    // Fallback: calculate from purchase date and subscription months
+                    const purchaseDate = new Date(row.purchase_date);
+                    const endDate = new Date(purchaseDate);
+                    endDate.setMonth(endDate.getMonth() + row.subscription_months);
+                    const today = new Date();
+                    const monthsDiff = (endDate.getFullYear() - today.getFullYear()) * 12 + 
+                                      (endDate.getMonth() - today.getMonth());
+                    remainingMonths = Math.max(0, monthsDiff);
+                }
             }
             
             return {
