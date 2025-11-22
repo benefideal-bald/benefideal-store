@@ -439,19 +439,20 @@ app.get('/api/admin/orders', (req, res) => {
     
     console.log('✅ Admin access granted');
     
-    // Group by order_id to show unique orders, but also show orders without order_id
+    // Get all subscriptions
     db.all(`
         SELECT 
-            COALESCE(order_id, 'ORDER_' || id) as order_id,
+            id,
             customer_name,
             customer_email,
-            MIN(purchase_date) as purchase_date,
-            SUM(amount) as total_amount,
-            COUNT(*) as items_count,
-            GROUP_CONCAT(product_name, '; ') as products,
-            GROUP_CONCAT(id) as subscription_ids
+            product_name,
+            product_id,
+            subscription_months,
+            purchase_date,
+            order_id,
+            amount,
+            is_active
         FROM subscriptions
-        GROUP BY COALESCE(order_id, 'ORDER_' || id)
         ORDER BY purchase_date DESC
     `, (err, rows) => {
         if (err) {
@@ -459,19 +460,51 @@ app.get('/api/admin/orders', (req, res) => {
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
-        // Format dates and format amount
-        const formattedOrders = rows.map(order => ({
+        // Group by order_id on the server side
+        const ordersMap = new Map();
+        
+        rows.forEach(row => {
+            const orderKey = row.order_id || `ORDER_${row.id}`;
+            
+            if (!ordersMap.has(orderKey)) {
+                ordersMap.set(orderKey, {
+                    order_id: row.order_id || `ORDER_${row.id}`,
+                    customer_name: row.customer_name,
+                    customer_email: row.customer_email,
+                    products: [],
+                    items_count: 0,
+                    purchase_date: row.purchase_date,
+                    total_amount: 0,
+                    subscription_ids: []
+                });
+            }
+            
+            const order = ordersMap.get(orderKey);
+            order.products.push(row.product_name);
+            order.items_count += 1;
+            order.total_amount += (row.amount || 0);
+            order.subscription_ids.push(row.id);
+            
+            // Use earliest purchase date
+            if (new Date(row.purchase_date) < new Date(order.purchase_date)) {
+                order.purchase_date = row.purchase_date;
+            }
+        });
+        
+        // Convert map to array and format
+        const formattedOrders = Array.from(ordersMap.values()).map(order => ({
             order_id: order.order_id,
             customer_name: order.customer_name,
             customer_email: order.customer_email,
-            products: order.products,
+            products: order.products.join('; '),
             items_count: order.items_count,
             purchase_date: order.purchase_date,
             purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
             purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
             amount: order.total_amount,
             amount_formatted: order.total_amount ? order.total_amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
-            is_active: 1 // Assume active if order exists
+            subscription_ids: order.subscription_ids.join(','),
+            is_active: 1
         }));
         
         res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
