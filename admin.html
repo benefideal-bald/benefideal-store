@@ -282,12 +282,15 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label>Дата от</label>
-                <input type="date" id="dateFrom" onchange="filterOrders()">
-            </div>
-            <div class="filter-group">
-                <label>Дата до</label>
-                <input type="date" id="dateTo" onchange="filterOrders()">
+                <label>Сортировка</label>
+                <select id="sortBy" onchange="sortOrders()">
+                    <option value="date-desc">Дата (новые сначала)</option>
+                    <option value="date-asc">Дата (старые сначала)</option>
+                    <option value="amount-desc">Сумма (больше сначала)</option>
+                    <option value="amount-asc">Сумма (меньше сначала)</option>
+                    <option value="name-asc">Имя (А-Я)</option>
+                    <option value="name-desc">Имя (Я-А)</option>
+                </select>
             </div>
         </div>
 
@@ -354,7 +357,7 @@
                 .then(data => {
                     if (data.success) {
                         allOrders = data.orders;
-                        displayOrders(allOrders);
+                        sortOrdersList(allOrders);
                         updateStats(allOrders);
                         document.getElementById('passwordPrompt').style.display = 'none';
                         document.getElementById('adminPanel').style.display = 'block';
@@ -420,11 +423,11 @@
             `;
         }
 
+        let currentSort = 'date-desc';
+        
         function filterOrders() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const product = document.getElementById('productFilter').value;
-            const dateFrom = document.getElementById('dateFrom').value;
-            const dateTo = document.getElementById('dateTo').value;
             
             let filtered = allOrders.filter(order => {
                 const matchSearch = !search || 
@@ -433,13 +436,39 @@
                 
                 const matchProduct = !product || order.product_name === product;
                 
-                const matchDateFrom = !dateFrom || (order.purchase_date && order.purchase_date >= dateFrom);
-                const matchDateTo = !dateTo || (order.purchase_date && order.purchase_date <= dateTo + 'T23:59:59');
-                
-                return matchSearch && matchProduct && matchDateFrom && matchDateTo;
+                return matchSearch && matchProduct;
             });
             
-            displayOrders(filtered);
+            // Apply sorting
+            sortOrdersList(filtered);
+        }
+        
+        function sortOrders() {
+            currentSort = document.getElementById('sortBy').value;
+            filterOrders();
+        }
+        
+        function sortOrdersList(orders) {
+            const sorted = [...orders].sort((a, b) => {
+                switch(currentSort) {
+                    case 'date-desc':
+                        return new Date(b.purchase_date) - new Date(a.purchase_date);
+                    case 'date-asc':
+                        return new Date(a.purchase_date) - new Date(b.purchase_date);
+                    case 'amount-desc':
+                        return (b.amount || 0) - (a.amount || 0);
+                    case 'amount-asc':
+                        return (a.amount || 0) - (b.amount || 0);
+                    case 'name-asc':
+                        return a.customer_name.localeCompare(b.customer_name, 'ru');
+                    case 'name-desc':
+                        return b.customer_name.localeCompare(a.customer_name, 'ru');
+                    default:
+                        return 0;
+                }
+            });
+            
+            displayOrders(sorted);
         }
 
         // Allow Enter key in password input
