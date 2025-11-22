@@ -378,9 +378,9 @@
     <!-- Admin Panel -->
     <div id="adminPanel" class="admin-container" style="display: none;">
         <!-- Debug Info (visible on page) -->
-        <div id="debugInfo" class="debug-info" style="display: none; background: #fff3cd; border: 1px solid #ffc107;">
+        <div id="debugInfo" class="debug-info" style="display: block; background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
             <strong>🔍 Отладочная информация:</strong><br>
-            <span id="debugText">Загрузка...</span>
+            <span id="debugText">Инициализация...</span>
         </div>
         
         <div class="admin-header">
@@ -477,15 +477,18 @@
         if (urlPassword) {
             adminPassword = urlPassword;
             localStorage.setItem('admin_password', urlPassword); // Save to localStorage
+            updateDebugInfo('✅ Пароль получен из URL');
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             loadOrders();
         } else if (savedPassword) {
             adminPassword = savedPassword;
+            updateDebugInfo('✅ Пароль загружен из сохраненных данных');
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             loadOrders();
         } else {
+            updateDebugInfo('⚠️ Пароль не найден, требуется вход');
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
         }
@@ -508,9 +511,16 @@
         function updateDebugInfo(text) {
             const debugEl = document.getElementById('debugInfo');
             const debugText = document.getElementById('debugText');
+            console.log('🔍 DEBUG:', text); // Also log to console
             if (debugEl && debugText) {
                 debugText.innerHTML += text + '<br>';
                 debugEl.style.display = 'block';
+                debugEl.style.background = '#fff3cd';
+                debugEl.style.border = '2px solid #ffc107';
+                debugEl.style.padding = '15px';
+                debugEl.style.margin = '15px 0';
+            } else {
+                console.error('❌ Debug elements not found!', { debugEl, debugText });
             }
         }
         
