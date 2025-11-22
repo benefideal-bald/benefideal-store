@@ -869,6 +869,109 @@ app.post('/api/admin/auto-restore-nikita', (req, res) => {
     }, 5000); // Wait 5 seconds for database to be ready
 })();
 
+// ONE-TIME RESTORE: Simple endpoint to restore Nikita order (no password required, one-time use)
+app.get('/restore-nikita-now', (req, res) => {
+    console.log('🔧 ONE-TIME: Restoring Nikita order via simple endpoint...');
+    
+    const nikitaData = {
+        customer_name: 'Никита',
+        customer_email: 'kitchenusefulproducts@gmail.com',
+        product_name: 'Adobe Creative Cloud',
+        product_id: 3,
+        subscription_months: 12,
+        purchase_date: '2025-11-22T18:16:19.000Z',
+        order_id: 'ORDER_1763835378659_pmen785dd',
+        amount: 29700
+    };
+    
+    // Check if order already exists
+    db.all(`SELECT * FROM subscriptions WHERE order_id = ? OR (customer_email = ? AND purchase_date LIKE ?)`, 
+        [nikitaData.order_id, nikitaData.customer_email, '2025-11-22%'], 
+        (err, existing) => {
+            if (err) {
+                console.error('❌ Error checking Nikita order:', err);
+                return res.status(500).json({ error: 'Database error', details: err.message });
+            }
+            
+            if (existing && existing.length > 0) {
+                console.log(`✅ Nikita order already exists: ${existing.length} subscription(s)`);
+                return res.json({
+                    success: true,
+                    message: 'Order already exists',
+                    subscriptions: existing.map(s => ({
+                        id: s.id,
+                        order_id: s.order_id,
+                        customer_name: s.customer_name,
+                        customer_email: s.customer_email,
+                        product_name: s.product_name,
+                        amount: s.amount
+                    }))
+                });
+            }
+            
+            // Order doesn't exist - restore it
+            console.log('🔧 Nikita order not found - restoring NOW...');
+            const stmt = db.prepare(`
+                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+            `);
+            
+            stmt.run([
+                nikitaData.customer_name,
+                nikitaData.customer_email,
+                nikitaData.product_name,
+                nikitaData.product_id,
+                nikitaData.subscription_months,
+                nikitaData.purchase_date,
+                nikitaData.order_id,
+                nikitaData.amount
+            ], function(err) {
+                if (err) {
+                    console.error('❌ Error restoring Nikita order:', err);
+                    stmt.finalize();
+                    return res.status(500).json({ error: 'Database error', details: err.message });
+                }
+                
+                const subscriptionId = this.lastID;
+                console.log(`✅ Nikita order restored successfully: Subscription ID=${subscriptionId}`);
+                stmt.finalize();
+                
+                // Generate reminders
+                const purchaseDate = new Date(nikitaData.purchase_date);
+                try {
+                    generateReminders(subscriptionId, nikitaData.product_id, nikitaData.subscription_months, purchaseDate);
+                    console.log(`✅ Reminders generated for Nikita subscription ${subscriptionId}`);
+                } catch (reminderErr) {
+                    console.error('⚠️ Error generating reminders:', reminderErr);
+                }
+                
+                // Verify
+                db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (verifyErr, saved) => {
+                    if (verifyErr || !saved) {
+                        console.error('❌ CRITICAL: Nikita order was not saved!');
+                        return res.status(500).json({
+                            success: false,
+                            error: 'Order restoration failed verification'
+                        });
+                    }
+                    
+                    console.log(`✅ VERIFIED: Nikita order ${subscriptionId} exists in database`);
+                    res.json({
+                        success: true,
+                        message: 'Nikita order restored successfully!',
+                        subscription_id: subscriptionId,
+                        order_id: nikitaData.order_id,
+                        customer_name: nikitaData.customer_name,
+                        customer_email: nikitaData.customer_email,
+                        product_name: nikitaData.product_name,
+                        amount: nikitaData.amount,
+                        note: 'Check admin panel now - order should be visible'
+                    });
+                });
+            });
+        });
+});
+
 // Admin API - Get renewals/reminders
 app.get('/api/admin/renewals', (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
