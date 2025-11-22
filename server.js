@@ -441,7 +441,7 @@ app.get('/api/admin/orders', (req, res) => {
     
     console.log('🔍 Fetching orders from database...');
     
-    // Get all subscriptions - simple query first to see all data
+    // Get all subscriptions - show all records as separate orders
     db.all(`
         SELECT 
             id,
@@ -469,61 +469,29 @@ app.get('/api/admin/orders', (req, res) => {
             return res.json({ success: true, orders: [], total: 0 });
         }
         
-        // Group by order_id on the server side
-        const ordersMap = new Map();
+        // Format dates and format amount - show all records as separate orders
+        const formattedOrders = rows.map(order => ({
+            id: order.id,
+            order_id: order.order_id,
+            customer_name: order.customer_name,
+            customer_email: order.customer_email,
+            product_name: order.product_name,
+            product_id: order.product_id,
+            subscription_months: order.subscription_months,
+            purchase_date: order.purchase_date,
+            purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
+            purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
+            amount: order.amount,
+            amount_formatted: order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
+            duration_text: order.subscription_months === 1 ? '1 месяц' : 
+                          order.subscription_months >= 2 && order.subscription_months <= 4 ? `${order.subscription_months} месяца` : 
+                          `${order.subscription_months} месяцев`,
+            is_active: order.is_active
+        }));
         
-        try {
-            rows.forEach(row => {
-                const orderKey = row.order_id || `ORDER_${row.id}`;
-                
-                if (!ordersMap.has(orderKey)) {
-                    ordersMap.set(orderKey, {
-                        order_id: row.order_id || `ORDER_${row.id}`,
-                        customer_name: row.customer_name,
-                        customer_email: row.customer_email,
-                        products: [],
-                        items_count: 0,
-                        purchase_date: row.purchase_date,
-                        total_amount: 0,
-                        subscription_ids: []
-                    });
-                }
-                
-                const order = ordersMap.get(orderKey);
-                order.products.push(row.product_name);
-                order.items_count += 1;
-                order.total_amount += (row.amount || 0);
-                order.subscription_ids.push(row.id);
-                
-                // Use earliest purchase date
-                if (new Date(row.purchase_date) < new Date(order.purchase_date)) {
-                    order.purchase_date = row.purchase_date;
-                }
-            });
-            
-            // Convert map to array and format
-            const formattedOrders = Array.from(ordersMap.values()).map(order => ({
-                order_id: order.order_id,
-                customer_name: order.customer_name,
-                customer_email: order.customer_email,
-                products: order.products.join('; '),
-                items_count: order.items_count,
-                purchase_date: order.purchase_date,
-                purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
-                purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
-                amount: order.total_amount,
-                amount_formatted: order.total_amount ? order.total_amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
-                subscription_ids: order.subscription_ids.join(','),
-                is_active: 1
-            }));
-            
-            console.log(`✅ Returning ${formattedOrders.length} grouped orders`);
-            
-            res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
-        } catch (processingError) {
-            console.error('❌ Error processing orders:', processingError);
-            return res.status(500).json({ error: 'Processing error', details: processingError.message });
-        }
+        console.log(`✅ Returning ${formattedOrders.length} orders`);
+        
+        res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
     });
 });
 
