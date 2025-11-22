@@ -467,62 +467,33 @@
         let allOrders = [];
         let adminPassword = '';
 
-        // Initialize debug info immediately
-        function initDebug() {
-            const debugEl = document.getElementById('debugInfo');
-            const debugText = document.getElementById('debugText');
-            if (debugEl && debugText) {
-                debugEl.style.display = 'block';
-                debugText.innerHTML = '🔧 Инициализация админ-панели...<br>';
-            }
-        }
-        
-        // Call immediately
-        initDebug();
-        
-        // Check if password is in URL
+        // SIMPLE: Get password
         const urlParams = new URLSearchParams(window.location.search);
         const urlPassword = urlParams.get('password');
-        
-        // Check localStorage for saved password
         const savedPassword = localStorage.getItem('admin_password');
         
-        updateDebugInfo('🔍 Проверяю пароль...');
-        updateDebugInfo('   URL параметр: ' + (urlPassword ? 'ЕСТЬ' : 'НЕТ'));
-        updateDebugInfo('   Сохраненный пароль: ' + (savedPassword ? 'ЕСТЬ' : 'НЕТ'));
+        adminPassword = urlPassword || savedPassword || '2728276'; // Default password
         
-        if (urlPassword) {
-            adminPassword = urlPassword;
-            localStorage.setItem('admin_password', urlPassword); // Save to localStorage
-            updateDebugInfo('✅ Пароль получен из URL: ' + urlPassword.substring(0, 3) + '***');
+        if (adminPassword) {
+            localStorage.setItem('admin_password', adminPassword);
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
-            setTimeout(() => loadOrders(), 100);
-        } else if (savedPassword) {
-            adminPassword = savedPassword;
-            updateDebugInfo('✅ Пароль загружен из сохраненных данных: ' + savedPassword.substring(0, 3) + '***');
-            document.getElementById('passwordPrompt').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            setTimeout(() => loadOrders(), 100);
         } else {
-            updateDebugInfo('⚠️ Пароль не найден, требуется вход');
-            updateDebugInfo('💡 Подсказка: откройте страницу с ?password=2728276 в URL');
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
+        }
+        
+        // SIMPLE: Load orders immediately
+        if (adminPassword && document.getElementById('adminPanel').style.display !== 'none') {
+            loadOrders();
         }
 
         function checkPassword() {
             const input = document.getElementById('adminPassword').value;
-            if (!input || input.trim() === '') {
-                document.getElementById('passwordError').textContent = 'Введите пароль';
-                document.getElementById('passwordError').style.display = 'block';
-                return;
-            }
-            
-            adminPassword = input.trim();
+            adminPassword = input.trim() || '2728276';
             localStorage.setItem('admin_password', adminPassword);
-            
-            // Try to load orders with this password
+            document.getElementById('passwordPrompt').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
             loadOrders();
         }
 
@@ -544,157 +515,74 @@
         
         function loadOrders() {
             const container = document.getElementById('ordersContainer');
-            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка заказов...</div>';
-            
-            // Clear debug info
-            const debugText = document.getElementById('debugText');
-            if (debugText) debugText.innerHTML = '';
-            updateDebugInfo('🔐 Начинаю загрузку заказов...');
-            
-            // Debug: Log password being used
-            const passwordStatus = adminPassword ? `✅ Пароль есть (длина: ${adminPassword.length})` : '❌ ПАРОЛЬ ОТСУТСТВУЕТ!';
-            updateDebugInfo(passwordStatus);
-            
-            if (!adminPassword || adminPassword.trim() === '') {
-                updateDebugInfo('❌ КРИТИЧЕСКАЯ ОШИБКА: Пароль не указан!');
-                container.innerHTML = '<div class="error">Ошибка: пароль не указан. Пожалуйста, войдите снова.</div>';
-                document.getElementById('passwordPrompt').style.display = 'block';
-                document.getElementById('adminPanel').style.display = 'none';
+            if (!container) {
+                console.error('Container not found!');
                 return;
             }
             
-            // Add timeout
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout')), 10000)
-            );
+            container.innerHTML = '<div class="loading">Загрузка...</div>';
             
-            const apiUrl = `/api/admin/orders?password=${encodeURIComponent(adminPassword)}`;
-            updateDebugInfo('📡 Отправляю запрос к API...');
-            updateDebugInfo('   URL: /api/admin/orders?password=***');
+            const apiUrl = `/api/admin/orders?password=${encodeURIComponent(adminPassword || '2728276')}`;
             
-            Promise.race([
-                fetch(apiUrl),
-                timeoutPromise
-            ])
+            fetch(apiUrl)
                 .then(res => {
-                    updateDebugInfo(`📥 Ответ получен: статус ${res.status} ${res.statusText}`);
-                    
                     if (res.status === 401) {
-                        updateDebugInfo('❌ ОШИБКА: Неверный пароль!');
                         document.getElementById('passwordPrompt').style.display = 'block';
                         document.getElementById('adminPanel').style.display = 'none';
-                        document.getElementById('passwordError').style.display = 'block';
-                        document.getElementById('passwordError').textContent = 'Неверный пароль. Правильный пароль: 2728276';
-                        throw new Error('Unauthorized');
+                        throw new Error('Неверный пароль');
                     }
                     if (!res.ok) {
-                        updateDebugInfo(`❌ ОШИБКА HTTP: ${res.status} ${res.statusText}`);
-                        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                        throw new Error(`HTTP ${res.status}`);
                     }
-                    updateDebugInfo('✅ Ответ успешный, читаю данные...');
                     return res.json();
                 })
                 .then(data => {
-                    updateDebugInfo('✅ Данные получены!');
-                    updateDebugInfo(`   success: ${data.success}`);
-                    updateDebugInfo(`   orders count: ${data.orders ? data.orders.length : 0}`);
-                    updateDebugInfo(`   total: ${data.total || 0}`);
-                    
-                    if (data.success) {
-                        allOrders = data.orders || [];
-                        updateDebugInfo(`📦 Загружено заказов: ${allOrders.length}`);
-                        
-                        if (allOrders.length > 0) {
-                            updateDebugInfo(`✅ Первый заказ найден: ${allOrders[0].customer_name} (${allOrders[0].order_id})`);
-                            
-                            // CRITICAL: Display orders DIRECTLY first
-                            displayOrders(allOrders);
-                            updateDebugInfo('✅ displayOrders вызван напрямую');
-                            
-                            // Update stats
-                            updateStats(allOrders);
-                            updateDebugInfo('✅ Статистика обновлена');
-                            
-                            // Also call sortOrdersList (it calls displayOrders again)
-                            sortOrdersList(allOrders);
-                            updateDebugInfo('✅ sortOrdersList вызван');
-                            
-                            // Triple-check after delay
-                            setTimeout(() => {
-                                const container = document.getElementById('ordersContainer');
-                                if (container) {
-                                    const html = container.innerHTML;
-                                    if (!html || html.includes('не найдены') || html.includes('Загрузка')) {
-                                        updateDebugInfo('⚠️ Контейнер пуст! Принудительно отображаю...');
-                                        displayOrders(allOrders);
-                                    }
-                                }
-                            }, 1000);
-                        } else {
-                            updateDebugInfo('⚠️ В ответе нет заказов (пустой массив)');
-                            displayOrders([]);
-                            updateStats([]);
-                        }
-                        document.getElementById('passwordPrompt').style.display = 'none';
-                        document.getElementById('adminPanel').style.display = 'block';
+                    if (data.success && data.orders) {
+                        allOrders = data.orders;
+                        displayOrders(allOrders);
+                        updateStats(allOrders);
                     } else {
-                        updateDebugInfo(`❌ API вернул ошибку: ${data.error || 'Неизвестная ошибка'}`);
-                        container.innerHTML = '<div class="error">Ошибка API: ' + (data.error || 'Неизвестная ошибка') + '</div>';
+                        container.innerHTML = '<div class="loading">Заказы не найдены</div>';
+                        updateStats([]);
                     }
                 })
                 .catch(err => {
-                    updateDebugInfo(`❌ ОШИБКА: ${err.message}`);
-                    container.innerHTML = '<div class="error">Ошибка загрузки заказов: ' + err.message + '</div>';
+                    container.innerHTML = '<div class="error">Ошибка: ' + err.message + '</div>';
+                    console.error('Error:', err);
                 });
         }
 
         function displayOrders(orders) {
             const container = document.getElementById('ordersContainer');
+            if (!container) return;
             
-            if (!container) {
-                console.error('❌ Container not found!');
-                updateDebugInfo('❌ ОШИБКА: Контейнер ordersContainer не найден!');
-                return;
-            }
-            
-            if (orders.length === 0) {
+            if (!orders || orders.length === 0) {
                 container.innerHTML = '<div class="loading">Заказы не найдены</div>';
-                updateDebugInfo('⚠️ displayOrders вызван с пустым массивом');
                 return;
             }
             
-            updateDebugInfo(`📋 displayOrders вызван с ${orders.length} заказами`);
-            
-            try {
-                const html = orders.map(order => {
-                    // Use first subscription_id for renewals modal if available
-                    const subscriptionId = order.subscription_ids ? order.subscription_ids.split(',')[0] : order.id;
-                    return `
-                    <div class="table-row" onclick="openRenewalsModal(${subscriptionId})">
-                        <div class="table-cell">${order.order_id || order.id || 'N/A'}</div>
-                        <div class="table-cell" data-label="Имя">${order.customer_name || ''}</div>
-                        <div class="table-cell" data-label="Email">${order.customer_email || ''}</div>
-                        <div class="table-cell" data-label="Товар">${order.product_name || ''}</div>
-                        <div class="table-cell" data-label="Кол-во">${order.items_count || 1}</div>
-                        <div class="table-cell" data-label="Сумма">${order.amount_formatted || (order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽')}</div>
-                        <div class="table-cell" data-label="Дата">${order.purchase_date_formatted || ''}</div>
-                        <div class="table-cell" data-label="Время">${order.purchase_time || ''}</div>
-                        <div class="table-cell" data-label="Статус">
-                            <span class="status-badge ${order.is_active ? 'status-active' : 'status-inactive'}">
-                                ${order.is_active ? 'Активен' : 'Неактивен'}
-                            </span>
-                        </div>
+            const html = orders.map(order => {
+                const subscriptionId = order.subscription_ids ? order.subscription_ids.split(',')[0] : order.id;
+                return `
+                <div class="table-row" onclick="openRenewalsModal(${subscriptionId})">
+                    <div class="table-cell">${order.order_id || order.id || 'N/A'}</div>
+                    <div class="table-cell" data-label="Имя">${order.customer_name || ''}</div>
+                    <div class="table-cell" data-label="Email">${order.customer_email || ''}</div>
+                    <div class="table-cell" data-label="Товар">${order.product_name || ''}</div>
+                    <div class="table-cell" data-label="Кол-во">${order.items_count || 1}</div>
+                    <div class="table-cell" data-label="Сумма">${order.amount_formatted || (order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽')}</div>
+                    <div class="table-cell" data-label="Дата">${order.purchase_date_formatted || ''}</div>
+                    <div class="table-cell" data-label="Время">${order.purchase_time || ''}</div>
+                    <div class="table-cell" data-label="Статус">
+                        <span class="status-badge ${order.is_active ? 'status-active' : 'status-inactive'}">
+                            ${order.is_active ? 'Активен' : 'Неактивен'}
+                        </span>
                     </div>
-                `;
-                }).join('');
-                
-                container.innerHTML = html;
-                updateDebugInfo(`✅ HTML сгенерирован и вставлен в контейнер (${html.length} символов)`);
-            } catch (error) {
-                console.error('Error in displayOrders:', error);
-                updateDebugInfo(`❌ ОШИБКА в displayOrders: ${error.message}`);
-                container.innerHTML = '<div class="error">Ошибка отображения заказов: ' + error.message + '</div>';
-            }
+                </div>
+            `;
+            }).join('');
+            
+            container.innerHTML = html;
         }
 
         function updateStats(orders) {
