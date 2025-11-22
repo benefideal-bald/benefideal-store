@@ -439,7 +439,7 @@ app.get('/api/admin/orders', (req, res) => {
     
     console.log('✅ Admin access granted');
     
-    // Get all subscriptions
+    // Get all subscriptions - simple query first to see all data
     db.all(`
         SELECT 
             id,
@@ -459,6 +459,8 @@ app.get('/api/admin/orders', (req, res) => {
             console.error('Error fetching orders:', err);
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
+        
+        console.log(`📊 Found ${rows.length} subscriptions in database`);
         
         // Group by order_id on the server side
         const ordersMap = new Map();
@@ -506,6 +508,8 @@ app.get('/api/admin/orders', (req, res) => {
             subscription_ids: order.subscription_ids.join(','),
             is_active: 1
         }));
+        
+        console.log(`✅ Returning ${formattedOrders.length} grouped orders`);
         
         res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
     });

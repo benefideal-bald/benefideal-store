@@ -499,12 +499,20 @@
                     return res.json();
                 })
                 .then(data => {
+                    console.log('Orders data received:', data);
                     if (data.success) {
-                        allOrders = data.orders;
-                        sortOrdersList(allOrders);
-                        updateStats(allOrders);
+                        allOrders = data.orders || [];
+                        console.log('Total orders:', allOrders.length);
+                        if (allOrders.length > 0) {
+                            sortOrdersList(allOrders);
+                            updateStats(allOrders);
+                        } else {
+                            updateStats([]);
+                        }
                         document.getElementById('passwordPrompt').style.display = 'none';
                         document.getElementById('adminPanel').style.display = 'block';
+                    } else {
+                        console.error('API returned error:', data);
                     }
                 })
                 .catch(err => {
