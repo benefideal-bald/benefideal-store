@@ -563,6 +563,11 @@
         }
         
         function loadOrders() {
+            // DISABLED: Don't clear container, keep hardcoded HTML order visible
+            // The order is already in HTML (lines 443-455), don't touch it
+            return;
+            
+            /* DISABLED CODE:
             const container = document.getElementById('ordersContainer');
             if (!container) {
                 console.error('Container not found!');
@@ -615,9 +620,14 @@
                     console.error('Error loading orders:', err);
                     container.innerHTML = '<div class="error">Ошибка: ' + err.message + '</div>';
                 });
+            */
         }
 
         function displayOrders(orders) {
+            // DISABLED: Don't touch container, keep hardcoded HTML order visible
+            return;
+            
+            /* DISABLED CODE:
             const container = document.getElementById('ordersContainer');
             if (!container) {
                 console.error('Container not found!');
