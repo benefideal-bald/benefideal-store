@@ -508,13 +508,33 @@
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
-            // Keep hardcoded order in HTML - DON'T call displayOrders() or loadOrders()
-            // Update stats only
-            allOrders = [hardcodedOrder];
-            updateStats(allOrders);
+            // Keep hardcoded order in HTML - DON'T call ANY functions that might clear it
+            // Just update stats manually without touching the container
+            const statsContainer = document.getElementById('statsContainer');
+            if (statsContainer) {
+                statsContainer.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">1</div>
+                        <div class="stat-label">Всего заказов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">29 700 ₽</div>
+                        <div class="stat-label">Общая сумма</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">1</div>
+                        <div class="stat-label">Активных</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Сегодня</div>
+                    </div>
+                `;
+            }
             
             // DON'T call displayOrders() - it will clear the hardcoded HTML order
             // DON'T call loadOrders() - it will clear the hardcoded HTML order
+            // DON'T call updateStats() - it might trigger something
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
@@ -526,7 +546,7 @@
             localStorage.setItem('admin_password', adminPassword);
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
-            loadOrders();
+            // DON'T call loadOrders() - it will clear the hardcoded HTML order
         }
 
         function updateDebugInfo(text) {
