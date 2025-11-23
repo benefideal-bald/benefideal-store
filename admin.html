@@ -502,6 +502,9 @@
                 `;
             }
             
+            // Load orders from API (will update stats automatically)
+            console.log('✅ Password accepted, loading orders...');
+            loadOrders();
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
