@@ -478,14 +478,21 @@
             localStorage.setItem('admin_password', adminPassword);
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
+            
+            // Load orders immediately when page loads
+            window.addEventListener('DOMContentLoaded', () => {
+                loadOrders();
+            });
+            
+            // Also try immediately
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadOrders);
+            } else {
+                loadOrders();
+            }
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
-        }
-        
-        // SIMPLE: Load orders immediately
-        if (adminPassword && document.getElementById('adminPanel').style.display !== 'none') {
-            loadOrders();
         }
 
         function checkPassword() {
@@ -517,15 +524,18 @@
             const container = document.getElementById('ordersContainer');
             if (!container) {
                 console.error('Container not found!');
+                setTimeout(loadOrders, 500); // Retry
                 return;
             }
             
             container.innerHTML = '<div class="loading">Загрузка...</div>';
             
             const apiUrl = `/api/admin/orders?password=${encodeURIComponent(adminPassword || '2728276')}`;
+            console.log('Loading orders from:', apiUrl);
             
             fetch(apiUrl)
                 .then(res => {
+                    console.log('Response status:', res.status);
                     if (res.status === 401) {
                         document.getElementById('passwordPrompt').style.display = 'block';
                         document.getElementById('adminPanel').style.display = 'none';
@@ -537,18 +547,25 @@
                     return res.json();
                 })
                 .then(data => {
-                    if (data.success && data.orders) {
+                    console.log('Data received:', data);
+                    console.log('Success:', data.success);
+                    console.log('Orders:', data.orders);
+                    console.log('Orders count:', data.orders ? data.orders.length : 0);
+                    
+                    if (data.success && data.orders && data.orders.length > 0) {
                         allOrders = data.orders;
+                        console.log('Displaying', allOrders.length, 'orders');
                         displayOrders(allOrders);
                         updateStats(allOrders);
                     } else {
+                        console.warn('No orders in response');
                         container.innerHTML = '<div class="loading">Заказы не найдены</div>';
                         updateStats([]);
                     }
                 })
                 .catch(err => {
+                    console.error('Error loading orders:', err);
                     container.innerHTML = '<div class="error">Ошибка: ' + err.message + '</div>';
-                    console.error('Error:', err);
                 });
         }
 
