@@ -535,48 +535,61 @@
         }
         
         function loadOrders() {
+            console.log('🔍 loadOrders() called');
             const container = document.getElementById('ordersContainer');
             if (!container) {
-                console.error('Container not found!');
+                console.error('❌ Container not found!');
                 setTimeout(loadOrders, 500); // Retry
                 return;
             }
             
+            console.log('✅ Container found, loading orders...');
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка заказов...</div>';
             
             const apiUrl = `/api/admin/orders?password=${encodeURIComponent(adminPassword || '2728276')}`;
-            console.log('Loading orders from:', apiUrl);
+            console.log('📡 Loading orders from:', apiUrl);
+            console.log('🔑 Using password:', adminPassword ? '***' : 'NOT SET');
             
             fetch(apiUrl)
                 .then(res => {
-                    console.log('Response status:', res.status);
+                    console.log('📥 Response status:', res.status);
+                    console.log('📥 Response ok:', res.ok);
                     if (res.status === 401) {
+                        console.error('❌ Unauthorized - wrong password');
                         document.getElementById('passwordPrompt').style.display = 'block';
                         document.getElementById('adminPanel').style.display = 'none';
                         throw new Error('Неверный пароль');
                     }
                     if (!res.ok) {
+                        console.error('❌ HTTP error:', res.status);
                         throw new Error(`HTTP ${res.status}`);
                     }
                     return res.json();
                 })
                 .then(data => {
-                    console.log('Data received:', data);
-                    console.log('Success:', data.success);
-                    console.log('Orders:', data.orders);
-                    console.log('Orders count:', data.orders ? data.orders.length : 0);
+                    console.log('✅ Data received:', data);
+                    console.log('✅ Success:', data.success);
+                    console.log('✅ Orders array:', data.orders);
+                    console.log('✅ Orders count:', data.orders ? data.orders.length : 0);
+                    console.log('✅ Total:', data.total);
                     
                     if (data.success && data.orders && data.orders.length > 0) {
+                        console.log('✅ Found orders, displaying...');
                         allOrders = data.orders;
                         displayOrders(allOrders);
                         updateStats(allOrders);
                     } else {
+                        console.warn('⚠️ No orders found in response');
+                        console.warn('   success:', data.success);
+                        console.warn('   orders:', data.orders);
                         container.innerHTML = '<div class="loading">Заказы не найдены</div>';
                         updateStats([]);
                     }
                 })
                 .catch(err => {
-                    console.error('Error loading orders:', err);
+                    console.error('❌ Error loading orders:', err);
+                    console.error('   Error message:', err.message);
+                    console.error('   Error stack:', err.stack);
                     container.innerHTML = '<div class="error">Ошибка: ' + err.message + '</div>';
                 });
         }
