@@ -271,7 +271,7 @@
 
         <!-- Calendar -->
         <div class="calendar-section">
-            <h2 class="calendar-title">Календарь продлений (30 дней)</h2>
+            <h2 class="calendar-title">Календарь продлений</h2>
             <div id="calendarContainer" class="calendar-grid">
                 <div class="loading">
                     <i class="fas fa-spinner fa-spin"></i> Загрузка календаря...
@@ -371,7 +371,8 @@
             const container = document.getElementById('calendarContainer');
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка календаря...</div>';
             
-            fetch(`/api/admin/renewals-calendar?password=${encodeURIComponent(adminPassword)}&days=30`)
+            // Get all future renewals (no days limit)
+            fetch(`/api/admin/renewals-calendar?password=${encodeURIComponent(adminPassword)}`)
                 .then(res => {
                     if (res.status === 401) {
                         container.innerHTML = '<div class="error">Неверный пароль</div>';

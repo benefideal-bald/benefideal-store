@@ -784,11 +784,10 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     
-    const daysAhead = parseInt(req.query.days) || 30; // Next 30 days by default
+    // Get all future reminders (no date limit)
     const startDate = new Date().toISOString().split('T')[0];
-    const endDate = new Date(Date.now() + daysAhead * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
-    // Get all reminders in the date range
+    // Get all reminders in the future (no upper limit)
     db.all(`
         SELECT 
             DATE(r.reminder_date) as reminder_day,
@@ -802,16 +801,16 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
             s.product_id
         FROM reminders r
         INNER JOIN subscriptions s ON r.subscription_id = s.id
-        WHERE DATE(r.reminder_date) >= DATE(?) AND DATE(r.reminder_date) <= DATE(?)
+        WHERE DATE(r.reminder_date) >= DATE(?)
         GROUP BY DATE(r.reminder_date)
         ORDER BY reminder_day ASC
-    `, [startDate, endDate], (err, rows) => {
+    `, [startDate], (err, rows) => {
         if (err) {
             console.error('Error fetching renewals calendar:', err);
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
-        // Get detailed data for each date
+        // Get detailed data for each date (all future reminders)
         db.all(`
             SELECT 
                 DATE(r.reminder_date) as reminder_day,
@@ -830,9 +829,9 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
                 s.amount
             FROM reminders r
             INNER JOIN subscriptions s ON r.subscription_id = s.id
-            WHERE DATE(r.reminder_date) >= DATE(?) AND DATE(r.reminder_date) <= DATE(?)
+            WHERE DATE(r.reminder_date) >= DATE(?)
             ORDER BY r.reminder_date ASC
-        `, [startDate, endDate], (err2, detailedRows) => {
+        `, [startDate], (err2, detailedRows) => {
             if (err2) {
                 console.error('Error fetching detailed renewals:', err2);
                 return res.status(500).json({ error: 'Database error', details: err2.message });
@@ -867,11 +866,15 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
                 });
             });
             
+            // Sort calendar by date (closest first)
+            const sortedCalendar = Object.values(calendar).sort((a, b) => {
+                return new Date(a.date) - new Date(b.date);
+            });
+            
             res.json({ 
                 success: true, 
-                calendar: Object.values(calendar),
+                calendar: sortedCalendar,
                 start_date: startDate,
-                end_date: endDate,
                 total: detailedRows.length
             });
         });
