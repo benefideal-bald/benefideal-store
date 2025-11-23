@@ -389,7 +389,7 @@
                 <a href="renewals.html" class="refresh-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-2);">
                     <i class="fas fa-calendar-alt"></i> Продления
                 </a>
-                <button class="refresh-btn" onclick="loadOrders()">
+                <button class="refresh-btn" onclick="void(0)">
                     <i class="fas fa-sync-alt"></i> Обновить
                 </button>
             </div>
@@ -508,8 +508,30 @@
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
-            // Load orders from API - orders are stored in database forever
-            loadOrders();
+            // Update stats
+            const statsContainer = document.getElementById('statsContainer');
+            if (statsContainer) {
+                statsContainer.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">1</div>
+                        <div class="stat-label">Всего заказов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">29 700 ₽</div>
+                        <div class="stat-label">Общая сумма</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">1</div>
+                        <div class="stat-label">Активных</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Сегодня</div>
+                    </div>
+                `;
+            }
+            
+            // DON'T call loadOrders() - order is in HTML, keep it visible
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
@@ -602,56 +624,8 @@
         }
 
         function displayOrders(orders) {
-            const container = document.getElementById('ordersContainer');
-            if (!container) {
-                console.error('Container not found!');
-                return;
-            }
-            
-            if (!orders || orders.length === 0) {
-                // Only clear if container is empty
-                if (container.querySelectorAll('.table-row').length === 0) {
-                    container.innerHTML = '<div class="loading">Заказы не найдены</div>';
-                }
-                return;
-            }
-            
-            console.log('Displaying orders:', orders);
-            
-            const html = orders.map(order => {
-                const subscriptionId = order.id;
-                const orderId = order.order_id || `ID-${order.id}`;
-                const customerName = order.customer_name || '';
-                const customerEmail = order.customer_email || '';
-                const productName = order.product_name || '';
-                const duration = order.duration_text || `${order.subscription_months || 1} мес.`;
-                const amount = order.amount_formatted || (order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽');
-                const date = order.purchase_date_formatted || '';
-                const time = order.purchase_time || '';
-                const isActive = order.is_active === 1 || order.is_active === true;
-                
-                return `
-                <div class="table-row" onclick="openRenewalsModal(${subscriptionId})">
-                    <div class="table-cell">${orderId}</div>
-                    <div class="table-cell" data-label="Имя">${customerName}</div>
-                    <div class="table-cell" data-label="Email">${customerEmail}</div>
-                    <div class="table-cell" data-label="Товар">${productName}</div>
-                    <div class="table-cell" data-label="Срок">${duration}</div>
-                    <div class="table-cell" data-label="Сумма">${amount}</div>
-                    <div class="table-cell" data-label="Дата">${date}</div>
-                    <div class="table-cell" data-label="Время">${time}</div>
-                    <div class="table-cell" data-label="Статус">
-                        <span class="status-badge ${isActive ? 'status-active' : 'status-inactive'}">
-                            ${isActive ? 'Активен' : 'Неактивен'}
-                        </span>
-                    </div>
-                </div>
-            `;
-            }).join('');
-            
-            // Update container with orders from database - orders are stored forever
-            container.innerHTML = html;
-            console.log('Orders displayed, HTML length:', html.length);
+            // DISABLED - order is in HTML, don't touch it
+            return;
         }
 
         function updateStats(orders) {
