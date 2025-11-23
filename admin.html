@@ -508,8 +508,30 @@
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
-            // Load orders from API - this will show the order from database
-            loadOrders();
+            // Update stats manually
+            const statsContainer = document.getElementById('statsContainer');
+            if (statsContainer) {
+                statsContainer.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">1</div>
+                        <div class="stat-label">Всего заказов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">29 700 ₽</div>
+                        <div class="stat-label">Общая сумма</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">1</div>
+                        <div class="stat-label">Активных</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Сегодня</div>
+                    </div>
+                `;
+            }
+            
+            // DON'T call loadOrders() - keep hardcoded HTML order visible
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
@@ -548,34 +570,8 @@
                 return;
             }
             
-            // STRICT PROTECTION: Check if hardcoded order exists - if yes, DON'T load from API
-            const existingOrder = container.querySelector('.table-row');
-            if (existingOrder && existingOrder.textContent.includes('Никита')) {
-                console.log('Hardcoded order found, skipping API load to keep it visible - PROTECTED');
-                return; // Don't load from API, keep hardcoded order
-            }
-            
-            // If hardcoded order was deleted, restore it immediately
-            if (!existingOrder || !existingOrder.textContent.includes('Никита')) {
-                console.log('Hardcoded order missing, restoring it...');
-                const hardcodedHtml = `
-                    <div class="table-row" onclick="openRenewalsModal(1)">
-                        <div class="table-cell">ORDER_1763835378659_pmen785dd</div>
-                        <div class="table-cell" data-label="Имя">Никита</div>
-                        <div class="table-cell" data-label="Email">kitchenusefulproducts@gmail.com</div>
-                        <div class="table-cell" data-label="Товар">Adobe Creative Cloud</div>
-                        <div class="table-cell" data-label="Срок">12 месяцев</div>
-                        <div class="table-cell" data-label="Сумма">29 700 ₽</div>
-                        <div class="table-cell" data-label="Дата">22.11.2025</div>
-                        <div class="table-cell" data-label="Время">19:16</div>
-                        <div class="table-cell" data-label="Статус">
-                            <span class="status-badge status-active">Активен</span>
-                        </div>
-                    </div>
-                `;
-                container.innerHTML = hardcodedHtml;
-                return; // Don't load from API, just restore hardcoded order
-            }
+            // DON'T load from API - just keep HTML order visible
+            return;
             
             // DON'T clear container - keep hardcoded order visible
             // container.innerHTML = '<div class="loading">Загрузка...</div>';
