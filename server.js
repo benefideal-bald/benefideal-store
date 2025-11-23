@@ -31,6 +31,8 @@ app.use(express.static('.')); // Для статических файлов
 // КРИТИЧЕСКИ ВАЖНО: Используем директорию data/ для базы данных
 // Эта директория НЕ в Git, поэтому база данных не будет перезаписана при деплое
 // На Render файлы в рабочей директории должны сохраняться между деплоями
+// Railway: Use /app/data for persistent storage (Volume mounted)
+// If DATABASE_PATH is not set, use data/ directory
 const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'subscriptions.db');
 // КРИТИЧЕСКИ ВАЖНО: reviews.json храним в data/ - эта директория сохраняется на Render между деплоями
 // Но при первом деплое копируем из корня проекта (из Git) если файл в data/ не существует
