@@ -571,28 +571,43 @@
 
         function displayOrders(orders) {
             const container = document.getElementById('ordersContainer');
-            if (!container) return;
+            if (!container) {
+                console.error('Container not found!');
+                return;
+            }
             
             if (!orders || orders.length === 0) {
                 container.innerHTML = '<div class="loading">Заказы не найдены</div>';
                 return;
             }
             
+            console.log('Displaying orders:', orders);
+            
             const html = orders.map(order => {
-                const subscriptionId = order.subscription_ids ? order.subscription_ids.split(',')[0] : order.id;
+                const subscriptionId = order.id;
+                const orderId = order.order_id || `ID-${order.id}`;
+                const customerName = order.customer_name || '';
+                const customerEmail = order.customer_email || '';
+                const productName = order.product_name || '';
+                const duration = order.duration_text || `${order.subscription_months || 1} мес.`;
+                const amount = order.amount_formatted || (order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽');
+                const date = order.purchase_date_formatted || '';
+                const time = order.purchase_time || '';
+                const isActive = order.is_active === 1 || order.is_active === true;
+                
                 return `
                 <div class="table-row" onclick="openRenewalsModal(${subscriptionId})">
-                    <div class="table-cell">${order.order_id || order.id || 'N/A'}</div>
-                    <div class="table-cell" data-label="Имя">${order.customer_name || ''}</div>
-                    <div class="table-cell" data-label="Email">${order.customer_email || ''}</div>
-                    <div class="table-cell" data-label="Товар">${order.product_name || ''}</div>
-                    <div class="table-cell" data-label="Кол-во">${order.items_count || 1}</div>
-                    <div class="table-cell" data-label="Сумма">${order.amount_formatted || (order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽')}</div>
-                    <div class="table-cell" data-label="Дата">${order.purchase_date_formatted || ''}</div>
-                    <div class="table-cell" data-label="Время">${order.purchase_time || ''}</div>
+                    <div class="table-cell">${orderId}</div>
+                    <div class="table-cell" data-label="Имя">${customerName}</div>
+                    <div class="table-cell" data-label="Email">${customerEmail}</div>
+                    <div class="table-cell" data-label="Товар">${productName}</div>
+                    <div class="table-cell" data-label="Срок">${duration}</div>
+                    <div class="table-cell" data-label="Сумма">${amount}</div>
+                    <div class="table-cell" data-label="Дата">${date}</div>
+                    <div class="table-cell" data-label="Время">${time}</div>
                     <div class="table-cell" data-label="Статус">
-                        <span class="status-badge ${order.is_active ? 'status-active' : 'status-inactive'}">
-                            ${order.is_active ? 'Активен' : 'Неактивен'}
+                        <span class="status-badge ${isActive ? 'status-active' : 'status-inactive'}">
+                            ${isActive ? 'Активен' : 'Неактивен'}
                         </span>
                     </div>
                 </div>
@@ -600,6 +615,7 @@
             }).join('');
             
             container.innerHTML = html;
+            console.log('Orders displayed, HTML length:', html.length);
         }
 
         function updateStats(orders) {
