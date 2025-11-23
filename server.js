@@ -38,6 +38,9 @@ const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'su
 // Но при первом деплое копируем из корня проекта (из Git) если файл в data/ не существует
 const reviewsJsonPath = path.join(process.cwd(), 'data', 'reviews.json');
 const reviewsJsonPathGit = path.join(process.cwd(), 'reviews.json'); // Файл в Git для начальных отзывов
+// КРИТИЧЕСКИ ВАЖНО: orders.json храним в корне проекта (Git) - как reviews.json
+// Это гарантирует, что заказы не потеряются при деплое
+const ordersJsonPath = path.join(process.cwd(), 'orders.json'); // Файл в Git для заказов
 const fs = require('fs');
 
 // КРИТИЧЕСКИ ВАЖНО: Проверяем, существует ли база данных и её размер
@@ -499,9 +502,14 @@ app.get('/api/admin/orders', (req, res) => {
     
     console.log('✅ Admin access granted');
     
-    console.log('🔍 Fetching orders from database...');
+    console.log('🔍 Fetching orders from database AND JSON...');
     
-    // Get all subscriptions - show all records as separate orders
+    // КРИТИЧЕСКИ ВАЖНО: Читаем заказы из JSON файла (как отзывы)
+    // Это гарантирует, что заказы не потеряются при деплое
+    const jsonOrders = readOrdersFromJSON();
+    console.log(`📋 Found ${jsonOrders.length} orders in orders.json`);
+    
+    // Get all subscriptions from database - show all records as separate orders
     db.all(`
         SELECT 
             id,
@@ -519,18 +527,62 @@ app.get('/api/admin/orders', (req, res) => {
     `, (err, rows) => {
         if (err) {
             console.error('❌ Error fetching orders:', err);
-            return res.status(500).json({ error: 'Database error', details: err.message });
+            // Если база данных недоступна, возвращаем только JSON заказы
+            const formattedJsonOrders = jsonOrders.map(order => ({
+                id: order.id,
+                order_id: order.order_id,
+                customer_name: order.customer_name,
+                customer_email: order.customer_email,
+                product_name: order.product_name,
+                product_id: order.product_id,
+                subscription_months: order.subscription_months,
+                purchase_date: order.purchase_date,
+                purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
+                purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
+                amount: order.amount,
+                amount_formatted: order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
+                duration_text: order.subscription_months === 1 ? '1 месяц' : 
+                              order.subscription_months >= 2 && order.subscription_months <= 4 ? `${order.subscription_months} месяца` : 
+                              `${order.subscription_months} месяцев`,
+                is_active: order.is_active || 1
+            }));
+            
+            console.log(`⚠️ Database error, returning ${formattedJsonOrders.length} orders from JSON only`);
+            return res.json({ success: true, orders: formattedJsonOrders, total: formattedJsonOrders.length });
         }
         
         console.log(`📊 Found ${rows ? rows.length : 0} subscriptions in database`);
         
-        if (!rows || rows.length === 0) {
-            console.log('⚠️ No subscriptions found in database');
+        // Объединяем заказы из базы данных и JSON
+        // Создаем Map для быстрого поиска дубликатов (по order_id + product_id + email)
+        const ordersMap = new Map();
+        
+        // Сначала добавляем заказы из базы данных
+        if (rows && rows.length > 0) {
+            rows.forEach(order => {
+                const key = `${order.order_id}_${order.product_id}_${order.customer_email}`;
+                ordersMap.set(key, order);
+            });
+        }
+        
+        // Затем добавляем заказы из JSON (если их нет в базе)
+        jsonOrders.forEach(order => {
+            const key = `${order.order_id}_${order.product_id}_${order.customer_email}`;
+            if (!ordersMap.has(key)) {
+                ordersMap.set(key, order);
+            }
+        });
+        
+        // Преобразуем Map обратно в массив и форматируем
+        const allOrders = Array.from(ordersMap.values());
+        
+        if (allOrders.length === 0) {
+            console.log('⚠️ No orders found in database or JSON');
             return res.json({ success: true, orders: [], total: 0 });
         }
         
         // Format dates and format amount - show all records as separate orders
-        const formattedOrders = rows.map(order => ({
+        const formattedOrders = allOrders.map(order => ({
             id: order.id,
             order_id: order.order_id,
             customer_name: order.customer_name,
@@ -546,10 +598,17 @@ app.get('/api/admin/orders', (req, res) => {
             duration_text: order.subscription_months === 1 ? '1 месяц' : 
                           order.subscription_months >= 2 && order.subscription_months <= 4 ? `${order.subscription_months} месяца` : 
                           `${order.subscription_months} месяцев`,
-            is_active: order.is_active
+            is_active: order.is_active || 1
         }));
         
-        console.log(`✅ Returning ${formattedOrders.length} orders`);
+        // Сортируем по дате (новые первыми)
+        formattedOrders.sort((a, b) => {
+            const timeA = new Date(a.purchase_date || 0).getTime();
+            const timeB = new Date(b.purchase_date || 0).getTime();
+            return timeB - timeA;
+        });
+        
+        console.log(`✅ Returning ${formattedOrders.length} orders (${rows ? rows.length : 0} from DB, ${jsonOrders.length} from JSON)`);
         
         res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
     });
@@ -937,6 +996,28 @@ app.post('/api/subscription', (req, res) => {
         console.log(`   Email: ${normalizedEmail}`);
         console.log(`   Product: ${item.title} (ID: ${item.id})`);
         console.log(`   Order ID: ${order_id || 'NULL'}`);
+        
+        // КРИТИЧЕСКИ ВАЖНО: Сохраняем заказ в JSON файл (как отзывы)
+        // Это гарантирует, что заказы не потеряются при деплое
+        const orderData = {
+            id: subscriptionId,
+            customer_name: name,
+            customer_email: normalizedEmail,
+            product_name: item.title,
+            product_id: item.id,
+            subscription_months: item.months || 1,
+            purchase_date: purchaseDate.toISOString(),
+            order_id: order_id || null,
+            amount: itemAmount,
+            is_active: 1
+        };
+        
+        const savedToJson = addOrderToJSON(orderData);
+        if (savedToJson) {
+            console.log(`✅ Order saved to orders.json: ${order_id || subscriptionId} (product ${item.id})`);
+        } else {
+            console.warn(`⚠️ Failed to save order to JSON: ${order_id || subscriptionId} (product ${item.id})`);
+        }
         
         // Finalize statement FIRST before async operations
         stmt.finalize();
@@ -1944,6 +2025,82 @@ function writeReviewsToJSON(reviews) {
         return true;
     } catch (error) {
         console.error('❌ Error writing reviews.json:', error);
+        return false;
+    }
+}
+
+// Helper function to read orders from JSON file
+// КРИТИЧЕСКИ ВАЖНО: Заказы хранятся в корневом orders.json (Git версия) - как reviews.json!
+function readOrdersFromJSON() {
+    try {
+        if (!fs.existsSync(ordersJsonPath)) {
+            console.log('📋 orders.json not found, returning empty array');
+            return [];
+        }
+        
+        const fileContent = fs.readFileSync(ordersJsonPath, 'utf8');
+        const orders = JSON.parse(fileContent);
+        
+        if (!Array.isArray(orders)) {
+            console.warn('⚠️ orders.json is not an array, resetting to empty array');
+            return [];
+        }
+        
+        console.log(`📋 Read ${orders.length} orders from orders.json`);
+        return orders;
+    } catch (error) {
+        console.error('❌ Error reading orders.json:', error);
+        return [];
+    }
+}
+
+// Helper function to write orders to JSON file
+// КРИТИЧЕСКИ ВАЖНО: Все заказы должны быть в ОДНОМ месте - корневой orders.json (Git версия)!
+function writeOrdersToJSON(orders) {
+    try {
+        if (!Array.isArray(orders)) {
+            console.error('❌ orders is not an array!', typeof orders);
+            return false;
+        }
+        
+        // Сортируем по дате (новые первыми)
+        const sortedOrders = [...orders].sort((a, b) => {
+            const timeA = new Date(a.purchase_date || 0).getTime();
+            const timeB = new Date(b.purchase_date || 0).getTime();
+            return timeB - timeA;
+        });
+        
+        fs.writeFileSync(ordersJsonPath, JSON.stringify(sortedOrders, null, 2), 'utf8');
+        console.log(`✅ Saved ${sortedOrders.length} orders to orders.json`);
+        
+        return true;
+    } catch (error) {
+        console.error('❌ Error writing orders.json:', error);
+        return false;
+    }
+}
+
+// Helper function to add order to JSON file
+function addOrderToJSON(order) {
+    try {
+        const existingOrders = readOrdersFromJSON();
+        
+        // Проверяем, нет ли уже такого заказа (по order_id и product_id)
+        const isDuplicate = existingOrders.some(existing => 
+            existing.order_id === order.order_id && 
+            existing.product_id === order.product_id &&
+            existing.customer_email === order.customer_email
+        );
+        
+        if (isDuplicate) {
+            console.log(`⚠️ Order ${order.order_id} (product ${order.product_id}) already exists in JSON, skipping`);
+            return false;
+        }
+        
+        existingOrders.push(order);
+        return writeOrdersToJSON(existingOrders);
+    } catch (error) {
+        console.error('❌ Error adding order to JSON:', error);
         return false;
     }
 }
@@ -4323,15 +4480,15 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
         console.log('   Total:', totalAmount);
         console.log('   Receipt file:', receiptFile.filename);
         
-        // Save subscriptions to database
+        // Save subscriptions to database AND JSON
         const purchaseDate = new Date();
         const normalizedEmail = email.toLowerCase().trim();
         
         for (const item of cartArray) {
             const itemAmount = item.price * (item.quantity || 1);
             const stmt = db.prepare(`
-                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
             `);
             
             stmt.run([
@@ -4348,7 +4505,29 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
                     console.error('❌ Error saving subscription:', err);
                 } else {
                     const subscriptionId = this.lastID;
-                    console.log(`✅ Subscription saved: ID=${subscriptionId}`);
+                    console.log(`✅ Subscription saved to database: ID=${subscriptionId}`);
+                    
+                    // КРИТИЧЕСКИ ВАЖНО: Сохраняем заказ в JSON файл (как отзывы)
+                    // Это гарантирует, что заказы не потеряются при деплое
+                    const orderData = {
+                        id: subscriptionId,
+                        customer_name: name,
+                        customer_email: normalizedEmail,
+                        product_name: item.title,
+                        product_id: item.id,
+                        subscription_months: item.months || 1,
+                        purchase_date: purchaseDate.toISOString(),
+                        order_id: order_id,
+                        amount: itemAmount,
+                        is_active: 1
+                    };
+                    
+                    const savedToJson = addOrderToJSON(orderData);
+                    if (savedToJson) {
+                        console.log(`✅ Order saved to orders.json: ${order_id} (product ${item.id})`);
+                    } else {
+                        console.warn(`⚠️ Failed to save order to JSON: ${order_id} (product ${item.id})`);
+                    }
                     
                     // Generate reminders
                     if (item.id === 1 || item.id === 3 || item.id === 7) {
