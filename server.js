@@ -452,11 +452,10 @@ app.get('/force-add-nikita', (req, res) => {
         const subscriptionId = this.lastID;
         console.log(`✅ FORCE ADDED: Subscription ID=${subscriptionId}`);
         
-        // Generate reminders
-        const purchaseDate = new Date('2025-11-22T18:16:19.000Z');
+        // Generate reminders with correct date and time (22.11.2025, 19:16)
         try {
             generateReminders(subscriptionId, 3, 12, purchaseDate);
-            console.log(`✅ Reminders generated`);
+            console.log(`✅ Reminders generated for subscription ${subscriptionId}`);
         } catch (e) {
             console.error('⚠️ Reminder error:', e);
         }
