@@ -3993,24 +3993,30 @@ function generateReminders(subscriptionId, productId, months, purchaseDate) {
         // 12 months -> 4 purchases of 3 months each
         
         if (months === 12) {
-            // Year subscription: 2 reminders (at 6 months and 12 months)
-            // First reminder at 6 months: renewal with 6 months remaining
-            const sixMonthRenewal = new Date(purchaseDate);
-            sixMonthRenewal.setMonth(sixMonthRenewal.getMonth() + 6);
-            sixMonthRenewal.setHours(reminderHour, reminderMinute, 0, 0);
-            insertReminder(subscriptionId, sixMonthRenewal, 'renewal_6months');
-            
-            // Second reminder at 12 months: expiry
-            const expiry = new Date(purchaseDate);
-            expiry.setMonth(expiry.getMonth() + 12);
-            expiry.setHours(reminderHour, reminderMinute, 0, 0);
-            insertReminder(subscriptionId, expiry, 'expiry');
+            // Year subscription: 4 purchases of 3 months each
+            // 4 reminders: at 3, 6, 9, and 12 months
+            for (let i = 1; i <= 4; i++) {
+                const renewalDate = new Date(purchaseDate);
+                renewalDate.setMonth(renewalDate.getMonth() + (i * 3));
+                renewalDate.setHours(reminderHour, reminderMinute, 0, 0);
+                
+                const monthsRemaining = 12 - (i * 3);
+                const reminderType = monthsRemaining > 0 ? `renewal_${monthsRemaining}months` : 'expiry';
+                
+                insertReminder(subscriptionId, renewalDate, reminderType);
+            }
         } else if (months === 6) {
-            // 6 months: 1 reminder at expiry (6 months)
-            const expiry = new Date(purchaseDate);
-            expiry.setMonth(expiry.getMonth() + 6);
-            expiry.setHours(reminderHour, reminderMinute, 0, 0);
-            insertReminder(subscriptionId, expiry, 'expiry');
+            // 6 months: 2 purchases of 3 months each
+            // 2 reminders: at 3 and 6 months
+            const firstRenewal = new Date(purchaseDate);
+            firstRenewal.setMonth(firstRenewal.getMonth() + 3);
+            firstRenewal.setHours(reminderHour, reminderMinute, 0, 0);
+            insertReminder(subscriptionId, firstRenewal, 'renewal_3months');
+            
+            const secondRenewal = new Date(purchaseDate);
+            secondRenewal.setMonth(secondRenewal.getMonth() + 6);
+            secondRenewal.setHours(reminderHour, reminderMinute, 0, 0);
+            insertReminder(subscriptionId, secondRenewal, 'expiry');
         } else {
             // 1 or 3 months: one purchase
             const expiry = new Date(purchaseDate);
