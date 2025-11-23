@@ -508,22 +508,14 @@
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
-            // IMMEDIATELY show hardcoded order, then try to load from API
+            // IMMEDIATELY show hardcoded order - DON'T load from API to keep it visible
             allOrders = [hardcodedOrder];
             displayOrders(allOrders);
             updateStats(allOrders);
             
-            // Load orders from API (will replace hardcoded if successful)
-            window.addEventListener('DOMContentLoaded', () => {
-                loadOrders();
-            });
-            
-            // Also try immediately
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', loadOrders);
-            } else {
-                loadOrders();
-            }
+            // DON'T call loadOrders() - it will clear the hardcoded order
+            // If you want to load from API, uncomment below (but it will replace hardcoded order)
+            // setTimeout(() => loadOrders(), 3000);
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
@@ -562,7 +554,8 @@
                 return;
             }
             
-            container.innerHTML = '<div class="loading">Загрузка...</div>';
+            // DON'T clear container - keep hardcoded order visible
+            // container.innerHTML = '<div class="loading">Загрузка...</div>';
             
             const apiUrl = `/api/admin/orders?password=${encodeURIComponent(adminPassword || '2728276')}`;
             console.log('Loading orders from:', apiUrl);
