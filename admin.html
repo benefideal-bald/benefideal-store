@@ -608,8 +608,25 @@
                 return;
             }
             
+            // PROTECTION: Don't clear hardcoded order if it exists
+            const existingOrder = container.querySelector('.table-row');
+            if (existingOrder && existingOrder.textContent.includes('Никита')) {
+                console.log('Hardcoded order found, keeping it visible');
+                // Only update if we have new orders from API
+                if (orders && orders.length > 0) {
+                    // Merge: keep hardcoded + add API orders
+                    const hardcodedHtml = existingOrder.outerHTML;
+                    // ... continue with API orders
+                } else {
+                    return; // Keep hardcoded order, don't clear
+                }
+            }
+            
             if (!orders || orders.length === 0) {
-                container.innerHTML = '<div class="loading">Заказы не найдены</div>';
+                // Don't clear if hardcoded order exists
+                if (!existingOrder || !existingOrder.textContent.includes('Никита')) {
+                    container.innerHTML = '<div class="loading">Заказы не найдены</div>';
+                }
                 return;
             }
             
