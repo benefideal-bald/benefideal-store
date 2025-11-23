@@ -431,13 +431,16 @@ app.get('/force-add-nikita', (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
     `);
     
+    // Date: 22.11.2025, Time: 19:16
+    const purchaseDate = new Date('2025-11-22T19:16:00.000Z');
+    
     stmt.run([
         'Никита',
         'kitchenusefulproducts@gmail.com',
         'Adobe Creative Cloud',
         3,
         12,
-        '2025-11-22T18:16:19.000Z',
+        purchaseDate.toISOString(),
         'ORDER_1763835378659_pmen785dd',
         29700
     ], function(err) {

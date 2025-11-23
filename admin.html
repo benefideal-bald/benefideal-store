@@ -508,59 +508,8 @@
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
-            // Keep hardcoded order in HTML - DON'T call ANY functions that might clear it
-            // Just update stats manually without touching the container
-            const statsContainer = document.getElementById('statsContainer');
-            if (statsContainer) {
-                statsContainer.innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-value">1</div>
-                        <div class="stat-label">Всего заказов</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">29 700 ₽</div>
-                        <div class="stat-label">Общая сумма</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">1</div>
-                        <div class="stat-label">Активных</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">0</div>
-                        <div class="stat-label">Сегодня</div>
-                    </div>
-                `;
-            }
-            
-            // CRITICAL: Ensure hardcoded order is visible on page load
-            setTimeout(() => {
-                const container = document.getElementById('ordersContainer');
-                if (container) {
-                    const existingOrder = container.querySelector('.table-row');
-                    if (!existingOrder || !existingOrder.textContent.includes('Никита')) {
-                        console.log('Hardcoded order missing on load, restoring...');
-                        container.innerHTML = `
-                            <div class="table-row" onclick="openRenewalsModal(1)">
-                                <div class="table-cell">ORDER_1763835378659_pmen785dd</div>
-                                <div class="table-cell" data-label="Имя">Никита</div>
-                                <div class="table-cell" data-label="Email">kitchenusefulproducts@gmail.com</div>
-                                <div class="table-cell" data-label="Товар">Adobe Creative Cloud</div>
-                                <div class="table-cell" data-label="Срок">12 месяцев</div>
-                                <div class="table-cell" data-label="Сумма">29 700 ₽</div>
-                                <div class="table-cell" data-label="Дата">22.11.2025</div>
-                                <div class="table-cell" data-label="Время">19:16</div>
-                                <div class="table-cell" data-label="Статус">
-                                    <span class="status-badge status-active">Активен</span>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-            }, 100);
-            
-            // DON'T call displayOrders() - it will clear the hardcoded HTML order
-            // DON'T call loadOrders() - it will clear the hardcoded HTML order
-            // DON'T call updateStats() - it might trigger something
+            // Load orders from API - this will show the order from database
+            loadOrders();
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
