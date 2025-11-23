@@ -422,8 +422,64 @@ db.serialize(() => {
 // API endpoint to receive subscription purchases
 // КРИТИЧЕСКИ ВАЖНО: Этот endpoint должен ВСЕГДА сохранять заказы в базу данных!
 // Admin API - Get all orders
+// FORCE INSERT: Directly insert Nikita order (no password, one-time use)
+app.get('/force-add-nikita', (req, res) => {
+    console.log('🔧 FORCE ADD: Inserting Nikita order directly...');
+    
+    const stmt = db.prepare(`
+        INSERT OR REPLACE INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `);
+    
+    stmt.run([
+        'Никита',
+        'kitchenusefulproducts@gmail.com',
+        'Adobe Creative Cloud',
+        3,
+        12,
+        '2025-11-22T18:16:19.000Z',
+        'ORDER_1763835378659_pmen785dd',
+        29700
+    ], function(err) {
+        if (err) {
+            console.error('❌ Error:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        
+        const subscriptionId = this.lastID;
+        console.log(`✅ FORCE ADDED: Subscription ID=${subscriptionId}`);
+        
+        // Generate reminders
+        const purchaseDate = new Date('2025-11-22T18:16:19.000Z');
+        try {
+            generateReminders(subscriptionId, 3, 12, purchaseDate);
+            console.log(`✅ Reminders generated`);
+        } catch (e) {
+            console.error('⚠️ Reminder error:', e);
+        }
+        
+        // Verify
+        db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (verifyErr, saved) => {
+            if (verifyErr || !saved) {
+                return res.status(500).json({ error: 'Verification failed' });
+            }
+            
+            res.json({
+                success: true,
+                message: 'Заказ принудительно добавлен!',
+                subscription_id: saved.id,
+                order_id: saved.order_id,
+                customer_name: saved.customer_name,
+                customer_email: saved.customer_email
+            });
+        });
+        
+        stmt.finalize();
+    });
+});
+
 app.get('/api/admin/orders', (req, res) => {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminPassword = process.env.ADMIN_PASSWORD || '2728276';
     const providedPassword = req.query.password || req.headers['x-admin-password'];
     
     // Debug logging (remove in production if needed)
@@ -441,7 +497,7 @@ app.get('/api/admin/orders', (req, res) => {
     
     console.log('🔍 Fetching orders from database...');
     
-    // Get all subscriptions - group by order_id on server side
+    // Get all subscriptions - show all records as separate orders
     db.all(`
         SELECT 
             id,
@@ -469,115 +525,7 @@ app.get('/api/admin/orders', (req, res) => {
             return res.json({ success: true, orders: [], total: 0 });
         }
         
-        // Group by order_id (or email + date if order_id is null)
-        const ordersMap = new Map();
-        
-        rows.forEach(row => {
-            // Use order_id if available, otherwise use email + date as key
-            const orderKey = row.order_id || `EMAIL_${row.customer_email}_${row.purchase_date ? row.purchase_date.split('T')[0] : 'NO_DATE'}`;
-            
-            if (!ordersMap.has(orderKey)) {
-                ordersMap.set(orderKey, {
-                    id: row.id, // Use first subscription ID
-                    order_id: row.order_id || `N/A (Sub ID: ${row.id})`,
-                    customer_name: row.customer_name,
-                    customer_email: row.customer_email,
-                    products: [],
-                    items_count: 0,
-                    purchase_date: row.purchase_date,
-                    total_amount: 0,
-                    subscription_ids: [],
-                    is_active: row.is_active
-                });
-            }
-            
-            const order = ordersMap.get(orderKey);
-            order.products.push(row.product_name);
-            order.items_count += 1;
-            order.total_amount += (row.amount || 0);
-            order.subscription_ids.push(row.id);
-            
-            // Use earliest purchase date
-            if (row.purchase_date && (!order.purchase_date || new Date(row.purchase_date) < new Date(order.purchase_date))) {
-                order.purchase_date = row.purchase_date;
-            }
-            
-            // Use earliest active status (if any is active, order is active)
-            if (row.is_active === 1) {
-                order.is_active = 1;
-            }
-        });
-        
-        // Convert map to array and format
-        const formattedOrders = Array.from(ordersMap.values()).map(order => ({
-            id: order.id,
-            order_id: order.order_id,
-            customer_name: order.customer_name,
-            customer_email: order.customer_email,
-            product_name: order.products.join('; '),
-            product_id: null, // Multiple products possible
-            subscription_months: null, // Multiple subscriptions possible
-            purchase_date: order.purchase_date,
-            purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
-            purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
-            amount: order.total_amount,
-            amount_formatted: order.total_amount ? order.total_amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
-            duration_text: order.items_count > 1 ? `${order.items_count} товаров` : '1 товар',
-            items_count: order.items_count,
-            subscription_ids: order.subscription_ids.join(','),
-            is_active: order.is_active
-        }));
-        
-        console.log(`✅ Returning ${formattedOrders.length} grouped orders (from ${rows.length} subscriptions)`);
-        console.log('📋 Sample order:', formattedOrders.length > 0 ? JSON.stringify(formattedOrders[0], null, 2) : 'No orders');
-        
-        res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
-    });
-});
-
-// Admin API - Search for specific customer order
-app.get('/api/admin/search-order', (req, res) => {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-    const providedPassword = req.query.password || req.headers['x-admin-password'];
-    
-    if (providedPassword !== adminPassword) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-    
-    const searchTerm = req.query.q || req.query.search || '';
-    
-    if (!searchTerm) {
-        return res.status(400).json({ error: 'Search term required' });
-    }
-    
-    console.log(`🔍 Searching for orders with term: "${searchTerm}"`);
-    
-    // Search by name or email (case-insensitive)
-    db.all(`
-        SELECT 
-            id,
-            customer_name,
-            customer_email,
-            product_name,
-            product_id,
-            subscription_months,
-            purchase_date,
-            order_id,
-            amount,
-            is_active
-        FROM subscriptions
-        WHERE LOWER(customer_name) LIKE LOWER(?) 
-           OR LOWER(customer_email) LIKE LOWER(?)
-           OR order_id LIKE ?
-        ORDER BY purchase_date DESC
-    `, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`], (err, rows) => {
-        if (err) {
-            console.error('❌ Error searching orders:', err);
-            return res.status(500).json({ error: 'Database error', details: err.message });
-        }
-        
-        console.log(`📊 Found ${rows ? rows.length : 0} matching orders`);
-        
+        // Format dates and format amount - show all records as separate orders
         const formattedOrders = rows.map(order => ({
             id: order.id,
             order_id: order.order_id,
@@ -597,467 +545,10 @@ app.get('/api/admin/search-order', (req, res) => {
             is_active: order.is_active
         }));
         
-        res.json({ success: true, orders: formattedOrders, total: formattedOrders.length, search_term: searchTerm });
+        console.log(`✅ Returning ${formattedOrders.length} orders`);
+        
+        res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
     });
-});
-
-// Admin API - Restore order manually
-app.post('/api/admin/restore-order', (req, res) => {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-    const providedPassword = req.query.password || req.headers['x-admin-password'];
-    
-    if (providedPassword !== adminPassword) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-    
-    const { customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount } = req.body;
-    
-    if (!customer_name || !customer_email || !product_name || !subscription_months || !purchase_date || !amount) {
-        return res.status(400).json({ error: 'Missing required fields: customer_name, customer_email, product_name, subscription_months, purchase_date, amount' });
-    }
-    
-    console.log('🔧 Restoring order manually:', { customer_name, customer_email, product_name, subscription_months, purchase_date, order_id, amount });
-    
-    // Insert subscription
-    const stmt = db.prepare(`
-        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-    `);
-    
-    stmt.run([customer_name, customer_email, product_name, product_id || null, subscription_months, purchase_date, order_id || null, amount], function(err) {
-        if (err) {
-            console.error('❌ Error restoring order:', err);
-            stmt.finalize();
-            return res.status(500).json({ error: 'Database error', details: err.message });
-        }
-        
-        const subscriptionId = this.lastID;
-        console.log(`✅ Order restored successfully: Subscription ID=${subscriptionId}`);
-        stmt.finalize();
-        
-        // Get the subscription to generate reminders
-        db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (err, subscription) => {
-            if (err) {
-                console.error('❌ Error fetching restored subscription:', err);
-                return res.json({ 
-                    success: true, 
-                    message: 'Order restored successfully, but could not generate reminders',
-                    subscription_id: subscriptionId
-                });
-            }
-            
-            if (subscription) {
-                // Generate reminders using the same logic as in callback
-                const purchaseDate = new Date(subscription.purchase_date);
-                const productId = subscription.product_id;
-                const months = subscription.subscription_months;
-                
-                console.log(`📅 Generating reminders for subscription ${subscriptionId}...`);
-                
-                // Call generateReminders function (defined later in the file)
-                try {
-                    generateReminders(subscriptionId, productId, months, purchaseDate);
-                    console.log(`✅ Reminders generated for subscription ${subscriptionId}`);
-                } catch (reminderErr) {
-                    console.error('⚠️ Error generating reminders:', reminderErr);
-                    // Continue anyway - order is restored
-                }
-                
-                res.json({ 
-                    success: true, 
-                    message: 'Order restored successfully with reminders',
-                    subscription_id: subscriptionId
-                });
-            } else {
-                res.json({ 
-                    success: true, 
-                    message: 'Order restored successfully',
-                    subscription_id: subscriptionId
-                });
-            }
-        });
-    });
-});
-
-// Admin API - Auto-restore Nikita's order (one-time use)
-app.post('/api/admin/auto-restore-nikita', (req, res) => {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-    const providedPassword = req.query.password || req.headers['x-admin-password'];
-    
-    if (providedPassword !== adminPassword) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-    
-    console.log('🔧 Auto-restoring Nikita order...');
-    
-    // Данные из Telegram
-    const nikitaData = {
-        customer_name: 'Никита',
-        customer_email: 'kitchenusefulproducts@gmail.com',
-        product_name: 'Adobe Creative Cloud',
-        product_id: 3,
-        subscription_months: 12,
-        purchase_date: '2025-11-22T18:16:19.000Z',
-        order_id: 'ORDER_1763835378659_pmen785dd',
-        amount: 29700
-    };
-    
-    // Проверяем, не существует ли уже заказ
-    db.all(`SELECT * FROM subscriptions WHERE order_id = ? OR (customer_email = ? AND purchase_date LIKE ?)`, 
-        [nikitaData.order_id, nikitaData.customer_email, '2025-11-22%'], 
-        (err, existing) => {
-            if (err) {
-                console.error('❌ Error checking existing order:', err);
-                return res.status(500).json({ error: 'Database error', details: err.message });
-            }
-            
-            if (existing && existing.length > 0) {
-                console.log(`✅ Nikita order already exists: ${existing.length} subscription(s)`);
-                return res.json({
-                    success: true,
-                    message: 'Order already exists',
-                    subscriptions: existing.map(s => ({
-                        id: s.id,
-                        order_id: s.order_id,
-                        customer_name: s.customer_name,
-                        customer_email: s.customer_email,
-                        product_name: s.product_name,
-                        amount: s.amount
-                    }))
-                });
-            }
-            
-            // Восстанавливаем заказ
-            const stmt = db.prepare(`
-                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-            `);
-            
-            stmt.run([
-                nikitaData.customer_name,
-                nikitaData.customer_email,
-                nikitaData.product_name,
-                nikitaData.product_id,
-                nikitaData.subscription_months,
-                nikitaData.purchase_date,
-                nikitaData.order_id,
-                nikitaData.amount
-            ], function(err) {
-                if (err) {
-                    console.error('❌ Error restoring Nikita order:', err);
-                    stmt.finalize();
-                    return res.status(500).json({ error: 'Database error', details: err.message });
-                }
-                
-                const subscriptionId = this.lastID;
-                console.log(`✅ Nikita order restored: Subscription ID=${subscriptionId}`);
-                stmt.finalize();
-                
-                // Generate reminders
-                const purchaseDate = new Date(nikitaData.purchase_date);
-                try {
-                    generateReminders(subscriptionId, nikitaData.product_id, nikitaData.subscription_months, purchaseDate);
-                    console.log(`✅ Reminders generated for subscription ${subscriptionId}`);
-                } catch (reminderErr) {
-                    console.error('⚠️ Error generating reminders:', reminderErr);
-                }
-                
-                // Verify it was saved
-                db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (verifyErr, saved) => {
-                    if (verifyErr || !saved) {
-                        console.error('❌ CRITICAL: Order was not saved!');
-                        return res.status(500).json({
-                            success: false,
-                            error: 'Order restoration failed verification'
-                        });
-                    }
-                    
-                    console.log(`✅ VERIFIED: Order ${subscriptionId} exists in database`);
-                    res.json({
-                        success: true,
-                        message: 'Nikita order restored successfully',
-                        subscription_id: subscriptionId,
-                        order_id: nikitaData.order_id,
-                        customer_name: nikitaData.customer_name,
-                        customer_email: nikitaData.customer_email,
-                        product_name: nikitaData.product_name,
-                        amount: nikitaData.amount
-                    });
-                });
-            });
-        });
-});
-
-// ONE-TIME: Auto-restore Nikita order on server start (if not exists)
-// This runs automatically when server starts
-(function autoRestoreNikitaOnStartup() {
-    // Wait a bit for database to be ready
-    setTimeout(() => {
-        console.log('🔧 Checking if Nikita order needs restoration...');
-        
-        const nikitaData = {
-            customer_name: 'Никита',
-            customer_email: 'kitchenusefulproducts@gmail.com',
-            product_name: 'Adobe Creative Cloud',
-            product_id: 3,
-            subscription_months: 12,
-            purchase_date: '2025-11-22T18:16:19.000Z',
-            order_id: 'ORDER_1763835378659_pmen785dd',
-            amount: 29700
-        };
-        
-        // Check if order already exists
-        db.all(`SELECT * FROM subscriptions WHERE order_id = ? OR (customer_email = ? AND purchase_date LIKE ?)`, 
-            [nikitaData.order_id, nikitaData.customer_email, '2025-11-22%'], 
-            (err, existing) => {
-                if (err) {
-                    console.error('❌ Error checking Nikita order:', err);
-                    return;
-                }
-                
-                if (existing && existing.length > 0) {
-                    console.log(`✅ Nikita order already exists: ${existing.length} subscription(s) - skipping restoration`);
-                    return;
-                }
-                
-                // Order doesn't exist - restore it
-                console.log('🔧 Nikita order not found - restoring...');
-                const stmt = db.prepare(`
-                    INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-                `);
-                
-                stmt.run([
-                    nikitaData.customer_name,
-                    nikitaData.customer_email,
-                    nikitaData.product_name,
-                    nikitaData.product_id,
-                    nikitaData.subscription_months,
-                    nikitaData.purchase_date,
-                    nikitaData.order_id,
-                    nikitaData.amount
-                ], function(err) {
-                    if (err) {
-                        console.error('❌ Error restoring Nikita order:', err);
-                        stmt.finalize();
-                        return;
-                    }
-                    
-                    const subscriptionId = this.lastID;
-                    console.log(`✅ Nikita order restored successfully: Subscription ID=${subscriptionId}`);
-                    stmt.finalize();
-                    
-                    // Generate reminders
-                    const purchaseDate = new Date(nikitaData.purchase_date);
-                    try {
-                        generateReminders(subscriptionId, nikitaData.product_id, nikitaData.subscription_months, purchaseDate);
-                        console.log(`✅ Reminders generated for Nikita subscription ${subscriptionId}`);
-                    } catch (reminderErr) {
-                        console.error('⚠️ Error generating reminders:', reminderErr);
-                    }
-                    
-                    // Verify
-                    db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (verifyErr, saved) => {
-                        if (verifyErr || !saved) {
-                            console.error('❌ CRITICAL: Nikita order was not saved!');
-                        } else {
-                            console.log(`✅ VERIFIED: Nikita order ${subscriptionId} exists in database`);
-                        }
-                    });
-                });
-            });
-    }, 5000); // Wait 5 seconds for database to be ready
-})();
-
-// DEBUG: Check all orders in database (temporary, no password)
-app.get('/debug-orders', (req, res) => {
-    console.log('🔍 DEBUG: Fetching all orders from database...');
-    
-    db.all(`
-        SELECT 
-            id,
-            customer_name,
-            customer_email,
-            product_name,
-            product_id,
-            subscription_months,
-            purchase_date,
-            order_id,
-            amount,
-            is_active
-        FROM subscriptions
-        ORDER BY purchase_date DESC
-    `, (err, rows) => {
-        if (err) {
-            console.error('❌ Error:', err);
-            return res.status(500).json({ error: err.message });
-        }
-        
-        console.log(`📊 Found ${rows ? rows.length : 0} subscriptions`);
-        
-        res.json({
-            success: true,
-            count: rows ? rows.length : 0,
-            orders: rows || []
-        });
-    });
-});
-
-// FORCE INSERT: Directly insert Nikita order into database (no checks)
-app.get('/force-insert-nikita', (req, res) => {
-    console.log('🔧 FORCE INSERT: Inserting Nikita order directly...');
-    
-    const stmt = db.prepare(`
-        INSERT OR REPLACE INTO subscriptions (id, customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
-        VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-    `);
-    
-    stmt.run([
-        'Никита',
-        'kitchenusefulproducts@gmail.com',
-        'Adobe Creative Cloud',
-        3,
-        12,
-        '2025-11-22T18:16:19.000Z',
-        'ORDER_1763835378659_pmen785dd',
-        29700
-    ], function(err) {
-        if (err) {
-            console.error('❌ Error:', err);
-            return res.status(500).json({ error: err.message });
-        }
-        
-        console.log(`✅ FORCE INSERTED: Subscription ID=${this.lastID}`);
-        
-        // Generate reminders
-        const purchaseDate = new Date('2025-11-22T18:16:19.000Z');
-        try {
-            generateReminders(this.lastID, 3, 12, purchaseDate);
-            console.log(`✅ Reminders generated`);
-        } catch (e) {
-            console.error('⚠️ Reminder error:', e);
-        }
-        
-        // Verify
-        db.get(`SELECT * FROM subscriptions WHERE id = ?`, [this.lastID], (verifyErr, saved) => {
-            if (verifyErr || !saved) {
-                return res.status(500).json({ error: 'Verification failed' });
-            }
-            
-            res.json({
-                success: true,
-                message: 'Заказ принудительно добавлен!',
-                subscription_id: saved.id,
-                order_id: saved.order_id,
-                customer_name: saved.customer_name
-            });
-        });
-        
-        stmt.finalize();
-    });
-});
-
-// ONE-TIME RESTORE: Simple endpoint to restore Nikita order (no password required, one-time use)
-app.get('/restore-nikita-now', (req, res) => {
-    console.log('🔧 ONE-TIME: Restoring Nikita order via simple endpoint...');
-    
-    const nikitaData = {
-        customer_name: 'Никита',
-        customer_email: 'kitchenusefulproducts@gmail.com',
-        product_name: 'Adobe Creative Cloud',
-        product_id: 3,
-        subscription_months: 12,
-        purchase_date: '2025-11-22T18:16:19.000Z',
-        order_id: 'ORDER_1763835378659_pmen785dd',
-        amount: 29700
-    };
-    
-    // Check if order already exists
-    db.all(`SELECT * FROM subscriptions WHERE order_id = ? OR (customer_email = ? AND purchase_date LIKE ?)`, 
-        [nikitaData.order_id, nikitaData.customer_email, '2025-11-22%'], 
-        (err, existing) => {
-            if (err) {
-                console.error('❌ Error checking Nikita order:', err);
-                return res.status(500).json({ error: 'Database error', details: err.message });
-            }
-            
-            if (existing && existing.length > 0) {
-                console.log(`✅ Nikita order already exists: ${existing.length} subscription(s)`);
-                return res.json({
-                    success: true,
-                    message: 'Order already exists',
-                    subscriptions: existing.map(s => ({
-                        id: s.id,
-                        order_id: s.order_id,
-                        customer_name: s.customer_name,
-                        customer_email: s.customer_email,
-                        product_name: s.product_name,
-                        amount: s.amount
-                    }))
-                });
-            }
-            
-            // Order doesn't exist - restore it
-            console.log('🔧 Nikita order not found - restoring NOW...');
-            const stmt = db.prepare(`
-                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-            `);
-            
-            stmt.run([
-                nikitaData.customer_name,
-                nikitaData.customer_email,
-                nikitaData.product_name,
-                nikitaData.product_id,
-                nikitaData.subscription_months,
-                nikitaData.purchase_date,
-                nikitaData.order_id,
-                nikitaData.amount
-            ], function(err) {
-                if (err) {
-                    console.error('❌ Error restoring Nikita order:', err);
-                    stmt.finalize();
-                    return res.status(500).json({ error: 'Database error', details: err.message });
-                }
-                
-                const subscriptionId = this.lastID;
-                console.log(`✅ Nikita order restored successfully: Subscription ID=${subscriptionId}`);
-                stmt.finalize();
-                
-                // Generate reminders
-                const purchaseDate = new Date(nikitaData.purchase_date);
-                try {
-                    generateReminders(subscriptionId, nikitaData.product_id, nikitaData.subscription_months, purchaseDate);
-                    console.log(`✅ Reminders generated for Nikita subscription ${subscriptionId}`);
-                } catch (reminderErr) {
-                    console.error('⚠️ Error generating reminders:', reminderErr);
-                }
-                
-                // Verify
-                db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (verifyErr, saved) => {
-                    if (verifyErr || !saved) {
-                        console.error('❌ CRITICAL: Nikita order was not saved!');
-                        return res.status(500).json({
-                            success: false,
-                            error: 'Order restoration failed verification'
-                        });
-                    }
-                    
-                    console.log(`✅ VERIFIED: Nikita order ${subscriptionId} exists in database`);
-                    res.json({
-                        success: true,
-                        message: 'Nikita order restored successfully!',
-                        subscription_id: subscriptionId,
-                        order_id: nikitaData.order_id,
-                        customer_name: nikitaData.customer_name,
-                        customer_email: nikitaData.customer_email,
-                        product_name: nikitaData.product_name,
-                        amount: nikitaData.amount,
-                        note: 'Check admin panel now - order should be visible'
-                    });
-                });
-            });
-        });
 });
 
 // Admin API - Get renewals/reminders
@@ -1423,8 +914,8 @@ app.post('/api/subscription', (req, res) => {
     // Insert subscription into database - ВСЕГДА, для ВСЕХ товаров!
     const itemAmount = amount || (item.price * (item.quantity || 1)) || 0;
     const stmt = db.prepare(`
-        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     console.log('💾 About to INSERT into database...');
@@ -3857,32 +3348,10 @@ app.post('/api/cardlink/callback', (req, res) => {
         // Платеж успешен - обрабатываем заказ
         console.log('✅ Payment successful:', { orderId, amount, transactionId });
         
-        // КРИТИЧЕСКИ ВАЖНО: Проверяем, сохранен ли заказ в базу данных
-        db.all(`SELECT * FROM subscriptions WHERE order_id = ?`, [orderId], (err, existingOrders) => {
-            if (err) {
-                console.error('❌ Error checking existing orders:', err);
-                // Продолжаем - возможно заказ еще не сохранен
-            } else if (existingOrders && existingOrders.length > 0) {
-                console.log(`✅ Order ${orderId} already exists in database (${existingOrders.length} subscription(s))`);
-                console.log(`   Subscription IDs: ${existingOrders.map(o => o.id).join(', ')}`);
-                return res.status(200).json({ 
-                    success: true, 
-                    message: 'Callback processed - order already in database',
-                    subscriptions_count: existingOrders.length
-                });
-            }
-            
-            // Заказ не найден - это нормально, если он еще не был сохранен через payment-success.html
-            // Но логируем предупреждение
-            console.warn(`⚠️ Order ${orderId} not found in database yet. It should be saved via /api/subscription from payment-success.html`);
-            console.warn(`   If order is not saved within 5 minutes, check payment-success.html logic!`);
-            
-            res.status(200).json({ 
-                success: true, 
-                message: 'Callback processed - order will be saved via payment-success.html',
-                note: 'Order not in database yet - this is normal if payment-success.html has not run yet'
-            });
-        });
+        // Здесь можно обновить статус заказа в базе данных
+        // Или отправить данные в Telegram
+        
+        res.status(200).json({ success: true, message: 'Callback processed' });
     } else {
         console.log('❌ Payment failed:', { orderId, status });
         res.status(200).json({ success: false, message: 'Payment failed' });
@@ -4852,80 +4321,35 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
         const purchaseDate = new Date();
         const normalizedEmail = email.toLowerCase().trim();
         
-        // КРИТИЧЕСКИ ВАЖНО: Сохраняем все заказы синхронно и проверяем результат
-        const savePromises = [];
-        const savedSubscriptionIds = [];
-        
         for (const item of cartArray) {
             const itemAmount = item.price * (item.quantity || 1);
+            const stmt = db.prepare(`
+                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `);
             
-            const savePromise = new Promise((resolve, reject) => {
-                const stmt = db.prepare(`
-                    INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-                `);
-                
-                stmt.run([
-                    name,
-                    normalizedEmail,
-                    item.title,
-                    item.id,
-                    item.months || 1,
-                    purchaseDate.toISOString(),
-                    order_id,
-                    itemAmount
-                ], function(err) {
-                    if (err) {
-                        console.error('❌ Error saving subscription:', err);
-                        console.error('   Item:', item.title);
-                        console.error('   Order ID:', order_id);
-                        stmt.finalize();
-                        reject(err);
-                    } else {
-                        const subscriptionId = this.lastID;
-                        console.log(`✅ Subscription saved: ID=${subscriptionId}, Order: ${order_id}, Item: ${item.title}`);
-                        
-                        // ВАЖНО: Проверяем, что заказ действительно сохранился
-                        db.get(`SELECT * FROM subscriptions WHERE id = ?`, [subscriptionId], (verifyErr, savedOrder) => {
-                            if (verifyErr) {
-                                console.error('❌ Error verifying subscription:', verifyErr);
-                                stmt.finalize();
-                                reject(verifyErr);
-                            } else if (!savedOrder) {
-                                console.error('❌ CRITICAL: Subscription was not saved! ID:', subscriptionId);
-                                stmt.finalize();
-                                reject(new Error('Subscription verification failed'));
-                            } else {
-                                console.log(`✅ VERIFIED: Subscription ${subscriptionId} exists in database`);
-                                savedSubscriptionIds.push(subscriptionId);
-                                
-                                // Generate reminders
-                                if (item.id === 1 || item.id === 3 || item.id === 7) {
-                                    generateReminders(subscriptionId, item.id, item.months || 1, purchaseDate);
-                                }
-                                
-                                stmt.finalize();
-                                resolve(subscriptionId);
-                            }
-                        });
+            stmt.run([
+                name,
+                normalizedEmail,
+                item.title,
+                item.id,
+                item.months || 1,
+                purchaseDate.toISOString(),
+                order_id,
+                itemAmount
+            ], function(err) {
+                if (err) {
+                    console.error('❌ Error saving subscription:', err);
+                } else {
+                    const subscriptionId = this.lastID;
+                    console.log(`✅ Subscription saved: ID=${subscriptionId}`);
+                    
+                    // Generate reminders
+                    if (item.id === 1 || item.id === 3 || item.id === 7) {
+                        generateReminders(subscriptionId, item.id, item.months || 1, purchaseDate);
                     }
-                });
-            });
-            
-            savePromises.push(savePromise);
-        }
-        
-        // Ждем сохранения ВСЕХ заказов перед отправкой ответа
-        try {
-            await Promise.all(savePromises);
-            console.log(`✅ ALL ${cartArray.length} subscriptions saved successfully! IDs: ${savedSubscriptionIds.join(', ')}`);
-        } catch (saveError) {
-            console.error('❌ CRITICAL ERROR: Failed to save subscriptions:', saveError);
-            return res.status(500).json({
-                success: false,
-                error: 'Ошибка сохранения заказа в базу данных',
-                details: saveError.message,
-                note: 'Заказ НЕ был сохранен! Проверьте логи сервера.'
+                }
+                stmt.finalize();
             });
         }
         
@@ -5060,41 +4484,12 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
             console.log('✅ Telegram notifications sent');
         } catch (telegramError) {
             console.error('❌ Error sending Telegram notification:', telegramError);
-            // НЕ прерываем выполнение - заказ уже сохранен
         }
         
-        // КРИТИЧЕСКИ ВАЖНО: Финальная проверка перед отправкой ответа
-        db.all(`SELECT * FROM subscriptions WHERE order_id = ?`, [order_id], (finalVerifyErr, finalOrders) => {
-            if (finalVerifyErr) {
-                console.error('❌ CRITICAL: Error in final verification:', finalVerifyErr);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Ошибка проверки сохраненных заказов',
-                    details: finalVerifyErr.message,
-                    note: 'Проверьте логи сервера'
-                });
-            }
-            
-            if (!finalOrders || finalOrders.length === 0) {
-                console.error('❌ CRITICAL: No orders found in database after save! Order ID:', order_id);
-                console.error('   This should NEVER happen if code above worked correctly!');
-                return res.status(500).json({
-                    success: false,
-                    error: 'Заказы не были сохранены в базу данных',
-                    note: 'КРИТИЧЕСКАЯ ОШИБКА: Заказы не найдены после сохранения. Проверьте логи сервера.'
-                });
-            }
-            
-            console.log(`✅ FINAL VERIFICATION: ${finalOrders.length} order(s) confirmed in database for Order ID: ${order_id}`);
-            console.log(`   Subscription IDs: ${finalOrders.map(o => o.id).join(', ')}`);
-            
-            res.json({
-                success: true,
-                message: 'Test payment processed successfully',
-                order_id: order_id,
-                subscriptions_saved: finalOrders.length,
-                subscription_ids: finalOrders.map(o => o.id)
-            });
+        res.json({
+            success: true,
+            message: 'Test payment processed successfully',
+            order_id: order_id
         });
     } catch (error) {
         console.error('❌ Error processing test payment:', error);
