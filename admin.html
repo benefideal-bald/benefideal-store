@@ -553,6 +553,13 @@
                 return;
             }
             
+            // PROTECTION: Check if hardcoded order exists - if yes, DON'T load from API
+            const existingOrder = container.querySelector('.table-row');
+            if (existingOrder && existingOrder.textContent.includes('Никита')) {
+                console.log('Hardcoded order found, skipping API load to keep it visible');
+                return; // Don't load from API, keep hardcoded order
+            }
+            
             // DON'T clear container - keep hardcoded order visible
             // container.innerHTML = '<div class="loading">Загрузка...</div>';
             
@@ -611,15 +618,8 @@
             // PROTECTION: Don't clear hardcoded order if it exists
             const existingOrder = container.querySelector('.table-row');
             if (existingOrder && existingOrder.textContent.includes('Никита')) {
-                console.log('Hardcoded order found, keeping it visible');
-                // Only update if we have new orders from API
-                if (orders && orders.length > 0) {
-                    // Merge: keep hardcoded + add API orders
-                    const hardcodedHtml = existingOrder.outerHTML;
-                    // ... continue with API orders
-                } else {
-                    return; // Keep hardcoded order, don't clear
-                }
+                console.log('Hardcoded order found, NOT clearing it');
+                return; // Keep hardcoded order, don't clear or replace
             }
             
             if (!orders || orders.length === 0) {
