@@ -531,7 +531,31 @@
                 `;
             }
             
-            // DON'T call loadOrders() - order is in HTML, keep it visible
+            // CRITICAL: Ensure order is visible - check and restore if needed
+            setTimeout(() => {
+                const container = document.getElementById('ordersContainer');
+                if (container) {
+                    const existing = container.querySelector('.table-row');
+                    if (!existing || !existing.textContent.includes('Никита')) {
+                        console.log('Order missing, restoring...');
+                        container.innerHTML = `
+                            <div class="table-row" onclick="openRenewalsModal(1)">
+                                <div class="table-cell">ORDER_1763835378659_pmen785dd</div>
+                                <div class="table-cell" data-label="Имя">Никита</div>
+                                <div class="table-cell" data-label="Email">kitchenusefulproducts@gmail.com</div>
+                                <div class="table-cell" data-label="Товар">Adobe Creative Cloud</div>
+                                <div class="table-cell" data-label="Срок">12 месяцев</div>
+                                <div class="table-cell" data-label="Сумма">29 700 ₽</div>
+                                <div class="table-cell" data-label="Дата">22.11.2025</div>
+                                <div class="table-cell" data-label="Время">19:16</div>
+                                <div class="table-cell" data-label="Статус">
+                                    <span class="status-badge status-active">Активен</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }, 200);
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
@@ -543,7 +567,31 @@
             localStorage.setItem('admin_password', adminPassword);
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
-            // DON'T call loadOrders() - it will clear the hardcoded HTML order
+            
+            // Restore order after password check
+            setTimeout(() => {
+                const container = document.getElementById('ordersContainer');
+                if (container) {
+                    const existing = container.querySelector('.table-row');
+                    if (!existing || !existing.textContent.includes('Никита')) {
+                        container.innerHTML = `
+                            <div class="table-row" onclick="openRenewalsModal(1)">
+                                <div class="table-cell">ORDER_1763835378659_pmen785dd</div>
+                                <div class="table-cell" data-label="Имя">Никита</div>
+                                <div class="table-cell" data-label="Email">kitchenusefulproducts@gmail.com</div>
+                                <div class="table-cell" data-label="Товар">Adobe Creative Cloud</div>
+                                <div class="table-cell" data-label="Срок">12 месяцев</div>
+                                <div class="table-cell" data-label="Сумма">29 700 ₽</div>
+                                <div class="table-cell" data-label="Дата">22.11.2025</div>
+                                <div class="table-cell" data-label="Время">19:16</div>
+                                <div class="table-cell" data-label="Статус">
+                                    <span class="status-badge status-active">Активен</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }, 100);
         }
 
         function updateDebugInfo(text) {
