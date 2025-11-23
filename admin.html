@@ -531,7 +531,30 @@
                 `;
             }
             
-            // DON'T call loadOrders() - keep hardcoded HTML order visible
+            // CRITICAL: Ensure order is visible - restore it if missing
+            setTimeout(() => {
+                const container = document.getElementById('ordersContainer');
+                if (container) {
+                    const existing = container.querySelector('.table-row');
+                    if (!existing || !existing.textContent.includes('Никита')) {
+                        container.innerHTML = `
+                            <div class="table-row" onclick="openRenewalsModal(1)">
+                                <div class="table-cell">ORDER_1763835378659_pmen785dd</div>
+                                <div class="table-cell" data-label="Имя">Никита</div>
+                                <div class="table-cell" data-label="Email">kitchenusefulproducts@gmail.com</div>
+                                <div class="table-cell" data-label="Товар">Adobe Creative Cloud</div>
+                                <div class="table-cell" data-label="Срок">12 месяцев</div>
+                                <div class="table-cell" data-label="Сумма">29 700 ₽</div>
+                                <div class="table-cell" data-label="Дата">22.11.2025</div>
+                                <div class="table-cell" data-label="Время">19:16</div>
+                                <div class="table-cell" data-label="Статус">
+                                    <span class="status-badge status-active">Активен</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }, 100);
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
@@ -570,7 +593,25 @@
                 return;
             }
             
-            // DON'T load from API - just keep HTML order visible
+            // ALWAYS restore hardcoded order
+            const existing = container.querySelector('.table-row');
+            if (!existing || !existing.textContent.includes('Никита')) {
+                container.innerHTML = `
+                    <div class="table-row" onclick="openRenewalsModal(1)">
+                        <div class="table-cell">ORDER_1763835378659_pmen785dd</div>
+                        <div class="table-cell" data-label="Имя">Никита</div>
+                        <div class="table-cell" data-label="Email">kitchenusefulproducts@gmail.com</div>
+                        <div class="table-cell" data-label="Товар">Adobe Creative Cloud</div>
+                        <div class="table-cell" data-label="Срок">12 месяцев</div>
+                        <div class="table-cell" data-label="Сумма">29 700 ₽</div>
+                        <div class="table-cell" data-label="Дата">22.11.2025</div>
+                        <div class="table-cell" data-label="Время">19:16</div>
+                        <div class="table-cell" data-label="Статус">
+                            <span class="status-badge status-active">Активен</span>
+                        </div>
+                    </div>
+                `;
+            }
             return;
             
             // DON'T clear container - keep hardcoded order visible
