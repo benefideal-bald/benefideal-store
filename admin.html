@@ -596,9 +596,52 @@
         }
 
         function displayOrders(orders) {
-            // COMPLETELY DISABLED - never touch container, always keep hardcoded order
-            return;
+            const container = document.getElementById('ordersContainer');
+            if (!container) {
+                console.error('Container not found!');
+                return;
+            }
             
+            if (!orders || orders.length === 0) {
+                container.innerHTML = '<div class="loading">Заказы не найдены</div>';
+                return;
+            }
+            
+            console.log('Displaying orders:', orders);
+            
+            const html = orders.map(order => {
+                const subscriptionId = order.id;
+                const orderId = order.order_id || `ID-${order.id}`;
+                const customerName = order.customer_name || '';
+                const customerEmail = order.customer_email || '';
+                const productName = order.product_name || '';
+                const duration = order.duration_text || `${order.subscription_months || 1} мес.`;
+                const amount = order.amount_formatted || (order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽');
+                const date = order.purchase_date_formatted || '';
+                const time = order.purchase_time || '';
+                const isActive = order.is_active === 1 || order.is_active === true;
+                
+                return `
+                <div class="table-row" onclick="openRenewalsModal(${subscriptionId})">
+                    <div class="table-cell">${orderId}</div>
+                    <div class="table-cell" data-label="Имя">${customerName}</div>
+                    <div class="table-cell" data-label="Email">${customerEmail}</div>
+                    <div class="table-cell" data-label="Товар">${productName}</div>
+                    <div class="table-cell" data-label="Срок">${duration}</div>
+                    <div class="table-cell" data-label="Сумма">${amount}</div>
+                    <div class="table-cell" data-label="Дата">${date}</div>
+                    <div class="table-cell" data-label="Время">${time}</div>
+                    <div class="table-cell" data-label="Статус">
+                        <span class="status-badge ${isActive ? 'status-active' : 'status-inactive'}">
+                            ${isActive ? 'Активен' : 'Неактивен'}
+                        </span>
+                    </div>
+                </div>
+            `;
+            }).join('');
+            
+            container.innerHTML = html;
+            console.log('Orders displayed, HTML length:', html.length);
         }
 
         function updateStats(orders) {
