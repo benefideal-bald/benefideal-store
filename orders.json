@@ -1,2 +1,14 @@
-[]
-
+[
+  {
+    "id": 1,
+    "customer_name": "Никита",
+    "customer_email": "kitchenusefulproducts@gmail.com",
+    "product_name": "Adobe Creative Cloud",
+    "product_id": 3,
+    "subscription_months": 12,
+    "purchase_date": "2025-11-22T16:16:00.000Z",
+    "order_id": "ORDER_1763835378659_pmen785dd",
+    "amount": 29700,
+    "is_active": 1
+  }
+]
