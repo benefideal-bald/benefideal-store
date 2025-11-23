@@ -439,7 +439,7 @@
                 <div>Статус</div>
             </div>
             <div id="ordersContainer">
-                <!-- HARDCODED ORDER: Никита -->
+                <!-- HARDCODED ORDER: Никита - данные из Telegram сообщения -->
                 <div class="table-row" onclick="openRenewalsModal(1)">
                     <div class="table-cell">ORDER_1763835378659_pmen785dd</div>
                     <div class="table-cell" data-label="Имя">Никита</div>
@@ -447,8 +447,8 @@
                     <div class="table-cell" data-label="Товар">Adobe Creative Cloud</div>
                     <div class="table-cell" data-label="Срок">12 месяцев</div>
                     <div class="table-cell" data-label="Сумма">29 700 ₽</div>
-                    <div class="table-cell" data-label="Дата">22.11.2025</div>
-                    <div class="table-cell" data-label="Время">18:16:19</div>
+                    <div class="table-cell" data-label="Дата">21.11.2025</div>
+                    <div class="table-cell" data-label="Время">19:16</div>
                     <div class="table-cell" data-label="Статус">
                         <span class="status-badge status-active">Активен</span>
                     </div>
@@ -478,7 +478,7 @@
         let allOrders = [];
         let adminPassword = '';
 
-        // HARDCODED DATA: Никита's order (temporary fallback)
+        // HARDCODED DATA: Никита's order (данные из Telegram сообщения)
         const hardcodedOrder = {
             id: 1,
             order_id: "ORDER_1763835378659_pmen785dd",
@@ -487,9 +487,9 @@
             product_name: "Adobe Creative Cloud",
             product_id: 3,
             subscription_months: 12,
-            purchase_date: "2025-11-22T18:16:19.000Z",
-            purchase_time: "18:16:19",
-            purchase_date_formatted: "22.11.2025",
+            purchase_date: "2025-11-21T19:16:00.000Z",
+            purchase_time: "19:16",
+            purchase_date_formatted: "21.11.2025",
             amount: 29700,
             amount_formatted: "29 700 ₽",
             duration_text: "12 месяцев",
