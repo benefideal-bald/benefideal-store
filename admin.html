@@ -439,8 +439,19 @@
                 <div>Статус</div>
             </div>
             <div id="ordersContainer">
-                <div class="loading">
-                    <i class="fas fa-spinner fa-spin"></i> Загрузка заказов...
+                <!-- HARDCODED ORDER: Никита -->
+                <div class="table-row" onclick="openRenewalsModal(1)">
+                    <div class="table-cell">ORDER_1763835378659_pmen785dd</div>
+                    <div class="table-cell" data-label="Имя">Никита</div>
+                    <div class="table-cell" data-label="Email">kitchenusefulproducts@gmail.com</div>
+                    <div class="table-cell" data-label="Товар">Adobe Creative Cloud</div>
+                    <div class="table-cell" data-label="Срок">12 месяцев</div>
+                    <div class="table-cell" data-label="Сумма">29 700 ₽</div>
+                    <div class="table-cell" data-label="Дата">22.11.2025</div>
+                    <div class="table-cell" data-label="Время">18:16:19</div>
+                    <div class="table-cell" data-label="Статус">
+                        <span class="status-badge status-active">Активен</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -497,7 +508,12 @@
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
-            // Load orders immediately when page loads
+            // IMMEDIATELY show hardcoded order, then try to load from API
+            allOrders = [hardcodedOrder];
+            displayOrders(allOrders);
+            updateStats(allOrders);
+            
+            // Load orders from API (will replace hardcoded if successful)
             window.addEventListener('DOMContentLoaded', () => {
                 loadOrders();
             });
