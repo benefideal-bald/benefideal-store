@@ -508,53 +508,8 @@
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
-            // Update stats manually
-            const statsContainer = document.getElementById('statsContainer');
-            if (statsContainer) {
-                statsContainer.innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-value">1</div>
-                        <div class="stat-label">Всего заказов</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">29 700 ₽</div>
-                        <div class="stat-label">Общая сумма</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">1</div>
-                        <div class="stat-label">Активных</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">0</div>
-                        <div class="stat-label">Сегодня</div>
-                    </div>
-                `;
-            }
-            
-            // CRITICAL: Ensure order is visible - restore it if missing
-            setTimeout(() => {
-                const container = document.getElementById('ordersContainer');
-                if (container) {
-                    const existing = container.querySelector('.table-row');
-                    if (!existing || !existing.textContent.includes('Никита')) {
-                        container.innerHTML = `
-                            <div class="table-row" onclick="openRenewalsModal(1)">
-                                <div class="table-cell">ORDER_1763835378659_pmen785dd</div>
-                                <div class="table-cell" data-label="Имя">Никита</div>
-                                <div class="table-cell" data-label="Email">kitchenusefulproducts@gmail.com</div>
-                                <div class="table-cell" data-label="Товар">Adobe Creative Cloud</div>
-                                <div class="table-cell" data-label="Срок">12 месяцев</div>
-                                <div class="table-cell" data-label="Сумма">29 700 ₽</div>
-                                <div class="table-cell" data-label="Дата">22.11.2025</div>
-                                <div class="table-cell" data-label="Время">19:16</div>
-                                <div class="table-cell" data-label="Статус">
-                                    <span class="status-badge status-active">Активен</span>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-            }, 100);
+            // Load orders from API - this will show all orders including Nikita's
+            loadOrders();
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
@@ -593,26 +548,12 @@
                 return;
             }
             
-            // ALWAYS restore hardcoded order
-            const existing = container.querySelector('.table-row');
-            if (!existing || !existing.textContent.includes('Никита')) {
-                container.innerHTML = `
-                    <div class="table-row" onclick="openRenewalsModal(1)">
-                        <div class="table-cell">ORDER_1763835378659_pmen785dd</div>
-                        <div class="table-cell" data-label="Имя">Никита</div>
-                        <div class="table-cell" data-label="Email">kitchenusefulproducts@gmail.com</div>
-                        <div class="table-cell" data-label="Товар">Adobe Creative Cloud</div>
-                        <div class="table-cell" data-label="Срок">12 месяцев</div>
-                        <div class="table-cell" data-label="Сумма">29 700 ₽</div>
-                        <div class="table-cell" data-label="Дата">22.11.2025</div>
-                        <div class="table-cell" data-label="Время">19:16</div>
-                        <div class="table-cell" data-label="Статус">
-                            <span class="status-badge status-active">Активен</span>
-                        </div>
-                    </div>
-                `;
-            }
-            return;
+            container.innerHTML = '<div class="loading">Загрузка...</div>';
+            
+            const apiUrl = `/api/admin/orders?password=${encodeURIComponent(adminPassword || '2728276')}`;
+            console.log('Loading orders from:', apiUrl);
+            
+            fetch(apiUrl)
             
             // DON'T clear container - keep hardcoded order visible
             // container.innerHTML = '<div class="loading">Загрузка...</div>';
@@ -639,21 +580,18 @@
                     console.log('Orders:', data.orders);
                     console.log('Orders count:', data.orders ? data.orders.length : 0);
                     
-                    // DON'T call displayOrders() - it will clear the hardcoded order
-                    // Just update stats if needed
                     if (data.success && data.orders && data.orders.length > 0) {
                         allOrders = data.orders;
+                        displayOrders(allOrders);
                         updateStats(allOrders);
                     } else {
-                        allOrders = [hardcodedOrder];
-                        updateStats(allOrders);
+                        container.innerHTML = '<div class="loading">Заказы не найдены</div>';
+                        updateStats([]);
                     }
                 })
                 .catch(err => {
                     console.error('Error loading orders:', err);
-                    // DON'T call displayOrders() - keep hardcoded order visible
-                    allOrders = [hardcodedOrder];
-                    updateStats(allOrders);
+                    container.innerHTML = '<div class="error">Ошибка: ' + err.message + '</div>';
                 });
         }
 
@@ -716,9 +654,26 @@
         }
         
         function sortOrdersList(orders) {
-            // DON'T call displayOrders() - it will clear the hardcoded order
-            // Sorting disabled to keep hardcoded order visible
-            return;
+            const sorted = [...orders].sort((a, b) => {
+                switch(currentSort) {
+                    case 'date-desc':
+                        return new Date(b.purchase_date) - new Date(a.purchase_date);
+                    case 'date-asc':
+                        return new Date(a.purchase_date) - new Date(b.purchase_date);
+                    case 'amount-desc':
+                        return (b.amount || 0) - (a.amount || 0);
+                    case 'amount-asc':
+                        return (a.amount || 0) - (b.amount || 0);
+                    case 'name-asc':
+                        return a.customer_name.localeCompare(b.customer_name, 'ru');
+                    case 'name-desc':
+                        return b.customer_name.localeCompare(a.customer_name, 'ru');
+                    default:
+                        return 0;
+                }
+            });
+            
+            displayOrders(sorted);
         }
 
         // Allow Enter key in password input
