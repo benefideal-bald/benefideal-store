@@ -467,24 +467,6 @@
         let allOrders = [];
         let adminPassword = '';
 
-        // HARDCODED DATA: Никита's order (данные из Telegram сообщения)
-        const hardcodedOrder = {
-            id: 1,
-            order_id: "ORDER_1763835378659_pmen785dd",
-            customer_name: "Никита",
-            customer_email: "kitchenusefulproducts@gmail.com",
-            product_name: "Adobe Creative Cloud",
-            product_id: 3,
-            subscription_months: 12,
-            purchase_date: "2025-11-22T19:16:00.000Z",
-            purchase_time: "19:16",
-            purchase_date_formatted: "22.11.2025",
-            amount: 29700,
-            amount_formatted: "29 700 ₽",
-            duration_text: "12 месяцев",
-            is_active: 1
-        };
-
         // SIMPLE: Get password
         const urlParams = new URLSearchParams(window.location.search);
         const urlPassword = urlParams.get('password');
@@ -553,11 +535,6 @@
         }
         
         function loadOrders() {
-            // DISABLED: Don't clear container, keep hardcoded HTML order visible
-            // The order is already in HTML (lines 443-455), don't touch it
-            return;
-            
-            /* DISABLED CODE:
             const container = document.getElementById('ordersContainer');
             if (!container) {
                 console.error('Container not found!');
@@ -565,15 +542,7 @@
                 return;
             }
             
-            container.innerHTML = '<div class="loading">Загрузка...</div>';
-            
-            const apiUrl = `/api/admin/orders?password=${encodeURIComponent(adminPassword || '2728276')}`;
-            console.log('Loading orders from:', apiUrl);
-            
-            fetch(apiUrl)
-            
-            // DON'T clear container - keep hardcoded order visible
-            // container.innerHTML = '<div class="loading">Загрузка...</div>';
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка заказов...</div>';
             
             const apiUrl = `/api/admin/orders?password=${encodeURIComponent(adminPassword || '2728276')}`;
             console.log('Loading orders from:', apiUrl);
@@ -610,7 +579,6 @@
                     console.error('Error loading orders:', err);
                     container.innerHTML = '<div class="error">Ошибка: ' + err.message + '</div>';
                 });
-            */
         }
 
         function displayOrders(orders) {
