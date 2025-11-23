@@ -546,6 +546,123 @@ app.get('/api/admin/orders', (req, res) => {
     res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
 });
 
+// Admin API - Sync orders from JSON to database (for renewals calendar)
+app.get('/api/admin/sync-orders-to-db', (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD || '2728276';
+    const providedPassword = req.query.password || req.headers['x-admin-password'];
+    
+    if (providedPassword !== adminPassword) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    console.log('🔄 Syncing orders from JSON to database...');
+    
+    const jsonOrders = readOrdersFromJSON();
+    console.log(`📋 Found ${jsonOrders.length} orders in orders.json`);
+    
+    if (jsonOrders.length === 0) {
+        return res.json({ success: true, message: 'No orders to sync', synced: 0 });
+    }
+    
+    let syncedCount = 0;
+    let remindersCreated = 0;
+    const errors = [];
+    
+    // Process each order
+    const processOrder = (order, callback) => {
+        // Check if subscription already exists
+        db.get(`
+            SELECT id FROM subscriptions 
+            WHERE order_id = ? AND product_id = ? AND customer_email = ?
+        `, [order.order_id, order.product_id, order.customer_email], (err, existing) => {
+            if (err) {
+                console.error(`❌ Error checking subscription for order ${order.order_id}:`, err);
+                errors.push(`Order ${order.order_id}: ${err.message}`);
+                return callback();
+            }
+            
+            if (existing) {
+                console.log(`⚠️ Subscription already exists for order ${order.order_id} (product ${order.product_id}), ID: ${existing.id}`);
+                
+                // Check if reminders exist
+                db.get(`
+                    SELECT COUNT(*) as count FROM reminders WHERE subscription_id = ?
+                `, [existing.id], (err2, reminderCheck) => {
+                    if (!err2 && reminderCheck && reminderCheck.count === 0) {
+                        // No reminders, create them
+                        const purchaseDate = new Date(order.purchase_date);
+                        generateReminders(existing.id, order.product_id, order.subscription_months, purchaseDate);
+                        remindersCreated++;
+                        console.log(`✅ Created reminders for existing subscription ${existing.id}`);
+                    }
+                    callback();
+                });
+                return;
+            }
+            
+            // Create new subscription
+            const stmt = db.prepare(`
+                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+            `);
+            
+            stmt.run([
+                order.customer_name,
+                order.customer_email,
+                order.product_name,
+                order.product_id,
+                order.subscription_months,
+                order.purchase_date,
+                order.order_id,
+                order.amount
+            ], function(insertErr) {
+                if (insertErr) {
+                    console.error(`❌ Error inserting subscription for order ${order.order_id}:`, insertErr);
+                    errors.push(`Order ${order.order_id}: ${insertErr.message}`);
+                    stmt.finalize();
+                    return callback();
+                }
+                
+                const subscriptionId = this.lastID;
+                console.log(`✅ Created subscription ID ${subscriptionId} for order ${order.order_id}`);
+                syncedCount++;
+                
+                // Create reminders
+                const purchaseDate = new Date(order.purchase_date);
+                generateReminders(subscriptionId, order.product_id, order.subscription_months, purchaseDate);
+                remindersCreated++;
+                console.log(`✅ Created reminders for subscription ${subscriptionId}`);
+                
+                stmt.finalize();
+                callback();
+            });
+        });
+    };
+    
+    // Process all orders sequentially
+    let processed = 0;
+    const processNext = () => {
+        if (processed >= jsonOrders.length) {
+            console.log(`✅ Sync complete: ${syncedCount} subscriptions created, ${remindersCreated} reminder sets created`);
+            res.json({
+                success: true,
+                message: `Synced ${syncedCount} orders, created ${remindersCreated} reminder sets`,
+                synced: syncedCount,
+                reminders_created: remindersCreated,
+                errors: errors.length > 0 ? errors : undefined
+            });
+            return;
+        }
+        
+        processOrder(jsonOrders[processed], () => {
+            processed++;
+            processNext();
+        });
+    };
+    
+    processNext();
+});
+
 // Admin API - Get renewals/reminders
 app.get('/api/admin/renewals', (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
