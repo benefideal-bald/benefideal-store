@@ -508,8 +508,30 @@
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
-            // Load orders from API - this will show all orders including Nikita's
-            loadOrders();
+            // Update stats
+            const statsContainer = document.getElementById('statsContainer');
+            if (statsContainer) {
+                statsContainer.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">1</div>
+                        <div class="stat-label">Всего заказов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">29 700 ₽</div>
+                        <div class="stat-label">Общая сумма</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">1</div>
+                        <div class="stat-label">Активных</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Сегодня</div>
+                    </div>
+                `;
+            }
+            
+            // DON'T call loadOrders() - keep HTML order visible
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
