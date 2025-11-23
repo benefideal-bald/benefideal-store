@@ -508,14 +508,13 @@
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
-            // IMMEDIATELY show hardcoded order - DON'T load from API to keep it visible
+            // Keep hardcoded order in HTML - DON'T call displayOrders() or loadOrders()
+            // Update stats only
             allOrders = [hardcodedOrder];
-            displayOrders(allOrders);
             updateStats(allOrders);
             
-            // DON'T call loadOrders() - it will clear the hardcoded order
-            // If you want to load from API, uncomment below (but it will replace hardcoded order)
-            // setTimeout(() => loadOrders(), 3000);
+            // DON'T call displayOrders() - it will clear the hardcoded HTML order
+            // DON'T call loadOrders() - it will clear the hardcoded HTML order
         } else {
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
@@ -654,7 +653,7 @@
         function updateStats(orders) {
             const total = orders.length;
             const totalAmount = orders.reduce((sum, o) => sum + (o.amount || 0), 0);
-            const active = orders.filter(o => o.is_active).length;
+            const active = orders.filter(o => o.is_active === 1 || o.is_active === true).length;
             const today = new Date().toISOString().split('T')[0];
             const todayOrders = orders.filter(o => o.purchase_date && o.purchase_date.startsWith(today)).length;
             
