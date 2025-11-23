@@ -602,10 +602,6 @@
         }
 
         function displayOrders(orders) {
-            // DISABLED: Don't touch container, keep hardcoded HTML order visible
-            return;
-            
-            /* DISABLED CODE:
             const container = document.getElementById('ordersContainer');
             if (!container) {
                 console.error('Container not found!');
@@ -613,7 +609,10 @@
             }
             
             if (!orders || orders.length === 0) {
-                container.innerHTML = '<div class="loading">Заказы не найдены</div>';
+                // Only clear if container is empty
+                if (container.querySelectorAll('.table-row').length === 0) {
+                    container.innerHTML = '<div class="loading">Заказы не найдены</div>';
+                }
                 return;
             }
             
@@ -650,6 +649,7 @@
             `;
             }).join('');
             
+            // Update container with orders from database - orders are stored forever
             container.innerHTML = html;
             console.log('Orders displayed, HTML length:', html.length);
         }
