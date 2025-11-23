@@ -504,7 +504,8 @@ app.get('/api/admin/orders', (req, res) => {
     
     console.log('🔍 Fetching orders from JSON only (database gets wiped on deploy)...');
     
-    // Читаем заказы ТОЛЬКО из JSON файла (база данных стирается при деплое!)
+    // Читаем ВСЕ заказы из JSON файла (база данных стирается при деплое!)
+    // Показываем ВСЕ заказы из orders.json без ограничений
     const jsonOrders = readOrdersFromJSON();
     console.log(`📋 Found ${jsonOrders.length} orders in orders.json`);
     
@@ -513,7 +514,7 @@ app.get('/api/admin/orders', (req, res) => {
         return res.json({ success: true, orders: [], total: 0 });
     }
     
-    // Форматируем заказы из JSON
+    // Форматируем ВСЕ заказы из JSON (без ограничений, показываем все!)
     const formattedOrders = jsonOrders.map(order => ({
         id: order.id,
         order_id: order.order_id,
