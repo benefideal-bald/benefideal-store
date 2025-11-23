@@ -628,17 +628,16 @@
                 return;
             }
             
-            // STRICT PROTECTION: NEVER clear hardcoded order
+            // STRICT PROTECTION: NEVER touch container if hardcoded order exists
             const existingOrder = container.querySelector('.table-row');
             if (existingOrder && existingOrder.textContent.includes('Никита')) {
-                console.log('Hardcoded order found, NOT clearing it - PROTECTED');
-                return; // ALWAYS keep hardcoded order, don't clear or replace
+                console.log('Hardcoded order found, NOT touching container - PROTECTED');
+                return; // ALWAYS keep hardcoded order, don't touch container at all
             }
             
-            // If no hardcoded order exists, check if we should add it back
+            // If no hardcoded order, restore it immediately
             if (!existingOrder || !existingOrder.textContent.includes('Никита')) {
-                // Restore hardcoded order if it was deleted
-                const hardcodedHtml = `
+                container.innerHTML = `
                     <div class="table-row" onclick="openRenewalsModal(1)">
                         <div class="table-cell">ORDER_1763835378659_pmen785dd</div>
                         <div class="table-cell" data-label="Имя">Никита</div>
@@ -653,46 +652,9 @@
                         </div>
                     </div>
                 `;
-                
-                if (!orders || orders.length === 0) {
-                    container.innerHTML = hardcodedHtml;
-                    return;
-                }
-                
-                // If we have API orders, show them but also keep hardcoded
-                const html = orders.map(order => {
-                    const subscriptionId = order.id;
-                    const orderId = order.order_id || `ID-${order.id}`;
-                    const customerName = order.customer_name || '';
-                    const customerEmail = order.customer_email || '';
-                    const productName = order.product_name || '';
-                    const duration = order.duration_text || `${order.subscription_months || 1} мес.`;
-                    const amount = order.amount_formatted || (order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽');
-                    const date = order.purchase_date_formatted || '';
-                    const time = order.purchase_time || '';
-                    const isActive = order.is_active === 1 || order.is_active === true;
-                    
-                    return `
-                    <div class="table-row" onclick="openRenewalsModal(${subscriptionId})">
-                        <div class="table-cell">${orderId}</div>
-                        <div class="table-cell" data-label="Имя">${customerName}</div>
-                        <div class="table-cell" data-label="Email">${customerEmail}</div>
-                        <div class="table-cell" data-label="Товар">${productName}</div>
-                        <div class="table-cell" data-label="Срок">${duration}</div>
-                        <div class="table-cell" data-label="Сумма">${amount}</div>
-                        <div class="table-cell" data-label="Дата">${date}</div>
-                        <div class="table-cell" data-label="Время">${time}</div>
-                        <div class="table-cell" data-label="Статус">
-                            <span class="status-badge ${isActive ? 'status-active' : 'status-inactive'}">
-                                ${isActive ? 'Активен' : 'Неактивен'}
-                            </span>
-                        </div>
-                    </div>
-                `;
-                }).join('');
-                
-                container.innerHTML = hardcodedHtml + html;
+                return; // Always restore hardcoded order, don't process API orders
             }
+            
         }
 
         function updateStats(orders) {
