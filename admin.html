@@ -795,7 +795,10 @@
             const renewalsList = reminders.map(reminder => {
                 const reminderDate = new Date(reminder.reminder_date);
                 const dateStr = reminderDate.toISOString().split('T')[0];
-                const timeStr = reminderDate.toTimeString().slice(0, 5);
+                // Используем UTC время для консистентности
+                const hours = String(reminderDate.getUTCHours()).padStart(2, '0');
+                const minutes = String(reminderDate.getUTCMinutes()).padStart(2, '0');
+                const timeStr = `${hours}:${minutes}`;
                 
                 const reminderTypeText = reminder.reminder_type === 'expiry' ? 'Окончание подписки' :
                     reminder.reminder_type.startsWith('renewal_') ? 
@@ -836,7 +839,12 @@
             const timeInput = document.getElementById(`time_${reminderId}`);
             const saveBtn = document.getElementById(`save_${reminderId}`);
             
-            const newDate = new Date(`${dateInput.value}T${timeInput.value}`);
+            // Создаем дату в UTC, чтобы время сохранялось точно как введено пользователем
+            const [year, month, day] = dateInput.value.split('-').map(Number);
+            const [hours, minutes] = timeInput.value.split(':').map(Number);
+            
+            // Создаем Date объект в UTC с введенным временем
+            const newDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0));
             pendingUpdates[reminderId] = newDate.toISOString();
             saveBtn.style.display = 'block';
         }
