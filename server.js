@@ -1081,6 +1081,7 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
             });
         });
     });
+    }
 });
 
 app.post('/api/subscription', (req, res) => {
