@@ -4231,9 +4231,10 @@ app.post('/api/debug/add-subscription', (req, res) => {
 function generateReminders(subscriptionId, productId, months, purchaseDate) {
     console.log(`Generating reminders for subscription ${subscriptionId}, product ${productId}, ${months} months`);
     
-    // Get original purchase time (hour and minutes)
-    const purchaseHour = purchaseDate.getHours();
-    const purchaseMinute = purchaseDate.getMinutes();
+    // Работаем с UTC временем, чтобы избежать проблем с часовыми поясами
+    // Get original purchase time in UTC (hour and minutes)
+    const purchaseHour = purchaseDate.getUTCHours();
+    const purchaseMinute = purchaseDate.getUTCMinutes();
     
     // Calculate reminder time: 1 hour before purchase time
     let reminderHour = purchaseHour - 1;
@@ -4256,8 +4257,9 @@ function generateReminders(subscriptionId, productId, months, purchaseDate) {
             // 4 reminders: at 3, 6, 9, and 12 months
             for (let i = 1; i <= 4; i++) {
                 const renewalDate = new Date(purchaseDate);
-                renewalDate.setMonth(renewalDate.getMonth() + (i * 3));
-                renewalDate.setHours(reminderHour, reminderMinute, 0, 0);
+                renewalDate.setUTCMonth(renewalDate.getUTCMonth() + (i * 3));
+                // Устанавливаем UTC время за 1 час до времени покупки (после добавления месяцев)
+                renewalDate.setUTCHours(reminderHour, reminderMinute, 0, 0);
                 
                 const monthsRemaining = 12 - (i * 3);
                 const reminderType = monthsRemaining > 0 ? `renewal_${monthsRemaining}months` : 'expiry';
@@ -4268,27 +4270,31 @@ function generateReminders(subscriptionId, productId, months, purchaseDate) {
             // 6 months: 2 purchases of 3 months each
             // 2 reminders: at 3 and 6 months
             const firstRenewal = new Date(purchaseDate);
-            firstRenewal.setMonth(firstRenewal.getMonth() + 3);
-            firstRenewal.setHours(reminderHour, reminderMinute, 0, 0);
+            firstRenewal.setUTCMonth(firstRenewal.getUTCMonth() + 3);
+            // Устанавливаем UTC время за 1 час до времени покупки
+            firstRenewal.setUTCHours(reminderHour, reminderMinute, 0, 0);
             insertReminder(subscriptionId, firstRenewal, 'renewal_3months');
             
             const secondRenewal = new Date(purchaseDate);
-            secondRenewal.setMonth(secondRenewal.getMonth() + 6);
-            secondRenewal.setHours(reminderHour, reminderMinute, 0, 0);
+            secondRenewal.setUTCMonth(secondRenewal.getUTCMonth() + 6);
+            // Устанавливаем UTC время за 1 час до времени покупки
+            secondRenewal.setUTCHours(reminderHour, reminderMinute, 0, 0);
             insertReminder(subscriptionId, secondRenewal, 'expiry');
         } else {
             // 1 or 3 months: one purchase
             const expiry = new Date(purchaseDate);
-            expiry.setMonth(expiry.getMonth() + months);
-            expiry.setHours(reminderHour, reminderMinute, 0, 0);
+            expiry.setUTCMonth(expiry.getUTCMonth() + months);
+            // Устанавливаем UTC время за 1 час до времени покупки
+            expiry.setUTCHours(reminderHour, reminderMinute, 0, 0);
             insertReminder(subscriptionId, expiry, 'expiry');
         }
     } else if (productId === 1 || productId === 7) {
         // ChatGPT and CapCut: monthly renewals
         for (let i = 1; i <= months; i++) {
             const renewalDate = new Date(purchaseDate);
-            renewalDate.setMonth(renewalDate.getMonth() + i);
-            renewalDate.setHours(reminderHour, reminderMinute, 0, 0);
+            renewalDate.setUTCMonth(renewalDate.getUTCMonth() + i);
+            // Устанавливаем UTC время за 1 час до времени покупки (после добавления месяцев)
+            renewalDate.setUTCHours(reminderHour, reminderMinute, 0, 0);
             
             const monthsRemaining = months - i;
             const reminderType = monthsRemaining > 0 ? `renewal_${monthsRemaining}months` : 'expiry';
