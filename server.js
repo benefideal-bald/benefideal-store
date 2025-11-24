@@ -901,8 +901,93 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     
-    // Get all future reminders (no date limit)
-    const startDate = new Date().toISOString().split('T')[0];
+    // Auto-sync orders from JSON to database before fetching renewals
+    // This ensures all orders from orders.json have subscriptions and reminders in the database
+    const jsonOrders = readOrdersFromJSON();
+    if (jsonOrders.length > 0) {
+        console.log('🔄 Auto-syncing orders from JSON to database for renewals calendar...');
+        
+        // Quick sync: check if any orders need to be synced
+        let needsSync = false;
+        let processed = 0;
+        
+        const checkAndSync = () => {
+            if (processed >= jsonOrders.length) {
+                // All checked, now fetch renewals
+                fetchRenewals();
+                return;
+            }
+            
+            const order = jsonOrders[processed];
+            db.get(`
+                SELECT id FROM subscriptions 
+                WHERE order_id = ? AND product_id = ? AND customer_email = ?
+            `, [order.order_id, order.product_id, order.customer_email], (err, existing) => {
+                if (err) {
+                    console.error(`Error checking subscription:`, err);
+                    processed++;
+                    checkAndSync();
+                    return;
+                }
+                
+                if (!existing) {
+                    // Need to create subscription
+                    needsSync = true;
+                    const stmt = db.prepare(`
+                        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                    `);
+                    
+                    stmt.run([
+                        order.customer_name,
+                        order.customer_email,
+                        order.product_name,
+                        order.product_id,
+                        order.subscription_months,
+                        order.purchase_date,
+                        order.order_id,
+                        order.amount
+                    ], function(insertErr) {
+                        if (!insertErr) {
+                            const subscriptionId = this.lastID;
+                            const purchaseDate = new Date(order.purchase_date);
+                            
+                            // Check if reminders already exist
+                            db.get(`SELECT COUNT(*) as count FROM reminders WHERE subscription_id = ?`, [subscriptionId], (err2, reminderCheck) => {
+                                if (!err2 && reminderCheck && reminderCheck.count === 0) {
+                                    generateReminders(subscriptionId, order.product_id, order.subscription_months, purchaseDate);
+                                    console.log(`✅ Auto-created subscription ${subscriptionId} and reminders for order ${order.order_id}`);
+                                }
+                            });
+                        }
+                        stmt.finalize();
+                        processed++;
+                        checkAndSync();
+                    });
+                } else {
+                    // Subscription exists, check reminders
+                    db.get(`SELECT COUNT(*) as count FROM reminders WHERE subscription_id = ?`, [existing.id], (err2, reminderCheck) => {
+                        if (!err2 && reminderCheck && reminderCheck.count === 0) {
+                            // No reminders, create them
+                            const purchaseDate = new Date(order.purchase_date);
+                            generateReminders(existing.id, order.product_id, order.subscription_months, purchaseDate);
+                            console.log(`✅ Auto-created reminders for existing subscription ${existing.id}`);
+                        }
+                        processed++;
+                        checkAndSync();
+                    });
+                }
+            });
+        };
+        
+        checkAndSync();
+    } else {
+        fetchRenewals();
+    }
+    
+    function fetchRenewals() {
+        // Get all future reminders (no date limit)
+        const startDate = new Date().toISOString().split('T')[0];
     
     // Get all reminders in the future (no upper limit)
     db.all(`
