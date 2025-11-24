@@ -753,7 +753,12 @@ app.get('/api/admin/renewals', (req, res) => {
             return {
                 reminder_id: row.reminder_id,
                 reminder_date: row.reminder_date,
-                reminder_time: row.reminder_date ? new Date(row.reminder_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '',
+                reminder_time: row.reminder_date ? (() => {
+                    const d = new Date(row.reminder_date);
+                    const hours = String(d.getUTCHours()).padStart(2, '0');
+                    const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+                    return `${hours}:${minutes}`;
+                })() : '',
                 reminder_date_formatted: row.reminder_date ? new Date(row.reminder_date).toLocaleDateString('ru-RU') : '',
                 reminder_type: row.reminder_type,
                 is_sent: row.is_sent === 1,
@@ -1052,9 +1057,19 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
                     };
                 }
                 calendar[day].count++;
+                // Форматируем время в UTC на сервере, чтобы оно было одинаковым везде
+                let reminderTime = '';
+                if (row.reminder_date) {
+                    const reminderDate = new Date(row.reminder_date);
+                    // Используем UTC время для консистентности
+                    const hours = String(reminderDate.getUTCHours()).padStart(2, '0');
+                    const minutes = String(reminderDate.getUTCMinutes()).padStart(2, '0');
+                    reminderTime = `${hours}:${minutes}`;
+                }
+                
                 calendar[day].renewals.push({
                     reminder_id: row.reminder_id,
-                    reminder_time: row.reminder_date ? new Date(row.reminder_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '',
+                    reminder_time: reminderTime,
                     reminder_type: row.reminder_type,
                     is_sent: row.is_sent === 1,
                     customer_name: row.customer_name,
