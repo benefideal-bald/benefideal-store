@@ -1995,20 +1995,34 @@ async function readReviewsFromJSON() {
         });
 
         // Объединяем отзывы из обоих источников, убирая дубликаты по email + order_id
+        // ВАЖНО:
+        // - клиентские отзывы из БД должны сохраниться как есть
+        // - статические отзывы (STATIC_*) должны браться из Git-версии (там самые свежие тексты)
         const reviewsMap = new Map();
         
-        // Сначала добавляем отзывы из Git (начальные)
-        allReviewsFromGit.forEach(review => {
-            if (review.id) {
-                const key = `${(review.customer_email || '').toLowerCase().trim()}_${review.order_id || 'null'}`;
-                reviewsMap.set(key, review);
-            }
-        });
-        
-        // Затем добавляем отзывы из базы данных (новые, перезаписывают старые если есть дубликаты)
+        // 1) Сначала добавляем ВСЕ отзывы из базы данных (клиентские + возможные статические)
         dbReviews.forEach(review => {
             const key = `${(review.customer_email || '').toLowerCase().trim()}_${review.order_id || 'null'}`;
             reviewsMap.set(key, review);
+        });
+
+        // 2) Затем добавляем отзывы из Git:
+        //    - для статических (is_static или order_id начинается с STATIC_) Git ВСЕГДА переопределяет БД
+        //    - для остальных добавляем только если такого ключа ещё нет
+        allReviewsFromGit.forEach(review => {
+            if (!review.id) return;
+            const email = (review.customer_email || '').toLowerCase().trim();
+            const orderId = review.order_id || 'null';
+            const key = `${email}_${orderId}`;
+            const isStatic = !!review.is_static || (orderId && String(orderId).startsWith('STATIC_'));
+
+            if (isStatic) {
+                // Статический отзыв – берём текст из Git, даже если в БД есть старая версия
+                reviewsMap.set(key, review);
+            } else if (!reviewsMap.has(key)) {
+                // Нестатический – добавляем, только если его ещё нет
+                reviewsMap.set(key, review);
+            }
         });
         
         // Преобразуем Map обратно в массив
