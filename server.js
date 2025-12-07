@@ -2035,6 +2035,32 @@ async function readReviewsFromJSON() {
     }
 }
 
+// Helper: read ALL reviews только из базы данных (единое хранилище)
+// Используется для основного API, который отдает отзывы на сайт
+async function readReviewsFromDatabaseOnly() {
+    return new Promise((resolve) => {
+        db.all(`
+            SELECT 
+                'review_' || id as id,
+                customer_name,
+                customer_email,
+                review_text,
+                rating,
+                order_id,
+                created_at,
+                0 as is_static
+            FROM reviews
+            ORDER BY datetime(created_at) DESC
+        `, [], (err, rows) => {
+            if (err) {
+                console.error('❌ Error reading reviews from database (readReviewsFromDatabaseOnly):', err);
+                return resolve([]);
+            }
+            resolve(rows || []);
+        });
+    });
+}
+
 // Функция для автоматического коммита отзывов в Git через GitHub API
 // Это гарантирует, что все новые отзывы попадут в Git и не потеряются при деплое
 // КРИТИЧЕСКИ ВАЖНО: Без этого отзывы могут потеряться при следующем деплое!
@@ -2269,6 +2295,7 @@ function addOrderToJSON(order) {
 }
 
 // API endpoint to get reviews
+// ЕДИНСТВЕННЫЙ источник данных для сайта: таблица reviews в базе данных
 app.get('/api/reviews', async (req, res) => {
     console.log('GET /api/reviews - Request received');
     console.log('Query params:', req.query);
@@ -2277,10 +2304,10 @@ app.get('/api/reviews', async (req, res) => {
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     const sortOrder = req.query.sort || 'DESC'; // DESC = newest first (same for both pages)
     
-    // Читаем все отзывы (Git + база данных)
-    let allReviews = await readReviewsFromJSON();
+    // Читаем ВСЕ отзывы ТОЛЬКО из базы данных (reviews table)
+    let allReviews = await readReviewsFromDatabaseOnly();
     
-    console.log(`Found ${allReviews.length} reviews in merged source (Git + DB)`);
+    console.log(`Found ${allReviews.length} reviews in DATABASE (single source of truth)`);
     
     // Фильтруем технический статический отзыв Тимура, который не должен отображаться на сайте
     // Используем order_id, чтобы не затронуть реальные клиентские отзывы с тем же именем
