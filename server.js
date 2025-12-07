@@ -2306,6 +2306,14 @@ app.get('/api/reviews', async (req, res) => {
         console.log(`🧹 Filtered out ${beforeFilterCount - allReviews.length} STATIC_REVIEW_TIMUR entries from API response`);
     }
     
+    // Убираем все остальные старые статические отзывы (маркетинговые заготовки),
+    // оставляем только реальные клиентские (is_static !== true)
+    const beforeStaticFilter = allReviews.length;
+    allReviews = allReviews.filter(r => !r.is_static);
+    if (allReviews.length !== beforeStaticFilter) {
+        console.log(`🧹 Filtered out ${beforeStaticFilter - allReviews.length} legacy static reviews (is_static=true)`);
+    }
+    
     // Сортируем отзывы по дате (новые первыми)
     const getTimestamp = (dateStr) => {
         if (!dateStr) return 0;
