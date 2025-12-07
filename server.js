@@ -2009,7 +2009,7 @@ async function readReviewsFromJSON() {
         // Объединяем отзывы из обоих источников, убирая дубликаты по email + order_id
         const reviewsMap = new Map();
         
-        // Сначала добавляем отзывы из Git (начальные)
+        // Сначала добавляем отзывы из Git (начальные) - для статических это ИСТОЧНИК ПРАВДЫ
         allReviewsFromGit.forEach(review => {
             if (review.id) {
                 const key = `${(review.customer_email || '').toLowerCase().trim()}_${review.order_id || 'null'}`;
@@ -2019,7 +2019,16 @@ async function readReviewsFromJSON() {
         
         // Затем добавляем отзывы из базы данных (новые, перезаписывают старые если есть дубликаты)
         dbReviews.forEach(review => {
-            const key = `${(review.customer_email || '').toLowerCase().trim()}_${review.order_id || 'null'}`;
+            const email = (review.customer_email || '').toLowerCase().trim();
+            const orderId = review.order_id || 'null';
+            const key = `${email}_${orderId}`;
+            const isStatic = orderId && String(orderId).startsWith('STATIC_');
+            
+            // Для статических отзывов НИКОГДА не перезаписываем Git-версию (там тексты обновлены)
+            if (isStatic && reviewsMap.has(key)) {
+                return;
+            }
+            
             reviewsMap.set(key, review);
         });
         
