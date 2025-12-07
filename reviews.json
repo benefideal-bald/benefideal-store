@@ -37,6 +37,15 @@
     "is_static": true
   },
   {
+    "id": "static_timur",
+    "customer_name": "Тимур",
+    "customer_email": "static_review_timur@benefideal.com",
+    "review_text": "Купил чат гпт на месяц, сделали все быстро, рекомендую 🤝",
+    "rating": 5,
+    "created_at": "2025-11-06T10:00:00Z",
+    "is_static": true
+  },
+  {
     "id": "static_sofia",
     "customer_name": "София",
     "customer_email": "static_review_1@benefideal.com",
