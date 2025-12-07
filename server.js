@@ -2006,34 +2006,18 @@ async function readReviewsFromJSON() {
             });
         });
 
-        // Объединяем отзывы из обоих источников, убирая дубликаты по email + order_id
-        const reviewsMap = new Map();
-        
-        // Сначала добавляем отзывы из Git (начальные) - для статических это ИСТОЧНИК ПРАВДЫ
-        allReviewsFromGit.forEach(review => {
-            if (review.id) {
-                const key = `${(review.customer_email || '').toLowerCase().trim()}_${review.order_id || 'null'}`;
-                reviewsMap.set(key, review);
-            }
+        // 1) Статические отзывы (STATIC_*) берём ТОЛЬКО из Git-версии reviews.json
+        //    DB-версии статических отзывов не используем, чтобы не получать старые тексты
+        const dynamicDbReviews = dbReviews.filter(review => {
+            const orderId = review.order_id || '';
+            return !(orderId && String(orderId).startsWith('STATIC_'));
         });
         
-        // Затем добавляем отзывы из базы данных (новые, перезаписывают старые если есть дубликаты)
-        dbReviews.forEach(review => {
-            const email = (review.customer_email || '').toLowerCase().trim();
-            const orderId = review.order_id || 'null';
-            const key = `${email}_${orderId}`;
-            const isStatic = orderId && String(orderId).startsWith('STATIC_');
-            
-            // Для статических отзывов НИКОГДА не перезаписываем Git-версию (там тексты обновлены)
-            if (isStatic && reviewsMap.has(key)) {
-                return;
-            }
-            
-            reviewsMap.set(key, review);
-        });
+        // 2) Объединяем Git + динамические отзывы из БД
+        let allReviews = [...allReviewsFromGit, ...dynamicDbReviews];
         
-        // Преобразуем Map обратно в массив
-        const allReviews = Array.from(reviewsMap.values());
+        // 3) Убираем дубликаты (по email+order_id или email+name+text)
+        allReviews = removeDuplicateReviews(allReviews);
         
         // Сортируем по дате (новые первыми)
         allReviews.sort((a, b) => {
@@ -2304,14 +2288,6 @@ app.get('/api/reviews', async (req, res) => {
     allReviews = allReviews.filter(r => r.order_id !== 'STATIC_REVIEW_TIMUR');
     if (allReviews.length !== beforeFilterCount) {
         console.log(`🧹 Filtered out ${beforeFilterCount - allReviews.length} STATIC_REVIEW_TIMUR entries from API response`);
-    }
-    
-    // Убираем все остальные старые статические отзывы (маркетинговые заготовки),
-    // оставляем только реальные клиентские (is_static !== true)
-    const beforeStaticFilter = allReviews.length;
-    allReviews = allReviews.filter(r => !r.is_static);
-    if (allReviews.length !== beforeStaticFilter) {
-        console.log(`🧹 Filtered out ${beforeStaticFilter - allReviews.length} legacy static reviews (is_static=true)`);
     }
     
     // Сортируем отзывы по дате (новые первыми)
