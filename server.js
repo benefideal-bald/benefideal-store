@@ -2435,9 +2435,9 @@ app.get('/api/debug/sync-reviews-from-root', (req, res) => {
 // Debug endpoint to force restore all reviews from database
 app.get('/api/debug/restore-all-reviews', (req, res) => {
     console.log('🔄 Force restore all reviews from database...');
-    migrateReviewsFromDatabase().then((migrated) => {
+    migrateReviewsFromDatabase().then(async (migrated) => {
         if (migrated) {
-            const allReviews = readReviewsFromJSON();
+            const allReviews = await readReviewsFromJSON();
             res.json({
                 success: true,
                 message: 'All reviews restored from database!',
@@ -2450,7 +2450,7 @@ app.get('/api/debug/restore-all-reviews', (req, res) => {
                 }))
             });
         } else {
-            const allReviews = readReviewsFromJSON();
+            const allReviews = await readReviewsFromJSON();
             res.json({
                 success: true,
                 message: 'No new reviews to migrate, all reviews are already in JSON',
@@ -2475,51 +2475,58 @@ app.get('/api/debug/restore-all-reviews', (req, res) => {
 // Debug endpoint to remove duplicates and clean up reviews
 app.get('/api/debug/remove-duplicates', (req, res) => {
     try {
-        let allReviews = readReviewsFromJSON();
-        const beforeCount = allReviews.length;
-        
-        console.log(`🔍 Checking for duplicates in ${beforeCount} reviews...`);
-        
-        // Remove duplicates
-        const uniqueReviews = removeDuplicateReviews(allReviews);
-        const afterCount = uniqueReviews.length;
-        
-        if (afterCount < beforeCount) {
-            // Sort by created_at (newest first)
-            uniqueReviews.sort((a, b) => {
-                const timeA = new Date(a.created_at).getTime();
-                const timeB = new Date(b.created_at).getTime();
-                return timeB - timeA;
-            });
+        readReviewsFromJSON().then((allReviews) => {
+            const beforeCount = allReviews.length;
             
-            // Save cleaned version
-            const saved = writeReviewsToJSON(uniqueReviews);
+            console.log(`🔍 Checking for duplicates in ${beforeCount} reviews...`);
             
-            if (saved) {
+            // Remove duplicates
+            const uniqueReviews = removeDuplicateReviews(allReviews);
+            const afterCount = uniqueReviews.length;
+            
+            if (afterCount < beforeCount) {
+                // Sort by created_at (newest first)
+                uniqueReviews.sort((a, b) => {
+                    const timeA = new Date(a.created_at).getTime();
+                    const timeB = new Date(b.created_at).getTime();
+                    return timeB - timeA;
+                });
+                
+                // Save cleaned version
+                const saved = writeReviewsToJSON(uniqueReviews);
+                
+                if (saved) {
+                    res.json({
+                        success: true,
+                        message: `Removed ${beforeCount - afterCount} duplicate reviews`,
+                        before: beforeCount,
+                        after: afterCount,
+                        removed: beforeCount - afterCount
+                    });
+                } else {
+                    res.status(500).json({
+                        success: false,
+                        error: 'Failed to save cleaned reviews'
+                    });
+                }
+            } else {
                 res.json({
                     success: true,
-                    message: `Removed ${beforeCount - afterCount} duplicate reviews`,
+                    message: 'No duplicates found',
                     before: beforeCount,
                     after: afterCount,
-                    removed: beforeCount - afterCount
-                });
-            } else {
-                res.status(500).json({
-                    success: false,
-                    error: 'Failed to save cleaned reviews'
+                    removed: 0
                 });
             }
-        } else {
-            res.json({
-                success: true,
-                message: 'No duplicates found',
-                before: beforeCount,
-                after: afterCount,
-                removed: 0
+        }).catch((error) => {
+            console.error('❌ Error removing duplicates:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
             });
-        }
+        });
     } catch (error) {
-        console.error('❌ Error removing duplicates:', error);
+        console.error('❌ Error removing duplicates (outer):', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -3222,14 +3229,14 @@ app.get('/api/debug/restore-vlad', (req, res) => {
 });
 
 // Endpoint to restore Таня review - searches on server first, then creates if not found
-app.get('/api/debug/restore-tanya', (req, res) => {
+app.get('/api/debug/restore-tanya', async (req, res) => {
     console.log('🔧 ========== RESTORE ТАНЯ REVIEW ==========');
     
     const tanyaName = 'Таня';
     const tanyaText = 'все как супер ❤️❤️ спасибо 🤗';
     
     // First, check if Таня review exists in JSON file (on server) - use readReviewsFromJSON() to see merged reviews
-    let allReviews = readReviewsFromJSON();
+    let allReviews = await readReviewsFromJSON();
     
     // Search for Таня review by name
     const tanyaReview = allReviews.find(r => 
@@ -3808,11 +3815,11 @@ app.post('/api/enot/callback', (req, res) => {
 });
 
 // Debug endpoint to check all reviews in JSON file (for finding lost reviews like Влад, Таня)
-app.get('/api/debug/check-all-reviews-json', (req, res) => {
+app.get('/api/debug/check-all-reviews-json', async (req, res) => {
     try {
         // КРИТИЧЕСКИ ВАЖНО: Используем readReviewsFromJSON() - она объединяет все отзывы правильно!
         // Это гарантирует, что мы видим ВСЕ отзывы (и из Git, и динамические)
-        const allReviews = readReviewsFromJSON();
+        const allReviews = await readReviewsFromJSON();
         
         // Also read separately for comparison
         let dataReviews = [];
