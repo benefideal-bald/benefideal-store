@@ -1951,10 +1951,12 @@ function migrateReviewsFromDatabase() {
     });
 }
 
-// Helper function to read reviews from database and Git JSON (ASYNC)
+// Helper function to read reviews from database and Git JSON
 // КРИТИЧЕСКИ ВАЖНО: Используем базу данных как основное хранилище!
 // База данных SQLite сохраняется на Render между деплоями (в отличие от файлов в data/)
-async function readReviewsFromJSON() {
+function readReviewsFromJSON() {
+    // Синхронная версия для обратной совместимости
+    // ВАЖНО: Это блокирующая операция, но используется только в API endpoints
     try {
         // Читаем начальные отзывы из Git
         let allReviewsFromGit = [];
@@ -1967,62 +1969,67 @@ async function readReviewsFromJSON() {
                 }
             } catch (error) {
                 console.warn('⚠️ Error reading Git reviews.json:', error.message);
-                allReviewsFromGit = [];
             }
         }
-
-        // Читаем отзывы из базы данных (основное хранилище) асинхронно
-        const dbReviews = await new Promise((resolve) => {
-            db.all(`
-                SELECT 
-                    'review_' || id as id,
-                    customer_name,
-                    customer_email,
-                    review_text,
-                    rating,
-                    order_id,
-                    created_at,
-                    0 as is_static
-                FROM reviews
-                ORDER BY created_at DESC
-            `, [], (err, rows) => {
-                if (err) {
-                    console.error('❌ Error reading reviews from database:', err);
-                    return resolve([]);
-                }
-                resolve(rows || []);
-            });
+        
+        // Читаем отзывы из базы данных (основное хранилище)
+        // Используем синхронный подход через db.all с блокировкой
+        let dbReviews = [];
+        let dbReadComplete = false;
+        
+        db.all(`
+            SELECT 
+                'review_' || id as id,
+                customer_name,
+                customer_email,
+                review_text,
+                rating,
+                order_id,
+                created_at,
+                0 as is_static
+            FROM reviews
+            ORDER BY created_at DESC
+        `, [], (err, rows) => {
+            if (err) {
+                console.error('❌ Error reading reviews from database:', err);
+                dbReviews = [];
+            } else {
+                dbReviews = rows || [];
+            }
+            dbReadComplete = true;
         });
-
+        
+        // Простое ожидание завершения (для синхронной функции)
+        // В реальности лучше сделать функцию асинхронной, но для обратной совместимости оставляем так
+        const startTime = Date.now();
+        while (!dbReadComplete && (Date.now() - startTime) < 1000) {
+            // Небольшая задержка без внешних зависимостей
+            const end = Date.now() + 10;
+            while (Date.now() < end) {
+                // Busy wait
+            }
+        }
+        
+        if (!dbReadComplete) {
+            console.warn('⚠️ Timeout waiting for database read, using empty array');
+            dbReviews = [];
+        }
+        
         // Объединяем отзывы из обоих источников, убирая дубликаты по email + order_id
-        // ВАЖНО:
-        // - клиентские отзывы из БД должны сохраниться как есть
-        // - статические отзывы (STATIC_*) должны браться из Git-версии (там самые свежие тексты)
         const reviewsMap = new Map();
         
-        // 1) Сначала добавляем ВСЕ отзывы из базы данных (клиентские + возможные статические)
+        // Сначала добавляем отзывы из Git (начальные)
+        allReviewsFromGit.forEach(review => {
+            if (review.id) {
+                const key = `${(review.customer_email || '').toLowerCase().trim()}_${review.order_id || 'null'}`;
+                reviewsMap.set(key, review);
+            }
+        });
+        
+        // Затем добавляем отзывы из базы данных (новые, перезаписывают старые если есть дубликаты)
         dbReviews.forEach(review => {
             const key = `${(review.customer_email || '').toLowerCase().trim()}_${review.order_id || 'null'}`;
             reviewsMap.set(key, review);
-        });
-
-        // 2) Затем добавляем отзывы из Git:
-        //    - для статических (is_static или order_id начинается с STATIC_) Git ВСЕГДА переопределяет БД
-        //    - для остальных добавляем только если такого ключа ещё нет
-        allReviewsFromGit.forEach(review => {
-            if (!review.id) return;
-            const email = (review.customer_email || '').toLowerCase().trim();
-            const orderId = review.order_id || 'null';
-            const key = `${email}_${orderId}`;
-            const isStatic = !!review.is_static || (orderId && String(orderId).startsWith('STATIC_'));
-
-            if (isStatic) {
-                // Статический отзыв – берём текст из Git, даже если в БД есть старая версия
-                reviewsMap.set(key, review);
-            } else if (!reviewsMap.has(key)) {
-                // Нестатический – добавляем, только если его ещё нет
-                reviewsMap.set(key, review);
-            }
         });
         
         // Преобразуем Map обратно в массив
@@ -2214,7 +2221,7 @@ function addOrderToJSON(order) {
 }
 
 // API endpoint to get reviews
-app.get('/api/reviews', async (req, res) => {
+app.get('/api/reviews', (req, res) => {
     console.log('GET /api/reviews - Request received');
     console.log('Query params:', req.query);
     
@@ -2222,10 +2229,10 @@ app.get('/api/reviews', async (req, res) => {
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     const sortOrder = req.query.sort || 'DESC'; // DESC = newest first (same for both pages)
     
-    // Читаем все отзывы (Git + БД)
-    let allReviews = await readReviewsFromJSON();
+    // Читаем все отзывы из JSON файла
+    let allReviews = readReviewsFromJSON();
     
-    console.log(`Found ${allReviews.length} reviews in merged source (Git + DB)`);
+    console.log(`Found ${allReviews.length} reviews in JSON file`);
     
     // Фильтруем технический статический отзыв Тимура, который не должен отображаться на сайте
     // Используем order_id, чтобы не затронуть реальные клиентские отзывы с тем же именем
