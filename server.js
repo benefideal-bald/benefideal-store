@@ -2001,8 +2001,10 @@ function readReviewsFromJSON() {
         
         // Простое ожидание завершения (для синхронной функции)
         // В реальности лучше сделать функцию асинхронной, но для обратной совместимости оставляем так
+        // Увеличили таймаут до 5000 мс, чтобы успевать читать отзывы из БД на Railway
+        const MAX_DB_WAIT_MS = 5000;
         const startTime = Date.now();
-        while (!dbReadComplete && (Date.now() - startTime) < 1000) {
+        while (!dbReadComplete && (Date.now() - startTime) < MAX_DB_WAIT_MS) {
             // Небольшая задержка без внешних зависимостей
             const end = Date.now() + 10;
             while (Date.now() < end) {
