@@ -2295,7 +2295,7 @@ function addOrderToJSON(order) {
 }
 
 // API endpoint to get reviews
-// ЕДИНСТВЕННЫЙ источник данных для сайта: таблица reviews в базе данных
+// Источник данных для сайта: объединение Git reviews.json + таблицы reviews (клиентские отзывы)
 app.get('/api/reviews', async (req, res) => {
     console.log('GET /api/reviews - Request received');
     console.log('Query params:', req.query);
@@ -2304,10 +2304,10 @@ app.get('/api/reviews', async (req, res) => {
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
     const sortOrder = req.query.sort || 'DESC'; // DESC = newest first (same for both pages)
     
-    // Читаем ВСЕ отзывы ТОЛЬКО из базы данных (reviews table)
-    let allReviews = await readReviewsFromDatabaseOnly();
+    // Читаем все отзывы из Git reviews.json + БД (reviews table)
+    let allReviews = await readReviewsFromJSON();
     
-    console.log(`Found ${allReviews.length} reviews in DATABASE (single source of truth)`);
+    console.log(`Found ${allReviews.length} reviews in merged source (Git + DB)`);
     
     // Фильтруем технический статический отзыв Тимура, который не должен отображаться на сайте
     // Используем order_id, чтобы не затронуть реальные клиентские отзывы с тем же именем
