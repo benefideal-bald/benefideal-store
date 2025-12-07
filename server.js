@@ -3979,6 +3979,46 @@ app.get('/api/debug/check-all-reviews-json', async (req, res) => {
     }
 });
 
+// Debug endpoint: get all reviews for specific email (from DATABASE ONLY)
+// Помогает точно понять, сохранен ли отзыв клиента в базе данных
+app.get('/api/debug/reviews-by-email', (req, res) => {
+    const { email } = req.query;
+    
+    if (!email) {
+        return res.status(400).json({
+            success: false,
+            error: 'Email query parameter is required'
+        });
+    }
+    
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log(`🔍 Debug: fetching reviews for email "${normalizedEmail}" from DATABASE...`);
+    
+    db.all(`
+        SELECT id, customer_name, customer_email, review_text, rating, order_id, created_at
+        FROM reviews
+        WHERE LOWER(customer_email) = LOWER(?)
+        ORDER BY datetime(created_at) DESC
+    `, [normalizedEmail], (err, rows) => {
+        if (err) {
+            console.error('❌ Error fetching reviews by email:', err);
+            return res.status(500).json({
+                success: false,
+                error: err.message
+            });
+        }
+        
+        console.log(`📋 Debug: found ${rows.length} review(s) in DATABASE for "${normalizedEmail}"`);
+        
+        res.json({
+            success: true,
+            email: normalizedEmail,
+            count: rows.length,
+            reviews: rows
+        });
+    });
+});
+
 // Debug endpoint to check all emails in subscriptions
 app.get('/api/debug/emails', (req, res) => {
     const searchEmail = req.query.email ? req.query.email.toLowerCase().trim() : null;
