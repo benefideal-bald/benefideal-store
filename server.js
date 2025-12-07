@@ -1355,75 +1355,53 @@ app.post('/api/review/verify', (req, res) => {
     console.log('   Email (original):', email);
     console.log('   Email (normalized):', normalizedEmail);
     
-    // First check if email exists in subscriptions at all (protection against spam)
-    // Try multiple query strategies to find the email
-    // 1. Exact match (normalized)
-    // 2. LOWER() comparison
-    // 3. TRIM() + LOWER() comparison
-    db.get(`
-        SELECT COUNT(*) as count 
-        FROM subscriptions 
-        WHERE customer_email = ? 
-           OR LOWER(customer_email) = LOWER(?)
-           OR LOWER(TRIM(customer_email)) = LOWER(TRIM(?))
-    `, [normalizedEmail, normalizedEmail, normalizedEmail], (err, emailCheck) => {
-        if (err) {
-            console.error('❌ Error checking email:', err);
-            return res.status(500).json({ error: 'Database error', details: err.message });
+    // Before checking email in subscriptions, try to sync corresponding orders from orders.json
+    syncOrdersEmailToSubscriptions(normalizedEmail, (syncErr, added) => {
+        if (syncErr) {
+            console.error('❌ Error syncing orders before review verify:', syncErr);
         }
         
-        console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found for "${normalizedEmail}"`);
-        
-        // Also check all emails in database for debugging
-        db.all(`SELECT DISTINCT customer_email FROM subscriptions ORDER BY purchase_date DESC LIMIT 20`, [], (err, allEmails) => {
-            if (!err && allEmails) {
-                console.log(`📋 Found ${allEmails.length} unique emails in database (showing last 20):`);
-                allEmails.forEach((e, i) => {
-                    const normalized = e.customer_email.toLowerCase().trim();
-                    const matches = normalized === normalizedEmail;
-                    console.log(`   ${i+1}. ${e.customer_email} ${matches ? '✅ MATCH!' : ''}`);
-                });
-                
-                // Check if normalized email matches any email in database
-                const matches = allEmails.filter(e => e.customer_email.toLowerCase().trim() === normalizedEmail);
-                if (matches.length > 0) {
-                    console.log(`✅ Found ${matches.length} matching email(s) in database:`, matches.map(m => m.customer_email));
-                } else {
-                    console.log(`❌ No matching email found. Looking for: "${normalizedEmail}"`);
-                    console.log(`   Available emails:`, allEmails.map(e => e.customer_email));
-                }
-            }
-        });
-        
-        if (!emailCheck || emailCheck.count === 0) {
-            console.error(`❌ Email "${normalizedEmail}" NOT FOUND in subscriptions table!`);
-            console.error(`   This means the order was NOT saved to the database, or email was saved differently.`);
-            return res.json({ 
-                success: false, 
-                error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
-                can_review: false 
-            });
-        }
-        
-        console.log(`✅ Email "${normalizedEmail}" found in ${emailCheck.count} subscription(s) - review is allowed!`);
-        
-        // Check all orders (with or without order_id), get newest first
-        // Use LOWER() for case-insensitive comparison
-        db.all(`
-            SELECT DISTINCT 
-                COALESCE(s.order_id, 'NULL_ORDER') as order_id,
-                MIN(s.purchase_date) as purchase_date
-            FROM subscriptions s
-            WHERE LOWER(s.customer_email) = LOWER(?)
-            GROUP BY COALESCE(s.order_id, 'NULL_ORDER')
-            ORDER BY purchase_date DESC
-        `, [normalizedEmail], (err, allOrders) => {
+        // First check if email exists in subscriptions at all (protection against spam)
+        // Try multiple query strategies to find the email
+        // 1. Exact match (normalized)
+        // 2. LOWER() comparison
+        // 3. TRIM() + LOWER() comparison
+        db.get(`
+            SELECT COUNT(*) as count 
+            FROM subscriptions 
+            WHERE customer_email = ? 
+               OR LOWER(customer_email) = LOWER(?)
+               OR LOWER(TRIM(customer_email)) = LOWER(TRIM(?))
+        `, [normalizedEmail, normalizedEmail, normalizedEmail], (err, emailCheck) => {
             if (err) {
-                console.error('Error checking orders:', err);
-                return res.status(500).json({ error: 'Database error' });
+                console.error('❌ Error checking email:', err);
+                return res.status(500).json({ error: 'Database error', details: err.message });
             }
             
-            if (!allOrders || allOrders.length === 0) {
+            console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found for "${normalizedEmail}" (after sync added ${added || 0})`);
+            // Also check all emails in database for debugging
+            db.all(`SELECT DISTINCT customer_email FROM subscriptions ORDER BY purchase_date DESC LIMIT 20`, [], (err, allEmails) => {
+                if (!err && allEmails) {
+                    console.log(`📋 Found ${allEmails.length} unique emails in database (showing last 20):`);
+                    allEmails.forEach((e, i) => {
+                        const normalized = e.customer_email.toLowerCase().trim();
+                        const matches = normalized === normalizedEmail;
+                        console.log(`   ${i+1}. ${e.customer_email} ${matches ? '✅ MATCH!' : ''}`);
+                    });
+                    
+                    // Check if normalized email matches any email in database
+                    const matches = allEmails.filter(e => e.customer_email.toLowerCase().trim() === normalizedEmail);
+                    if (matches.length > 0) {
+                        console.log(`✅ Found ${matches.length} matching email(s) in database:`, matches.map(m => m.customer_email));
+                    } else {
+                        console.log(`❌ No matching email found. Looking for: "${normalizedEmail}"`);
+                        console.log(`   Available emails:`, allEmails.map(e => e.customer_email));
+                    }
+                }
+            });
+            
+            if (!emailCheck || emailCheck.count === 0) {
+                console.error(`❌ Email "${normalizedEmail}" NOT FOUND in subscriptions table even after sync!`);
                 return res.json({ 
                     success: false, 
                     error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
@@ -1431,51 +1409,78 @@ app.post('/api/review/verify', (req, res) => {
                 });
             }
             
-            // Get the newest order (first in sorted list)
-            const newestOrder = allOrders[0];
-            const newestOrderId = newestOrder.order_id === 'NULL_ORDER' ? null : newestOrder.order_id;
+            console.log(`✅ Email "${normalizedEmail}" found in ${emailCheck.count} subscription(s) - review is allowed!`);
             
-            // Check if this order already has a review
-            let reviewCheckQuery;
-            let reviewCheckParams;
-            
-            if (newestOrderId === null) {
-                // For orders without order_id, check reviews with NULL order_id
-                reviewCheckQuery = `
-                    SELECT COUNT(*) as count 
-                    FROM reviews 
-                    WHERE LOWER(customer_email) = LOWER(?) AND (order_id IS NULL OR order_id = '')
-                `;
-                reviewCheckParams = [normalizedEmail];
-            } else {
-                // For orders with order_id, check reviews with that order_id
-                reviewCheckQuery = `
-                    SELECT COUNT(*) as count 
-                    FROM reviews 
-                    WHERE LOWER(customer_email) = LOWER(?) AND order_id = ?
-                `;
-                reviewCheckParams = [normalizedEmail, newestOrderId];
-            }
-            
-            db.get(reviewCheckQuery, reviewCheckParams, (err, reviewedCheck) => {
+            // Check all orders (with or without order_id), get newest first
+            // Use LOWER() for case-insensitive comparison
+            db.all(`
+                SELECT DISTINCT 
+                    COALESCE(s.order_id, 'NULL_ORDER') as order_id,
+                    MIN(s.purchase_date) as purchase_date
+                FROM subscriptions s
+                WHERE LOWER(s.customer_email) = LOWER(?)
+                GROUP BY COALESCE(s.order_id, 'NULL_ORDER')
+                ORDER BY purchase_date DESC
+            `, [normalizedEmail], (err, allOrders) => {
                 if (err) {
-                    console.error('Error checking reviews:', err);
+                    console.error('Error checking orders:', err);
                     return res.status(500).json({ error: 'Database error' });
                 }
                 
-                if (reviewedCheck && reviewedCheck.count > 0) {
+                if (!allOrders || allOrders.length === 0) {
                     return res.json({ 
                         success: false, 
-                        error: 'Вы уже оставили отзыв для вашего последнего заказа',
+                        error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
                         can_review: false 
                     });
                 }
                 
-                res.json({ 
-                    success: true, 
-                    can_review: true,
-                    message: 'Email найден. Вы можете оставить отзыв.',
-                    available_orders: 1
+                // Get the newest order (first in sorted list)
+                const newestOrder = allOrders[0];
+                const newestOrderId = newestOrder.order_id === 'NULL_ORDER' ? null : newestOrder.order_id;
+                
+                // Check if this order already has a review
+                let reviewCheckQuery;
+                let reviewCheckParams;
+                
+                if (newestOrderId === null) {
+                    // For orders without order_id, check reviews with NULL order_id
+                    reviewCheckQuery = `
+                        SELECT COUNT(*) as count 
+                        FROM reviews 
+                        WHERE LOWER(customer_email) = LOWER(?) AND (order_id IS NULL OR order_id = '')
+                    `;
+                    reviewCheckParams = [normalizedEmail];
+                } else {
+                    // For orders with order_id, check reviews with that order_id
+                    reviewCheckQuery = `
+                        SELECT COUNT(*) as count 
+                        FROM reviews 
+                        WHERE LOWER(customer_email) = LOWER(?) AND order_id = ?
+                    `;
+                    reviewCheckParams = [normalizedEmail, newestOrderId];
+                }
+                
+                db.get(reviewCheckQuery, reviewCheckParams, (err, reviewedCheck) => {
+                    if (err) {
+                        console.error('Error checking reviews:', err);
+                        return res.status(500).json({ error: 'Database error' });
+                    }
+                    
+                    if (reviewedCheck && reviewedCheck.count > 0) {
+                        return res.json({ 
+                            success: false, 
+                            error: 'Вы уже оставили отзыв для вашего последнего заказа',
+                            can_review: false 
+                        });
+                    }
+                    
+                    res.json({ 
+                        success: true, 
+                        can_review: true,
+                        message: 'Email найден. Вы можете оставить отзыв.',
+                        available_orders: 1
+                    });
                 });
             });
         });
@@ -1499,32 +1504,39 @@ app.post('/api/review', (req, res) => {
     console.log('   Rating:', rating);
     console.log('   Text length:', text ? text.length : 0);
     
-    // First verify email exists in subscriptions at all (protection against spam)
-    // Use LOWER() for case-insensitive comparison
-    db.get(`
-        SELECT COUNT(*) as count 
-        FROM subscriptions 
-        WHERE LOWER(customer_email) = LOWER(?)
-    `, [normalizedEmail], (err, emailCheck) => {
-        if (err) {
-            console.error('❌ Error checking email:', err);
-            return res.status(500).json({ error: 'Database error', details: err.message });
+    // First sync possible orders from orders.json into subscriptions for this email
+    // then verify email exists in subscriptions (protection against spam)
+    syncOrdersEmailToSubscriptions(normalizedEmail, (syncErr, added) => {
+        if (syncErr) {
+            console.error('❌ Error syncing orders before review submit:', syncErr);
         }
         
-        console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found for ${normalizedEmail}`);
-        
-        // ЗАЩИТА ОТ СПАМА: Отзыв можно оставить ТОЛЬКО с почты, с которой покупал
-        // Если email не найден в базе покупок - отказываем
-        if (!emailCheck || emailCheck.count === 0) {
-            console.error(`❌ Email ${normalizedEmail} not found in subscriptions - SPAM PROTECTION`);
-            return res.status(400).json({ 
-                success: false,
-                error: 'Email не найден в системе. Отзыв можно оставить только с почты, с которой вы совершали покупку.' 
-            });
-        }
-        
-        // Email найден в базе покупок - продолжаем
-        continueWithEmail(normalizedEmail);
+        // Use LOWER() for case-insensitive comparison
+        db.get(`
+            SELECT COUNT(*) as count 
+            FROM subscriptions 
+            WHERE LOWER(customer_email) = LOWER(?)
+        `, [normalizedEmail], (err, emailCheck) => {
+            if (err) {
+                console.error('❌ Error checking email:', err);
+                return res.status(500).json({ error: 'Database error', details: err.message });
+            }
+            
+            console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found for ${normalizedEmail} (after sync added ${added || 0})`);
+            
+            // ЗАЩИТА ОТ СПАМА: Отзыв можно оставить ТОЛЬКО с почты, с которой покупал
+            // Если email не найден в базе покупок - отказываем
+            if (!emailCheck || emailCheck.count === 0) {
+                console.error(`❌ Email ${normalizedEmail} not found in subscriptions - SPAM PROTECTION`);
+                return res.status(400).json({ 
+                    success: false,
+                    error: 'Email не найден в системе. Отзыв можно оставить только с почты, с которой вы совершали покупку.' 
+                });
+            }
+            
+            // Email найден в базе покупок - продолжаем
+            continueWithEmail(normalizedEmail);
+        });
     });
     
     // Функция для продолжения обработки с найденным email
@@ -2166,6 +2178,70 @@ function readOrdersFromJSON() {
     } catch (error) {
         console.error('❌ Error reading orders.json:', error);
         return [];
+    }
+}
+
+// Helper function to sync orders for specific email from orders.json into subscriptions table
+// Используется перед проверкой email для отзывов, чтобы восстановить заказы, которые есть в JSON, но отсутствуют в БД
+function syncOrdersEmailToSubscriptions(normalizedEmail, callback) {
+    try {
+        const jsonOrders = readOrdersFromJSON();
+        if (!jsonOrders || jsonOrders.length === 0) {
+            return callback(null, 0);
+        }
+        
+        const email = (normalizedEmail || '').toLowerCase().trim();
+        const ordersForEmail = jsonOrders.filter(order => 
+            (order.customer_email || '').toLowerCase().trim() === email
+        );
+        
+        if (ordersForEmail.length === 0) {
+            return callback(null, 0);
+        }
+        
+        console.log(`🔄 Syncing ${ordersForEmail.length} orders from orders.json to subscriptions for email "${email}"...`);
+        
+        const stmt = db.prepare(`
+            INSERT OR IGNORE INTO subscriptions 
+                (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        `);
+        
+        let remaining = ordersForEmail.length;
+        let added = 0;
+        
+        ordersForEmail.forEach(order => {
+            stmt.run([
+                order.customer_name,
+                order.customer_email,
+                order.product_name,
+                order.product_id,
+                order.subscription_months,
+                order.purchase_date,
+                order.order_id,
+                order.amount
+            ], (err) => {
+                if (err) {
+                    console.error('❌ Error syncing order to subscriptions:', err);
+                } else {
+                    added++;
+                }
+                
+                remaining--;
+                if (remaining === 0) {
+                    stmt.finalize((finalizeErr) => {
+                        if (finalizeErr) {
+                            console.error('❌ Error finalizing sync statement:', finalizeErr);
+                        }
+                        console.log(`✅ Sync for email "${email}" complete. Added ${added} subscription(s).`);
+                        callback(null, added);
+                    });
+                }
+            });
+        });
+    } catch (error) {
+        console.error('❌ Error in syncOrdersEmailToSubscriptions:', error);
+        callback(error);
     }
 }
 
