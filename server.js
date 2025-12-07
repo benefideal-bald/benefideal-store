@@ -2234,7 +2234,13 @@ app.get('/api/reviews', (req, res) => {
     
     console.log(`Found ${allReviews.length} reviews in JSON file`);
     
-    // НИЧЕГО НЕ УДАЛЯЕМ - возвращаем все отзывы как есть
+    // Фильтруем технический статический отзыв Тимура, который не должен отображаться на сайте
+    // Используем order_id, чтобы не затронуть реальные клиентские отзывы с тем же именем
+    const beforeFilterCount = allReviews.length;
+    allReviews = allReviews.filter(r => r.order_id !== 'STATIC_REVIEW_TIMUR');
+    if (allReviews.length !== beforeFilterCount) {
+        console.log(`🧹 Filtered out ${beforeFilterCount - allReviews.length} STATIC_REVIEW_TIMUR entries from API response`);
+    }
     
     // Сортируем отзывы по дате (новые первыми)
     const getTimestamp = (dateStr) => {
