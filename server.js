@@ -1763,6 +1763,22 @@ app.post('/api/review', (req, res) => {
                 console.log(`   Email: ${normalizedEmail}`);
                 console.log(`   ✅ Отзыв сохранен в базу данных - НЕ ПОТЕРЯЕТСЯ при деплое!`);
                 stmt.finalize();
+
+                // 🔄 ДОПОЛНИТЕЛЬНО: после сохранения в базу синхронизируем "папку всех отзывов"
+                // Эта функция:
+                // 1) читает все отзывы (Git + БД) через readReviewsFromJSON()
+                // 2) сохраняет полный список в data/reviews.json (персистентная папка на сервере)
+                // 3) сохраняет тот же список в корневой reviews.json (копия, которую ты видишь в репозитории после git pull)
+                // 4) при наличии GITHUB_TOKEN пытается автоматически закоммитить обновлённый reviews.json в GitHub
+                if (typeof snapshotAllReviewsToJsonFiles === 'function') {
+                    (async () => {
+                        try {
+                            await snapshotAllReviewsToJsonFiles();
+                        } catch (e) {
+                            console.warn('⚠️ Failed to snapshot reviews to JSON files after new review:', e.message);
+                        }
+                    })();
+                }
             });
             
             console.log(`✅ ========== REVIEW SAVED TO DATABASE ==========`);
@@ -2104,6 +2120,57 @@ async function readReviewsFromJSON() {
     } catch (error) {
         console.error('❌ Error reading reviews:', error);
         return [];
+    }
+}
+
+// 🔄 ЕДИНАЯ СИНХРОНИЗАЦИЯ ОТЗЫВОВ В "ПАПКУ"
+// Эта функция собирает ВСЕ отзывы (Git + БД) и сохраняет их:
+// 1) в data/reviews.json  — персистентная "папка всех отзывов" на сервере (не стирается между деплоями)
+// 2) в корневой reviews.json — копия, которую ты видишь в репозитории после git pull
+// 3) при наличии GITHUB_TOKEN пробует автоматически закоммитить файл в GitHub (чтобы всё было честно и без ручной работы)
+async function snapshotAllReviewsToJsonFiles() {
+    try {
+        // Берём полный список так же, как его видит сайт: Git + БД, без дубликатов
+        const allReviews = await readReviewsFromJSON();
+        if (!Array.isArray(allReviews) || allReviews.length === 0) {
+            console.warn('⚠️ snapshotAllReviewsToJsonFiles: no reviews to snapshot');
+            return;
+        }
+
+        // Сортируем по дате (новые первыми)
+        const sorted = [...allReviews].sort((a, b) => {
+            const timeA = new Date(a.created_at || 0).getTime();
+            const timeB = new Date(b.created_at || 0).getTime();
+            return timeB - timeA;
+        });
+
+        // 1) Сохраняем в data/reviews.json (персистентная папка)
+        try {
+            const dataDir = path.dirname(reviewsJsonPath);
+            if (!fs.existsSync(dataDir)) {
+                fs.mkdirSync(dataDir, { recursive: true });
+            }
+            fs.writeFileSync(reviewsJsonPath, JSON.stringify(sorted, null, 2), 'utf8');
+            console.log(`✅ Snapshot: saved ${sorted.length} reviews to data/reviews.json (persistent folder)`);
+        } catch (err) {
+            console.warn('⚠️ Failed to write data/reviews.json snapshot:', err.message);
+        }
+
+        // 2) Сохраняем в корневой reviews.json (Git-копия)
+        try {
+            writeReviewsToJSON(sorted);
+        } catch (err) {
+            console.warn('⚠️ Failed to write root reviews.json snapshot:', err.message);
+        }
+
+        // 3) Пытаемся автоматически закоммитить изменения в GitHub (если настроен токен)
+        try {
+            await commitReviewsToGitViaAPI();
+        } catch (err) {
+            console.warn('⚠️ Failed to auto-commit reviews.json to GitHub (you can also commit manually):', err.message);
+        }
+    } catch (error) {
+        console.warn('⚠️ snapshotAllReviewsToJsonFiles failed:', error.message);
     }
 }
 
