@@ -2265,6 +2265,66 @@ async function commitReviewsToGitViaAPI() {
     }
 }
 
+// Функция для автоматического коммита orders.json в Git через GitHub API
+// Чтобы заказы и продления в админ-панели не стирались при деплоях
+async function commitOrdersToGitViaAPI() {
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const GITHUB_REPO = process.env.GITHUB_REPO || 'benefideal-bald/benefideal-store'; // owner/repo
+    const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
+    
+    if (!GITHUB_TOKEN) {
+        console.error(`🚨 GITHUB_TOKEN не установлен - orders.json НЕ будет автоматически сохраняться в GitHub!`);
+        return false;
+    }
+    
+    try {
+        // Читаем текущий файл orders.json
+        const fileContent = fs.readFileSync(ordersJsonPath, 'utf8');
+        const contentBase64 = Buffer.from(fileContent).toString('base64');
+        
+        // Получаем SHA текущего файла
+        const getFileSha = await axios.get(
+            `https://api.github.com/repos/${GITHUB_REPO}/contents/orders.json?ref=${GITHUB_BRANCH}`,
+            {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            }
+        ).catch(() => null);
+        
+        const sha = getFileSha?.data?.sha || null;
+        
+        // Коммитим изменения через GitHub API
+        const commitMessage = `Auto-commit: новый заказ добавлен (${new Date().toISOString()})`;
+        
+        const response = await axios.put(
+            `https://api.github.com/repos/${GITHUB_REPO}/contents/orders.json`,
+            {
+                message: commitMessage,
+                content: contentBase64,
+                branch: GITHUB_BRANCH,
+                ...(sha ? { sha: sha } : {})
+            },
+            {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        
+        console.log(`✅ orders.json автоматически закоммичен в GitHub!`);
+        console.log(`   Commit SHA: ${response.data.commit.sha}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Ошибка при автокоммите orders.json в GitHub:`, error.response?.data || error.message);
+        console.warn(`   ВАЖНО: закоммить orders.json вручную, чтобы заказы не потерялись при следующем деплое.`);
+        return false;
+    }
+}
+
 // Helper function to write reviews to JSON file
 // КРИТИЧЕСКИ ВАЖНО: Все отзывы должны быть в ОДНОМ месте - корневой reviews.json (Git версия)!
 function writeReviewsToJSON(reviews) {
@@ -2400,7 +2460,19 @@ function writeOrdersToJSON(orders) {
         
         fs.writeFileSync(ordersJsonPath, JSON.stringify(sortedOrders, null, 2), 'utf8');
         console.log(`✅ Saved ${sortedOrders.length} orders to orders.json`);
-        
+
+        // Пытаемся в фоне закоммитить обновлённый orders.json в GitHub,
+        // чтобы заказы и продления не стирались при деплое
+        if (typeof commitOrdersToGitViaAPI === 'function') {
+            (async () => {
+                try {
+                    await commitOrdersToGitViaAPI();
+                } catch (e) {
+                    console.warn('⚠️ Failed to auto-commit orders.json to GitHub:', e.message);
+                }
+            })();
+        }
+
         return true;
     } catch (error) {
         console.error('❌ Error writing orders.json:', error);
