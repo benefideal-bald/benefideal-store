@@ -1,6 +1,16 @@
 [
   {
     "id": "review_19",
+    "customer_name": "ангелина",
+    "customer_email": "angelinasugar802@gmail.com",
+    "review_text": "купила chat gpt на месяц все хорошо",
+    "rating": 5,
+    "order_id": "ORDER_1765225670602_k7cwkrjxv",
+    "created_at": "2025-12-08T21:03:29.312Z",
+    "is_static": 0
+  },
+  {
+    "id": "review_19",
     "customer_name": "сергей",
     "customer_email": "frenchpaul299@gmail.com",
     "review_text": "нейросеть работает отлично",
