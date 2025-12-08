@@ -1127,7 +1127,7 @@ app.post('/api/subscription', (req, res) => {
     
     const purchaseDate = new Date();
     
-    // Сохраняем заказ ТОЛЬКО в JSON (база данных стирается при деплое!)
+    // Всегда сохраняем заказы в JSON (как источник правды, который не стирается при деплоях)
     const itemAmount = amount || (item.price * (item.quantity || 1)) || 0;
     
     // Генерируем уникальный ID
@@ -1135,9 +1135,9 @@ app.post('/api/subscription', (req, res) => {
     const maxId = existingOrders.length > 0 ? Math.max(...existingOrders.map(o => o.id || 0)) : 0;
     const subscriptionId = maxId + 1;
     
-    console.log('💾 Saving order to JSON (NOT to database - it gets wiped on deploy)...');
+    console.log('💾 Saving order to JSON (source of truth for admin panel)...');
     
-    // Сохраняем заказ ТОЛЬКО в JSON файл
+    // Сохраняем заказ в JSON файл (orders.json)
     const orderData = {
         id: subscriptionId,
         customer_name: name,
@@ -1162,16 +1162,88 @@ app.post('/api/subscription', (req, res) => {
     console.log(`   Product: ${item.title} (ID: ${item.id})`);
     console.log(`   Order ID: ${order_id || 'NULL'}`);
     
-    // Generate reminders based on subscription type (only for ChatGPT, CapCut, Adobe)
-    if (item.id === 1 || item.id === 3 || item.id === 7) {
-        generateReminders(subscriptionId, item.id, item.months || 1, purchaseDate);
-    }
+    // Дополнительно сохраняем/синхронизируем заказ в БД (subscriptions + reminders),
+    // чтобы система напоминаний в Telegram видела то же, что и админ-панель
+    const months = item.months || 1;
+    const productId = item.id;
     
-    // Send response
-    res.json({ 
-        success: true, 
-        subscription_id: subscriptionId,
-        message: `Order saved to JSON for ${normalizedEmail}`
+    const finishResponse = () => {
+        // Отправляем ответ клиенту, даже если синхронизация в БД прошла с ошибками
+        res.json({ 
+            success: true, 
+            subscription_id: subscriptionId,
+            message: `Order saved for ${normalizedEmail}`
+        });
+    };
+    
+    // Проверяем, существует ли уже такая подписка в БД
+    db.get(`
+        SELECT id FROM subscriptions 
+        WHERE order_id = ? AND product_id = ? AND customer_email = ?
+    `, [orderData.order_id, productId, normalizedEmail], (err, existing) => {
+        if (err) {
+            console.error('❌ Error checking subscription in DB (will still return success to client):', err);
+            return finishResponse();
+        }
+        
+        if (existing) {
+            console.log(`⚠️ Subscription already exists in DB for order ${orderData.order_id} (product ${productId}), ID: ${existing.id}`);
+            
+            // Проверяем, есть ли напоминания; если нет — создаём
+            db.get(`
+                SELECT COUNT(*) as count FROM reminders WHERE subscription_id = ?
+            `, [existing.id], (err2, reminderCheck) => {
+                if (err2) {
+                    console.error('❌ Error checking reminders in DB:', err2);
+                    return finishResponse();
+                }
+                
+                if (!reminderCheck || reminderCheck.count === 0) {
+                    console.log(`ℹ️ No reminders found for subscription ${existing.id}, generating...`);
+                    generateReminders(existing.id, productId, months, purchaseDate);
+                } else {
+                    console.log(`✅ Reminders already exist for subscription ${existing.id}, count=${reminderCheck.count}`);
+                }
+                
+                return finishResponse();
+            });
+        } else {
+            // Создаём новую подписку в БД
+            console.log(`ℹ️ Creating new subscription in DB for order ${orderData.order_id} (product ${productId})`);
+            
+            const stmt = db.prepare(`
+                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+            `);
+            
+            stmt.run([
+                orderData.customer_name,
+                orderData.customer_email,
+                orderData.product_name,
+                orderData.product_id,
+                orderData.subscription_months,
+                orderData.purchase_date,
+                orderData.order_id,
+                orderData.amount
+            ], function(insertErr) {
+                if (insertErr) {
+                    console.error('❌ Error inserting subscription into DB (will still return success to client):', insertErr);
+                    stmt.finalize();
+                    return finishResponse();
+                }
+                
+                const dbSubscriptionId = this.lastID;
+                console.log(`✅ Created subscription ID ${dbSubscriptionId} in DB for order ${orderData.order_id}`);
+                
+                // Генерируем напоминания на основе данных подписки
+                if (productId === 1 || productId === 3 || productId === 7) {
+                    generateReminders(dbSubscriptionId, productId, months, new Date(orderData.purchase_date));
+                }
+                
+                stmt.finalize();
+                return finishResponse();
+            });
+        }
     });
 });
 
