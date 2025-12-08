@@ -1,5 +1,53 @@
 [
   {
+    "id": "review_19",
+    "customer_name": "сергей",
+    "customer_email": "frenchpaul299@gmail.com",
+    "review_text": "нейросеть работает отлично",
+    "rating": 5,
+    "order_id": "ORDER_1765220956850_nslyv3drt",
+    "created_at": "2025-12-08T19:11:06.268Z",
+    "is_static": 0
+  },
+  {
+    "id": "review_igor_italiefleur18_1",
+    "customer_name": "игорь",
+    "customer_email": "italiefleur18@gmail.com",
+    "review_text": "Все класс спасибо всем",
+    "rating": 5,
+    "created_at": "2025-12-08T16:37:00.000Z",
+    "is_static": false
+  },
+  {
+    "id": "review_slava_kitchenuseless_1",
+    "customer_name": "Слава",
+    "customer_email": "kitchenuselessproducts@gmail.com",
+    "review_text": "всё честно и без обмана👍🏻",
+    "rating": 5,
+    "created_at": "2025-12-08T00:00:00.000Z",
+    "is_static": false
+  },
+  {
+    "id": "review_nikita_kitchenuseful_1",
+    "customer_name": "Никита",
+    "customer_email": "kitchenusefulproducts@gmail.com",
+    "review_text": "отличный сервис спасибо",
+    "rating": 5,
+    "order_id": "ORDER_1763835378659_pmen785dd",
+    "created_at": "2025-12-07T16:22:14.760Z",
+    "is_static": false
+  },
+  {
+    "id": "review_1_1765212908904_wu64gkcwp",
+    "customer_name": "Тимур",
+    "customer_email": "static_review_timur@benefideal.com",
+    "review_text": "Купил чат гпт на месяц, сделали все быстро, рекомендую 🫡",
+    "rating": 5,
+    "order_id": "STATIC_REVIEW_TIMUR",
+    "created_at": "2025-12-06T10:00:00.000Z",
+    "is_static": false
+  },
+  {
     "id": "review_max_restored",
     "customer_name": "Макс",
     "customer_email": "temp_max@restore.pending",
@@ -15,34 +63,6 @@
     "review_text": "все как супер ❤️❤️ спасибо 😊",
     "rating": 5,
     "created_at": "2025-11-14T20:00:00Z",
-    "is_static": false
-  },
-  {
-    "id": "review_nikita_kitchenuseful_1",
-    "customer_name": "Никита",
-    "customer_email": "kitchenusefulproducts@gmail.com",
-    "review_text": "отличный сервис спасибо",
-    "rating": 5,
-    "order_id": "ORDER_1763835378659_pmen785dd",
-    "created_at": "2025-12-07T16:22:14.760Z",
-    "is_static": false
-  },
-  {
-    "id": "review_slava_kitchenuseless_1",
-    "customer_name": "Слава",
-    "customer_email": "kitchenuselessproducts@gmail.com",
-    "review_text": "всё честно и без обмана👍🏻",
-    "rating": 5,
-    "created_at": "2025-12-08T00:00:00.000Z",
-    "is_static": false
-  },
-  {
-    "id": "review_igor_italiefleur18_1",
-    "customer_name": "игорь",
-    "customer_email": "italiefleur18@gmail.com",
-    "review_text": "Все класс спасибо всем",
-    "rating": 5,
-    "created_at": "2025-12-08T16:37:00.000Z",
     "is_static": false
   },
   {
@@ -119,15 +139,6 @@
     "is_static": true
   },
   {
-    "id": "static_arina",
-    "customer_name": "Арина",
-    "customer_email": "static_review_7@benefideal.com",
-    "review_text": "Capcut покупала для блога в Instagram. Все функции доступны, убираю водяные знаки и использую эксклюзивные эффекты",
-    "rating": 5,
-    "created_at": "2025-08-25T10:00:00Z",
-    "is_static": true
-  },
-  {
     "id": "static_konstantin",
     "customer_name": "Константин",
     "customer_email": "static_review_8@benefideal.com",
@@ -170,6 +181,15 @@
     "review_text": "Заказала адоб на 3 месяца данные пришли очень быстро, проблем не было спасибо!",
     "rating": 5,
     "created_at": "2025-08-26T10:00:00Z",
+    "is_static": true
+  },
+  {
+    "id": "static_arina",
+    "customer_name": "Арина",
+    "customer_email": "static_review_7@benefideal.com",
+    "review_text": "Capcut покупала для блога в Instagram. Все функции доступны, убираю водяные знаки и использую эксклюзивные эффекты",
+    "rating": 5,
+    "created_at": "2025-08-25T10:00:00Z",
     "is_static": true
   },
   {
