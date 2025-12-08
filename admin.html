@@ -466,20 +466,21 @@
     <script>
         let allOrders = [];
         let adminPassword = '';
-
-        // SIMPLE: Get password
+        
+        // Получаем пароль: из URL или из localStorage (если уже вводили ранее)
         const urlParams = new URLSearchParams(window.location.search);
         const urlPassword = urlParams.get('password');
         const savedPassword = localStorage.getItem('admin_password');
         
-        adminPassword = urlPassword || savedPassword || '2728276'; // Default password
+        // БОЛЬШЕ НИКАКОГО ДЕФОЛТНОГО ПАРОЛЯ: только явный ввод или ?password=...
+        adminPassword = urlPassword || savedPassword || '';
         
         if (adminPassword) {
             localStorage.setItem('admin_password', adminPassword);
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
-            // Update stats
+            // Update stats (будут обновлены после загрузки заказов)
             const statsContainer = document.getElementById('statsContainer');
             if (statsContainer) {
                 statsContainer.innerHTML = `
@@ -506,14 +507,26 @@
             console.log('✅ Password accepted, loading orders...');
             loadOrders();
         } else {
+            // Нет сохранённого/переданного пароля — показываем форму ввода
             document.getElementById('passwordPrompt').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
         }
-
+        
         function checkPassword() {
-            const input = document.getElementById('adminPassword').value;
-            adminPassword = input.trim() || '2728276';
+            const input = document.getElementById('adminPassword').value.trim();
+            const errorEl = document.getElementById('passwordError');
+            
+            if (!input) {
+                if (errorEl) {
+                    errorEl.textContent = 'Введите пароль';
+                    errorEl.style.display = 'block';
+                }
+                return;
+            }
+            
+            adminPassword = input;
             localStorage.setItem('admin_password', adminPassword);
+            if (errorEl) errorEl.style.display = 'none';
             document.getElementById('passwordPrompt').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             
@@ -546,10 +559,17 @@
                 return;
             }
             
+            if (!adminPassword) {
+                console.warn('⚠️ No admin password set, showing prompt');
+                document.getElementById('passwordPrompt').style.display = 'block';
+                document.getElementById('adminPanel').style.display = 'none';
+                return;
+            }
+            
             console.log('✅ Container found, loading orders...');
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка заказов...</div>';
             
-            const apiUrl = `/api/admin/orders?password=${encodeURIComponent(adminPassword || '2728276')}`;
+            const apiUrl = `/api/admin/orders?password=${encodeURIComponent(adminPassword)}`;
             console.log('📡 Loading orders from:', apiUrl);
             console.log('🔑 Using password:', adminPassword ? '***' : 'NOT SET');
             
