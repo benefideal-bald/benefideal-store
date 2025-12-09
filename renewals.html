@@ -386,11 +386,25 @@
                 return;
             }
             
-            container.innerHTML = calendar.map(day => `
+            container.innerHTML = calendar.map(day => {
+                // Если в этот день только окончания подписки (expiry), показываем "Конец подписки"
+                let countLabel = '';
+                const expiryCount = day.expiry_count || 0;
+                const renewalCount = day.renewal_count || 0;
+                
+                if (renewalCount === 0 && expiryCount > 0) {
+                    // Только окончания
+                    countLabel = expiryCount === 1 ? 'Конец подписки' : `${expiryCount} окончаний подписки`;
+                } else {
+                    // Есть хотя бы одно продление
+                    countLabel = `${day.count} продлений`;
+                }
+                
+                return `
                 <div class="calendar-day">
                     <div class="calendar-day-header">
                         <div class="calendar-day-date">${day.date_formatted}</div>
-                        <div class="calendar-day-count">${day.count} продлений</div>
+                        <div class="calendar-day-count">${countLabel}</div>
                     </div>
                     <div class="calendar-day-renewals">
                         ${day.renewals.map(renewal => `
@@ -407,7 +421,8 @@
                         `).join('')}
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // Load on page load

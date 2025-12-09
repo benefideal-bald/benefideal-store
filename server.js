@@ -1182,10 +1182,19 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
                         date: day,
                         date_formatted: new Date(day).toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
                         count: 0,
+                        renewal_count: 0,
+                        expiry_count: 0,
                         renewals: []
                     };
                 }
                 calendar[day].count++;
+                
+                // Отдельно считаем продления и окончания подписки
+                if (row.reminder_type === 'expiry') {
+                    calendar[day].expiry_count++;
+                } else {
+                    calendar[day].renewal_count++;
+                }
                 // Форматируем время в UTC на сервере, чтобы оно было одинаковым везде
                 let reminderTime = '';
                 if (row.reminder_date) {
