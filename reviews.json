@@ -1,6 +1,16 @@
 [
   {
     "id": "review_19",
+    "customer_name": "Кристина",
+    "customer_email": "kristinamustafacas@gmail.com",
+    "review_text": "Взяла себе адоб и очень довольна 😃🐒",
+    "rating": 5,
+    "order_id": "ORDER_1765295902204_l1wmbl8bd",
+    "created_at": "2025-12-09T16:04:19.463Z",
+    "is_static": 0
+  },
+  {
+    "id": "review_19",
     "customer_name": "ангелина",
     "customer_email": "angelinasugar802@gmail.com",
     "review_text": "купила chat gpt на месяц все хорошо",
