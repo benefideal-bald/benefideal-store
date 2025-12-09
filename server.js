@@ -700,7 +700,7 @@ app.get('/api/admin/sync-orders-to-db', (req, res) => {
 
 // Admin API - Get renewals/reminders
 app.get('/api/admin/renewals', (req, res) => {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminPassword = process.env.ADMIN_PASSWORD || '2728276';
     const providedPassword = req.query.password || req.headers['x-admin-password'];
     
     if (providedPassword !== adminPassword) {
@@ -818,7 +818,7 @@ app.get('/api/admin/renewals', (req, res) => {
 
 // Admin API - Get renewals for a specific subscription
 app.get('/api/admin/subscription/:subscriptionId/renewals', (req, res) => {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminPassword = process.env.ADMIN_PASSWORD || '2728276';
     const providedPassword = req.query.password || req.headers['x-admin-password'];
     
     if (providedPassword !== adminPassword) {
@@ -890,7 +890,7 @@ app.get('/api/admin/subscription/:subscriptionId/renewals', (req, res) => {
 // Admin API - Get renewals by order info (order_id + product_id + email)
 // Это более надёжный способ, чтобы из таблицы заказов всегда открывался правильный клиент
 app.get('/api/admin/order-renewals', (req, res) => {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminPassword = process.env.ADMIN_PASSWORD || '2728276';
     const providedPassword = req.query.password || req.headers['x-admin-password'];
     
     if (providedPassword !== adminPassword) {
@@ -983,7 +983,7 @@ app.get('/api/admin/order-renewals', (req, res) => {
 
 // Admin API - Update reminder date
 app.put('/api/admin/reminder/:reminderId', (req, res) => {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminPassword = process.env.ADMIN_PASSWORD || '2728276';
     const providedPassword = req.query.password || req.headers['x-admin-password'];
     
     if (providedPassword !== adminPassword) {
@@ -1028,7 +1028,7 @@ app.put('/api/admin/reminder/:reminderId', (req, res) => {
 
 // Admin API - Get renewals calendar (all upcoming renewals grouped by date)
 app.get('/api/admin/renewals-calendar', (req, res) => {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminPassword = process.env.ADMIN_PASSWORD || '2728276';
     const providedPassword = req.query.password || req.headers['x-admin-password'];
     
     if (providedPassword !== adminPassword) {
