@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата – СБП Багдад</title>
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="nav">
+                <a href="index.html" class="logo">Benefideal</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="product-page" style="padding: var(--space-24) 0; background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%); min-height:80vh;">
+        <div class="container" style="display:flex; align-items:center; justify-content:center; min-height: 70vh;">
+            <div class="checkout-card" style="max-width: 600px;">
+                <div style="text-align: center; margin-bottom: var(--space-8);">
+                    <i class="fas fa-mobile-alt" style="font-size: 3rem; color: var(--primary); margin-bottom: var(--space-4);"></i>
+                    <h2 style="margin: 0; color: var(--gray-900);">Оплата заказа по СБП Багдад</h2>
+                </div>
+
+                <!-- СБП Bagdad Payment Section -->
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); box-shadow: var(--shadow-lg);">
+                    <div style="margin-bottom: var(--space-4);">
+                        <span style="color: rgba(255,255,255,0.9); font-size: 0.9rem; display: block; margin-bottom: var(--space-2);">Номер телефона:</span>
+                        <div id="phoneNumberContainer" style="display: flex; align-items: center; gap: var(--space-2);">
+                            <input type="text" 
+                                   id="sbpNumber" 
+                                   value="097654618" 
+                                   readonly 
+                                   style="flex: 1; background: white; border: none; border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: 1.3rem; font-weight: 600; color: var(--gray-900); text-align: center; letter-spacing: 2px; min-width: 0;">
+                            <button onclick="copySBPNumber()" 
+                                    style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); cursor: pointer; transition: all 0.3s ease; flex-shrink: 0;">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                        <span style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Банк:</span>
+                        <strong style="color: white; font-size: 1.1rem;">Озон Банк</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                        <span style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Получатель:</span>
+                        <strong style="color: white; font-size: 1.1rem;">Валерий Б</strong>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.15); border-radius: var(--radius-md); padding: var(--space-3); margin-top: var(--space-4);">
+                        <p style="color: white; font-size: 0.9rem; margin: 0; line-height: 1.6;">
+                            <i class="fas fa-info-circle" style="margin-right: var(--space-2);"></i>
+                            Переведите нужную сумму на этот номер через приложение вашего банка. Оплата проходит мгновенно через СБП.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Остальной функционал (итог, товары, загрузка чека, подтверждение) такой же, как в payment.html -->
+                <div style="background: var(--gray-50); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                        <span style="color: var(--gray-600);">Итого к оплате:</span>
+                        <span id="totalAmount" style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">0 ₽</span>
+                    </div>
+                    <div style="background: white; border-radius: var(--radius-md); padding: var(--space-4);" id="orderItems">
+                        <!-- Order items will be shown here -->
+                    </div>
+                </div>
+
+                <div style="background: var(--gray-50); border: 2px solid var(--primary); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); text-align: center; transition: all 0.3s ease; cursor: pointer;" 
+                     id="uploadArea" 
+                     ondrop="handleDrop(event)" 
+                     ondragover="handleDragOver(event)" 
+                     ondragleave="handleDragLeave(event)"
+                     onmouseenter="document.getElementById('uploadArea').style.borderColor='var(--primary-dark)'; document.getElementById('uploadArea').style.background='var(--white)';"
+                     onmouseleave="document.getElementById('uploadArea').style.borderColor='var(--primary)'; document.getElementById('uploadArea').style.background='var(--gray-50)';">
+                    <input type="file" 
+                           id="receiptUpload" 
+                           accept="image/*" 
+                           style="display: none;" 
+                           onchange="handleFileSelect(event)">
+                    <div id="uploadContent">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: var(--primary); margin-bottom: var(--space-4);"></i>
+                        <p style="color: var(--gray-900); font-size: 1rem; margin-bottom: var(--space-2); font-weight: 600;">
+                            Нажмите, чтобы загрузить чек перевода
+                        </p>
+                        <p style="color: var(--gray-500); font-size: 0.85rem; margin: 0;">
+                            Или перетащите файл сюда (JPG, PNG, PDF)
+                        </p>
+                    </div>
+                    <div id="uploadPreview" style="display: none;">
+                        <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--success); margin-bottom: var(--space-4);"></i>
+                        <p style="color: var(--success); font-size: 0.95rem; margin-bottom: var(--space-4); font-weight: 600;">
+                            Чек успешно загружен
+                        </p>
+                        <button onclick="removeReceipt()" class="btn btn-secondary" style="padding: var(--space-2) var(--space-4); font-size: 0.9rem;">
+                            <i class="fas fa-times"></i> Удалить
+                        </button>
+                    </div>
+                </div>
+
+                <div style="background: #fef3c7; border-left: 4px solid var(--warning); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-8);">
+                    <div style="display: flex; align-items: start; gap: var(--space-3);">
+                        <i class="fas fa-info-circle" style="color: var(--warning); font-size: 1.2rem; margin-top: 2px;"></i>
+                        <div>
+                            <strong style="color: #78350f; display: block; margin-bottom: var(--space-1);">Внимание!</strong>
+                            <p style="color: #92400e; margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                                Перед подтверждением оплаты сохраните чек перевода и загрузите его в расположенное выше поле для подтверждения платежа и ускорения обработки данных.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center;">
+                    <button class="btn btn-primary" style="width: 100%;" onclick="confirmPayment()">
+                        Подтверждение оплаты
+                    </button>
+                </div>
+
+                <div style="text-align: center; margin-top: var(--space-6);">
+                    <a href="checkout.html" style="color: var(--gray-600); text-decoration: none; font-size: 0.9rem;">
+                        <i class="fas fa-arrow-left"></i> Вернуться назад
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Копирование номера в буфер обмена
+        function copySBPNumber() {
+            const input = document.getElementById('sbpNumber');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            alert('Номер для СБП скопирован: ' + input.value);
+        }
+    </script>
+</body>
+</html>
+
+

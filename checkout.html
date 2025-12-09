@@ -71,6 +71,21 @@
                                 <span style="line-height: 1.4;">Тест (перевод по СБП)</span>
                             </span>
                         </label>
+
+                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease; margin-top: var(--space-2);" 
+                               onmouseover="this.style.background='var(--gray-100)'" 
+                               onmouseout="this.style.background='var(--gray-50)'">
+                            <input type="radio" 
+                                   name="paymentMethod" 
+                                   id="paymentSbpBagdad" 
+                                   value="sbp-bagdad" 
+                                   required
+                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
+                            <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2);">
+                                <i class="fas fa-mobile-alt" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
+                                <span style="line-height: 1.4;">СБП Багдад</span>
+                            </span>
+                        </label>
                     </div>
                     
                     <button type="submit" id="payButton" class="btn btn-primary">Перейти к оплате</button>
@@ -180,6 +195,8 @@
                 // Выбираем способ оплаты
                 if (paymentMethod === 'test') {
                     processTestPayment(name, email);
+                } else if (paymentMethod === 'sbp-bagdad') {
+                    processSbpBagdadPayment(name, email);
                 } else {
                     processCardlinkPayment(name, email);
                 }
@@ -299,6 +316,16 @@
                 
                 // Переходим на страницу тестовой оплаты
                 window.location.href = 'test-payment.html';
+            }
+            
+            // Функция для обработки оплаты через СБП Багдад (то же, что тест СБП, но другой номер)
+            function processSbpBagdadPayment(name, email) {
+                // Сохраняем данные для страницы оплаты
+                localStorage.setItem('benefideal_checkout_name', name);
+                localStorage.setItem('benefideal_checkout_email', email);
+                
+                // Переходим на страницу оплаты СБП Багдад
+                window.location.href = 'payment-bagdad.html';
             }
             
             // Функция для обработки оплаты через Enot.io
