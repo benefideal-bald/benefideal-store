@@ -502,10 +502,9 @@ app.get('/api/admin/orders', (req, res) => {
     
     console.log('✅ Admin access granted');
     
-    console.log('🔍 Fetching orders from JSON only (database gets wiped on deploy)...');
+    console.log('🔍 Fetching orders from JSON (source of truth) and linking to subscriptions in DB...');
     
-    // Читаем ВСЕ заказы из JSON файла (база данных стирается при деплое!)
-    // Показываем ВСЕ заказы из orders.json без ограничений
+    // Читаем ВСЕ заказы из JSON файла (это источник правды для админ-панели)
     const jsonOrders = readOrdersFromJSON();
     console.log(`📋 Found ${jsonOrders.length} orders in orders.json`);
     
@@ -514,36 +513,72 @@ app.get('/api/admin/orders', (req, res) => {
         return res.json({ success: true, orders: [], total: 0 });
     }
     
-    // Форматируем ВСЕ заказы из JSON (без ограничений, показываем все!)
-    const formattedOrders = jsonOrders.map(order => ({
-        id: order.id,
-        order_id: order.order_id,
-        customer_name: order.customer_name,
-        customer_email: order.customer_email,
-        product_name: order.product_name,
-        product_id: order.product_id,
-        subscription_months: order.subscription_months,
-        purchase_date: order.purchase_date,
-        purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
-        purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
-        amount: order.amount,
-        amount_formatted: order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
-        duration_text: order.subscription_months === 1 ? '1 месяц' : 
-                      order.subscription_months >= 2 && order.subscription_months <= 4 ? `${order.subscription_months} месяца` : 
-                      `${order.subscription_months} месяцев`,
-        is_active: order.is_active || 1
-    }));
-    
-    // Сортируем по дате (новые первыми)
-    formattedOrders.sort((a, b) => {
-        const timeA = new Date(a.purchase_date || 0).getTime();
-        const timeB = new Date(b.purchase_date || 0).getTime();
-        return timeB - timeA;
+    // Пытаемся привязать каждый заказ к подписке в БД по (order_id + product_id + email)
+    db.all(`
+        SELECT 
+            id,
+            order_id,
+            product_id,
+            LOWER(customer_email) as customer_email
+        FROM subscriptions
+    `, [], (err, subs) => {
+        if (err) {
+            console.error('❌ Error reading subscriptions from database for admin orders:', err);
+        }
+        
+        const subMap = new Map();
+        if (subs && subs.length > 0) {
+            subs.forEach(sub => {
+                const key = `${sub.order_id || 'null'}_${sub.product_id || 'null'}_${(sub.customer_email || '').toLowerCase().trim()}`;
+                // Если по каким-то причинам несколько подписок на один и тот же заказ,
+                // оставляем первую найденную
+                if (!subMap.has(key)) {
+                    subMap.set(key, sub.id);
+                }
+            });
+            console.log(`📋 Linked ${subMap.size} subscriptions to orders by order_id+product_id+email`);
+        } else {
+            console.log('⚠️ No subscriptions found in database for linking (this is ok for very fresh installs)');
+        }
+        
+        // Форматируем ВСЕ заказы из JSON (без ограничений, показываем все!)
+        const formattedOrders = jsonOrders.map(order => {
+            const emailKey = (order.customer_email || '').toLowerCase().trim();
+            const mapKey = `${order.order_id || 'null'}_${order.product_id || 'null'}_${emailKey}`;
+            const subscriptionId = subMap.get(mapKey) || null;
+            
+            return {
+                id: order.id, // ID заказа в JSON (для отладки/таблицы)
+                subscription_id: subscriptionId, // ID подписки в БД (для продлений)
+                order_id: order.order_id,
+                customer_name: order.customer_name,
+                customer_email: order.customer_email,
+                product_name: order.product_name,
+                product_id: order.product_id,
+                subscription_months: order.subscription_months,
+                purchase_date: order.purchase_date,
+                purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
+                purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
+                amount: order.amount,
+                amount_formatted: order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
+                duration_text: order.subscription_months === 1 ? '1 месяц' : 
+                              order.subscription_months >= 2 && order.subscription_months <= 4 ? `${order.subscription_months} месяца` : 
+                              `${order.subscription_months} месяцев`,
+                is_active: order.is_active || 1
+            };
+        });
+        
+        // Сортируем по дате (новые первыми)
+        formattedOrders.sort((a, b) => {
+            const timeA = new Date(a.purchase_date || 0).getTime();
+            const timeB = new Date(b.purchase_date || 0).getTime();
+            return timeB - timeA;
+        });
+        
+        console.log(`✅ Returning ${formattedOrders.length} orders from JSON with linked subscriptions`);
+        
+        res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
     });
-    
-    console.log(`✅ Returning ${formattedOrders.length} orders from JSON`);
-    
-    res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
 });
 
 // Admin API - Sync orders from JSON to database (for renewals calendar)

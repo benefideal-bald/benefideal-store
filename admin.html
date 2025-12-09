@@ -641,7 +641,9 @@
             console.log('Displaying orders:', orders);
             
             const html = orders.map(order => {
-                const subscriptionId = order.id;
+                // subscription_id приходит с сервера: это ID подписки в БД, по которому есть продления
+                // Если по каким-то причинам его нет, используем order.id (для старых/тестовых данных)
+                const subscriptionId = order.subscription_id || order.id;
                 const orderId = order.order_id || `ID-${order.id}`;
                 const customerName = order.customer_name || '';
                 const customerEmail = order.customer_email || '';
