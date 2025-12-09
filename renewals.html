@@ -145,7 +145,24 @@
         .calendar-title {
             font-size: 1.5rem;
             font-weight: 700;
+        }
+        
+        .calendar-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: var(--space-4);
+        }
+        
+        .calendar-toggle-btn {
+            padding: var(--space-2) var(--space-4);
+            background: var(--gray-200);
+            color: var(--gray-800);
+            border: none;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
         
         .calendar-grid {
@@ -256,7 +273,12 @@
 
         <!-- Calendar -->
         <div class="calendar-section">
-            <h2 class="calendar-title">Календарь продлений</h2>
+            <div class="calendar-header-row">
+                <h2 class="calendar-title" id="calendarTitle">Календарь продлений</h2>
+                <button id="calendarToggleBtn" class="calendar-toggle-btn" onclick="toggleCalendarMode()">
+                    Прошедшие
+                </button>
+            </div>
             <div id="calendarContainer" class="calendar-grid">
                 <div class="loading">
                     <i class="fas fa-spinner fa-spin"></i> Загрузка календаря...
@@ -267,6 +289,7 @@
 
     <script>
         let adminPassword = '';
+        let calendarMode = 'future'; // 'future' | 'past'
 
         // Get password from URL or localStorage
         const urlParams = new URLSearchParams(window.location.search);
@@ -357,7 +380,7 @@
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка календаря...</div>';
             
             // Get all future renewals (no days limit)
-            fetch(`/api/admin/renewals-calendar?password=${encodeURIComponent(adminPassword)}`)
+            fetch(`/api/admin/renewals-calendar?password=${encodeURIComponent(adminPassword)}&mode=${encodeURIComponent(calendarMode)}`)
                 .then(res => {
                     if (res.status === 401) {
                         container.innerHTML = '<div class="error">Неверный пароль</div>';
@@ -425,6 +448,23 @@
             }).join('');
         }
 
+        function toggleCalendarMode() {
+            calendarMode = calendarMode === 'future' ? 'past' : 'future';
+            
+            const titleEl = document.getElementById('calendarTitle');
+            const btnEl = document.getElementById('calendarToggleBtn');
+            
+            if (calendarMode === 'past') {
+                if (titleEl) titleEl.textContent = 'Календарь прошедших продлений';
+                if (btnEl) btnEl.textContent = 'Будущие';
+            } else {
+                if (titleEl) titleEl.textContent = 'Календарь продлений';
+                if (btnEl) btnEl.textContent = 'Прошедшие';
+            }
+            
+            loadCalendar();
+        }
+        
         // Load on page load
         if (adminPassword) {
             loadRenewals();

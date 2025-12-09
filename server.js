@@ -1120,120 +1120,133 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
     }
     
     function fetchRenewals() {
-        // Get all future reminders (no date limit)
-        const startDate = new Date().toISOString().split('T')[0];
-    
-    // Get all reminders in the future (no upper limit)
-    db.all(`
-        SELECT 
-            DATE(r.reminder_date) as reminder_day,
-            COUNT(*) as count,
-            r.reminder_date,
-            r.reminder_type,
-            r.is_sent,
-            s.customer_name,
-            s.customer_email,
-            s.product_name,
-            s.product_id
-        FROM reminders r
-        INNER JOIN subscriptions s ON r.subscription_id = s.id
-        WHERE DATE(r.reminder_date) >= DATE(?)
-        GROUP BY DATE(r.reminder_date)
-        ORDER BY reminder_day ASC
-    `, [startDate], (err, rows) => {
-        if (err) {
-            console.error('Error fetching renewals calendar:', err);
-            return res.status(500).json({ error: 'Database error', details: err.message });
-        }
+        const mode = (req.query.mode || 'future').toLowerCase(); // 'future' | 'past'
         
-        // Get detailed data for each date (all future reminders)
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        // Для прошедших продлений ограничим глубину 1 год назад
+        const pastStart = new Date(today);
+        pastStart.setFullYear(pastStart.getFullYear() - 1);
+        const pastStartStr = pastStart.toISOString().split('T')[0];
+        
+        const isPast = mode === 'past';
+        
+        // Условия для выборки
+        const whereFuture = 'DATE(r.reminder_date) >= DATE(?)';
+        const wherePast = 'DATE(r.reminder_date) < DATE(?) AND DATE(r.reminder_date) >= DATE(?)';
+        
+        const whereClause = isPast ? wherePast : whereFuture;
+        const paramsForGrouped = isPast ? [todayStr, pastStartStr] : [todayStr];
+        const paramsForDetailed = isPast ? [todayStr, pastStartStr] : [todayStr];
+        
+        // Get grouped counts per day (мы не используем rows напрямую, но запрос полезен для планов расширения и логов)
         db.all(`
             SELECT 
                 DATE(r.reminder_date) as reminder_day,
-                r.id as reminder_id,
-                r.reminder_date,
-                r.reminder_type,
-                r.is_sent,
-                s.id as subscription_id,
-                s.customer_name,
-                s.customer_email,
-                s.product_name,
-                s.product_id,
-                s.subscription_months,
-                s.purchase_date,
-                s.order_id,
-                s.amount
+                COUNT(*) as count
             FROM reminders r
             INNER JOIN subscriptions s ON r.subscription_id = s.id
-            WHERE DATE(r.reminder_date) >= DATE(?)
-            ORDER BY r.reminder_date ASC
-        `, [startDate], (err2, detailedRows) => {
-            if (err2) {
-                console.error('Error fetching detailed renewals:', err2);
-                return res.status(500).json({ error: 'Database error', details: err2.message });
+            WHERE ${whereClause}
+            GROUP BY DATE(r.reminder_date)
+            ORDER BY reminder_day ${isPast ? 'DESC' : 'ASC'}
+        `, paramsForGrouped, (err) => {
+            if (err) {
+                console.error('Error fetching renewals calendar (grouped):', err);
+                return res.status(500).json({ error: 'Database error', details: err.message });
             }
             
-            // Group by date
-            const calendar = {};
-            detailedRows.forEach(row => {
-                const day = row.reminder_day;
-                if (!calendar[day]) {
-                    calendar[day] = {
-                        date: day,
-                        date_formatted: new Date(day).toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-                        count: 0,
-                        renewal_count: 0,
-                        expiry_count: 0,
-                        renewals: []
-                    };
-                }
-                calendar[day].count++;
-                
-                // Отдельно считаем продления и окончания подписки
-                if (row.reminder_type === 'expiry') {
-                    calendar[day].expiry_count++;
-                } else {
-                    calendar[day].renewal_count++;
-                }
-                // Форматируем время в UTC на сервере, чтобы оно было одинаковым везде
-                let reminderTime = '';
-                if (row.reminder_date) {
-                    const reminderDate = new Date(row.reminder_date);
-                    // Используем UTC время для консистентности
-                    const hours = String(reminderDate.getUTCHours()).padStart(2, '0');
-                    const minutes = String(reminderDate.getUTCMinutes()).padStart(2, '0');
-                    reminderTime = `${hours}:${minutes}`;
+            // Get detailed data for each date
+            db.all(`
+                SELECT 
+                    DATE(r.reminder_date) as reminder_day,
+                    r.id as reminder_id,
+                    r.reminder_date,
+                    r.reminder_type,
+                    r.is_sent,
+                    s.id as subscription_id,
+                    s.customer_name,
+                    s.customer_email,
+                    s.product_name,
+                    s.product_id,
+                    s.subscription_months,
+                    s.purchase_date,
+                    s.order_id,
+                    s.amount
+                FROM reminders r
+                INNER JOIN subscriptions s ON r.subscription_id = s.id
+                WHERE ${whereClause}
+                ORDER BY r.reminder_date ${isPast ? 'DESC' : 'ASC'}
+            `, paramsForDetailed, (err2, detailedRows) => {
+                if (err2) {
+                    console.error('Error fetching detailed renewals:', err2);
+                    return res.status(500).json({ error: 'Database error', details: err2.message });
                 }
                 
-                calendar[day].renewals.push({
-                    reminder_id: row.reminder_id,
-                    reminder_time: reminderTime,
-                    reminder_type: row.reminder_type,
-                    is_sent: row.is_sent === 1,
-                    customer_name: row.customer_name,
-                    customer_email: row.customer_email,
-                    product_name: row.product_name,
-                    product_id: row.product_id,
-                    subscription_months: row.subscription_months,
-                    purchase_date_formatted: row.purchase_date ? new Date(row.purchase_date).toLocaleDateString('ru-RU') : '',
-                    order_id: row.order_id,
-                    amount_formatted: row.amount ? row.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽'
+                // Group by date
+                const calendar = {};
+                detailedRows.forEach(row => {
+                    const day = row.reminder_day;
+                    if (!calendar[day]) {
+                        calendar[day] = {
+                            date: day,
+                            date_formatted: new Date(day).toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                            count: 0,
+                            renewal_count: 0,
+                            expiry_count: 0,
+                            renewals: []
+                        };
+                    }
+                    calendar[day].count++;
+                    
+                    // Отдельно считаем продления и окончания подписки
+                    if (row.reminder_type === 'expiry') {
+                        calendar[day].expiry_count++;
+                    } else {
+                        calendar[day].renewal_count++;
+                    }
+                    
+                    // Форматируем время в UTC на сервере, чтобы оно было одинаковым везде
+                    let reminderTime = '';
+                    if (row.reminder_date) {
+                        const reminderDate = new Date(row.reminder_date);
+                        const hours = String(reminderDate.getUTCHours()).padStart(2, '0');
+                        const minutes = String(reminderDate.getUTCMinutes()).padStart(2, '0');
+                        reminderTime = `${hours}:${minutes}`;
+                    }
+                    
+                    calendar[day].renewals.push({
+                        reminder_id: row.reminder_id,
+                        reminder_time: reminderTime,
+                        reminder_type: row.reminder_type,
+                        is_sent: row.is_sent === 1,
+                        customer_name: row.customer_name,
+                        customer_email: row.customer_email,
+                        product_name: row.product_name,
+                        product_id: row.product_id,
+                        subscription_months: row.subscription_months,
+                        purchase_date_formatted: row.purchase_date ? new Date(row.purchase_date).toLocaleDateString('ru-RU') : '',
+                        order_id: row.order_id,
+                        amount_formatted: row.amount ? row.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽'
+                    });
+                });
+                
+                // Sort calendar by date (closest first for future, latest first for past)
+                const sortedCalendar = Object.values(calendar).sort((a, b) => {
+                    return isPast
+                        ? new Date(b.date) - new Date(a.date)
+                        : new Date(a.date) - new Date(b.date);
+                });
+                
+                res.json({ 
+                    success: true, 
+                    calendar: sortedCalendar,
+                    start_date: isPast ? pastStartStr : todayStr,
+                    mode,
+                    total: detailedRows.length
                 });
             });
-            
-            // Sort calendar by date (closest first)
-            const sortedCalendar = Object.values(calendar).sort((a, b) => {
-                return new Date(a.date) - new Date(b.date);
-            });
-            
-            res.json({ 
-                success: true, 
-                calendar: sortedCalendar,
-                start_date: startDate,
-                total: detailedRows.length
-            });
         });
-    });
     }
 });
 
