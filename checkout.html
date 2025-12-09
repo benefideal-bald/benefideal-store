@@ -41,7 +41,7 @@
                     </div>
                     
                     <div class="form-group" style="margin-bottom: var(--space-6);">
-                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease; margin-bottom: var(--space-3);" 
+                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
                                onmouseover="this.style.background='var(--gray-100)'" 
                                onmouseout="this.style.background='var(--gray-50)'">
                             <input type="radio" 
@@ -50,40 +50,10 @@
                                    value="cardlink" 
                                    checked
                                    required
-                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio"
+                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
                             <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2);">
                                 <i class="fas fa-credit-card" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
                                 <span style="line-height: 1.4;">Оплата картой, СБП, или криптовалютой</span>
-                            </span>
-                        </label>
-                        
-                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
-                               onmouseover="this.style.background='var(--gray-100)'" 
-                               onmouseout="this.style.background='var(--gray-50)'">
-                            <input type="radio" 
-                                   name="paymentMethod" 
-                                   id="paymentTest" 
-                                   value="test" 
-                                   required
-                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
-                            <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2);">
-                                <i class="fas fa-mobile-alt" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
-                                <span style="line-height: 1.4;">Тест (перевод по СБП)</span>
-                            </span>
-                        </label>
-
-                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease; margin-top: var(--space-2);" 
-                               onmouseover="this.style.background='var(--gray-100)'" 
-                               onmouseout="this.style.background='var(--gray-50)'">
-                            <input type="radio" 
-                                   name="paymentMethod" 
-                                   id="paymentSbpBagdad" 
-                                   value="sbp-bagdad" 
-                                   required
-                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
-                            <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2);">
-                                <i class="fas fa-mobile-alt" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
-                                <span style="line-height: 1.4;">СБП Багдад</span>
                             </span>
                         </label>
                     </div>
@@ -192,14 +162,8 @@
                 const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
                 console.log('💾 Saved to localStorage:', { name, email, paymentMethod });
                 
-                // Выбираем способ оплаты
-                if (paymentMethod === 'test') {
-                    processTestPayment(name, email);
-                } else if (paymentMethod === 'sbp-bagdad') {
-                    processSbpBagdadPayment(name, email);
-                } else {
-                    processCardlinkPayment(name, email);
-                }
+                // Единственный способ оплаты сейчас — через Cardlink
+                processCardlinkPayment(name, email);
             });
             
             // Функция для обработки оплаты через Cardlink
@@ -291,41 +255,21 @@
                             return;
                         } else {
                             // Если ссылка не настроена, показываем инструкцию
-                            alert(`Для оплаты через Cardlink:\n\n1. Создайте платежную ссылку в личном кабинете Cardlink (раздел "My links" или кнопка "Create payment link")\n2. Скопируйте ссылку\n3. Добавьте её в переменную окружения CARDLINK_PAYMENT_LINK на Render\n\nИли выберите оплату через СБП.`);
+                            alert(`Для оплаты через Cardlink:\n\n1. Создайте платежную ссылку в личном кабинете Cardlink (раздел "My links" или кнопка "Create payment link")\n2. Скопируйте ссылку\n3. Добавьте её в переменную окружения CARDLINK_PAYMENT_LINK на Render.`);
                             window.location.href = 'payment.html';
                             return;
                         }
                     } catch (linkError) {
                         console.error('Ошибка получения платежной ссылки:', linkError);
-                        alert('Не удалось получить платежную ссылку. Выберите оплату через СБП или обратитесь в поддержку.');
+                        alert('Не удалось получить платежную ссылку. Обратитесь в поддержку.');
                         window.location.href = 'payment.html';
                         return;
                     }
                     
                 } catch (error) {
                     console.error('Ошибка обработки оплаты Cardlink:', error);
-                    alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз или выберите оплату через СБП.');
+                    alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз или обратитесь в поддержку.');
                 }
-            }
-            
-            // Функция для обработки тестовой оплаты (СБП) - просто переходим на страницу оплаты
-            function processTestPayment(name, email) {
-                // Сохраняем данные для страницы оплаты
-                localStorage.setItem('benefideal_checkout_name', name);
-                localStorage.setItem('benefideal_checkout_email', email);
-                
-                // Переходим на страницу тестовой оплаты
-                window.location.href = 'test-payment.html';
-            }
-            
-            // Функция для обработки оплаты через СБП Багдад (то же, что тест СБП, но другой номер)
-            function processSbpBagdadPayment(name, email) {
-                // Сохраняем данные для страницы оплаты
-                localStorage.setItem('benefideal_checkout_name', name);
-                localStorage.setItem('benefideal_checkout_email', email);
-                
-                // Переходим на страницу оплаты СБП Багдад
-                window.location.href = 'payment-bagdad.html';
             }
             
             // Функция для обработки оплаты через Enot.io
