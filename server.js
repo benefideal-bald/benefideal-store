@@ -887,6 +887,100 @@ app.get('/api/admin/subscription/:subscriptionId/renewals', (req, res) => {
     });
 });
 
+// Admin API - Get renewals by order info (order_id + product_id + email)
+// Это более надёжный способ, чтобы из таблицы заказов всегда открывался правильный клиент
+app.get('/api/admin/order-renewals', (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const providedPassword = req.query.password || req.headers['x-admin-password'];
+    
+    if (providedPassword !== adminPassword) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    const orderId = req.query.order_id || null;
+    const productId = req.query.product_id ? parseInt(req.query.product_id) : null;
+    const emailRaw = req.query.email || '';
+    const email = emailRaw.toLowerCase().trim();
+    
+    if (!orderId || !email) {
+        return res.status(400).json({ error: 'Missing required params: order_id and email' });
+    }
+    
+    // Сначала пытаемся найти подписку по тройке (order_id + product_id + email)
+    // Если product_id не передан, ищем только по order_id + email
+    let query = `
+        SELECT * 
+        FROM subscriptions 
+        WHERE order_id = ? 
+          AND LOWER(customer_email) = LOWER(?)
+    `;
+    const params = [orderId, email];
+    
+    if (productId) {
+        query += ' AND product_id = ?';
+        params.push(productId);
+    }
+    
+    query += ' ORDER BY id DESC LIMIT 1';
+    
+    db.get(query, params, (err, subscription) => {
+        if (err) {
+            console.error('❌ Error finding subscription by order info:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+        if (!subscription) {
+            console.warn('⚠️ Subscription not found for order:', { orderId, productId, email });
+            return res.status(404).json({ error: 'Subscription not found for this order' });
+        }
+        
+        const subscriptionId = subscription.id;
+        
+        // Получаем все напоминания для этой подписки
+        db.all(`
+            SELECT 
+                r.id as reminder_id,
+                r.reminder_date,
+                r.reminder_type,
+                r.is_sent
+            FROM reminders r
+            WHERE r.subscription_id = ?
+            ORDER BY r.reminder_date ASC
+        `, [subscriptionId], (err2, reminders) => {
+            if (err2) {
+                console.error('❌ Error reading reminders for subscription:', err2);
+                return res.status(500).json({ error: 'Database error', details: err2.message });
+            }
+            
+            const formattedReminders = reminders.map(r => ({
+                reminder_id: r.reminder_id,
+                reminder_date: r.reminder_date,
+                reminder_date_formatted: r.reminder_date ? new Date(r.reminder_date).toLocaleDateString('ru-RU') : '',
+                reminder_time: r.reminder_date ? new Date(r.reminder_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '',
+                reminder_type: r.reminder_type,
+                is_sent: r.is_sent === 1
+            }));
+            
+            res.json({
+                success: true,
+                subscription: {
+                    id: subscription.id,
+                    customer_name: subscription.customer_name,
+                    customer_email: subscription.customer_email,
+                    product_name: subscription.product_name,
+                    product_id: subscription.product_id,
+                    subscription_months: subscription.subscription_months,
+                    purchase_date: subscription.purchase_date,
+                    purchase_date_formatted: subscription.purchase_date ? new Date(subscription.purchase_date).toLocaleDateString('ru-RU') : '',
+                    order_id: subscription.order_id,
+                    amount: subscription.amount
+                },
+                reminders: formattedReminders
+            });
+        });
+    });
+});
+
 // Admin API - Update reminder date
 app.put('/api/admin/reminder/:reminderId', (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';

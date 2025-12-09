@@ -641,9 +641,6 @@
             console.log('Displaying orders:', orders);
             
             const html = orders.map(order => {
-                // subscription_id приходит с сервера: это ID подписки в БД, по которому есть продления
-                // Если по каким-то причинам его нет, используем order.id (для старых/тестовых данных)
-                const subscriptionId = order.subscription_id || order.id;
                 const orderId = order.order_id || `ID-${order.id}`;
                 const customerName = order.customer_name || '';
                 const customerEmail = order.customer_email || '';
@@ -655,7 +652,11 @@
                 const isActive = order.is_active === 1 || order.is_active === true;
                 
                 return `
-                <div class="table-row" onclick="openRenewalsModal(${subscriptionId})">
+                <div class="table-row"
+                     data-order-id="${orderId}"
+                     data-product-id="${order.product_id || ''}"
+                     data-email="${customerEmail}"
+                     onclick="openRenewalsModalFromRow(this)">
                     <div class="table-cell">${orderId}</div>
                     <div class="table-cell" data-label="Имя">${customerName}</div>
                     <div class="table-cell" data-label="Email">${customerEmail}</div>
@@ -670,7 +671,7 @@
                         </span>
                     </div>
                 </div>
-            `;
+                `;
             }).join('');
             
             container.innerHTML = html;
@@ -760,18 +761,39 @@
         });
 
         // Renewals Modal
-        function openRenewalsModal(subscriptionId) {
+        function openRenewalsModalFromRow(rowEl) {
+            if (!rowEl) return;
+            
+            const orderId = rowEl.getAttribute('data-order-id') || '';
+            const productId = rowEl.getAttribute('data-product-id') || '';
+            const email = rowEl.getAttribute('data-email') || '';
+            
+            openRenewalsModal(orderId, productId, email);
+        }
+
+        function openRenewalsModal(orderId, productId, email) {
             const modal = document.getElementById('renewalsModal');
             const content = document.getElementById('modalContent');
             
             modal.classList.add('active');
             content.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка продлений...</div>';
             
-            fetch(`/api/admin/subscription/${subscriptionId}/renewals?password=${encodeURIComponent(adminPassword)}`)
+            const params = new URLSearchParams({
+                order_id: orderId || '',
+                product_id: productId || '',
+                email: email || '',
+                password: adminPassword || ''
+            });
+            
+            fetch(`/api/admin/order-renewals?${params.toString()}`)
                 .then(res => {
                     if (res.status === 401) {
                         content.innerHTML = '<div class="error">Неверный пароль</div>';
                         throw new Error('Unauthorized');
+                    }
+                    if (res.status === 404) {
+                        content.innerHTML = '<div class="error">Для этого заказа подписка/продления не найдены</div>';
+                        throw new Error('Subscription not found');
                     }
                     return res.json();
                 })
