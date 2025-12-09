@@ -131,6 +131,10 @@
         .table-cell {
             font-size: 0.9rem;
             color: var(--gray-700);
+            /* Делаем красивую ровную таблицу: одна строка, обрезка и многоточие */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .order-id {
@@ -230,6 +234,11 @@
                 content: attr(data-label) ": ";
                 font-weight: 600;
                 color: var(--gray-600);
+            }
+
+            /* На мобильных даём тексту переноситься, чтобы не было горизонтального скролла */
+            .table-cell {
+                white-space: normal;
             }
         }
         
