@@ -887,8 +887,8 @@ app.get('/api/admin/subscription/:subscriptionId/renewals', (req, res) => {
     });
 });
 
-// Admin API - Get renewals by order info (order_id + product_id + email)
-// Это более надёжный способ, чтобы из таблицы заказов всегда открывался правильный клиент
+// Admin API - Get renewals by order info (order_id + email, МОЖЕТ БЫТЬ НЕСКОЛЬКО ТОВАРОВ В ОДНОМ ЗАКАЗЕ)
+// ВАЖНО: возвращаем ВСЕ подписки по этому заказу (CapCut, ChatGPT и т.д.), а не только первый товар
 app.get('/api/admin/order-renewals', (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || '2728276';
     const providedPassword = req.query.password || req.headers['x-admin-password'];
@@ -898,7 +898,7 @@ app.get('/api/admin/order-renewals', (req, res) => {
     }
     
     const orderId = req.query.order_id || null;
-    const productId = req.query.product_id ? parseInt(req.query.product_id) : null;
+    const productId = req.query.product_id ? parseInt(req.query.product_id) : null; // сейчас используется только как подсказка (можно игнорировать)
     const emailRaw = req.query.email || '';
     const email = emailRaw.toLowerCase().trim();
     
@@ -906,76 +906,75 @@ app.get('/api/admin/order-renewals', (req, res) => {
         return res.status(400).json({ error: 'Missing required params: order_id and email' });
     }
     
-    // Сначала пытаемся найти подписку по тройке (order_id + product_id + email)
-    // Если product_id не передан, ищем только по order_id + email
-    let query = `
+    // ВАЖНО: ищем ВСЕ подписки по этому заказу и email (одна подписка на каждый товар в корзине)
+    db.all(`
         SELECT * 
         FROM subscriptions 
         WHERE order_id = ? 
           AND LOWER(customer_email) = LOWER(?)
-    `;
-    const params = [orderId, email];
-    
-    if (productId) {
-        query += ' AND product_id = ?';
-        params.push(productId);
-    }
-    
-    query += ' ORDER BY id DESC LIMIT 1';
-    
-    db.get(query, params, (err, subscription) => {
+        ORDER BY id ASC
+    `, [orderId, email], (err, subscriptions) => {
         if (err) {
-            console.error('❌ Error finding subscription by order info:', err);
+            console.error('❌ Error finding subscriptions by order info:', err);
             return res.status(500).json({ error: 'Database error', details: err.message });
         }
         
-        if (!subscription) {
-            console.warn('⚠️ Subscription not found for order:', { orderId, productId, email });
-            return res.status(404).json({ error: 'Subscription not found for this order' });
+        if (!subscriptions || subscriptions.length === 0) {
+            console.warn('⚠️ Subscriptions not found for order:', { orderId, productId, email });
+            return res.status(404).json({ error: 'Subscriptions not found for this order' });
         }
         
-        const subscriptionId = subscription.id;
+        const subscriptionIds = subscriptions.map(s => s.id);
         
-        // Получаем все напоминания для этой подписки
+        // Получаем все напоминания для ВСЕХ подписок этого заказа
         db.all(`
             SELECT 
                 r.id as reminder_id,
+                r.subscription_id,
                 r.reminder_date,
                 r.reminder_type,
                 r.is_sent
             FROM reminders r
-            WHERE r.subscription_id = ?
+            WHERE r.subscription_id IN (${subscriptionIds.map(() => '?').join(',')})
             ORDER BY r.reminder_date ASC
-        `, [subscriptionId], (err2, reminders) => {
+        `, subscriptionIds, (err2, reminders) => {
             if (err2) {
-                console.error('❌ Error reading reminders for subscription:', err2);
+                console.error('❌ Error reading reminders for subscriptions:', err2);
                 return res.status(500).json({ error: 'Database error', details: err2.message });
             }
             
-            const formattedReminders = reminders.map(r => ({
-                reminder_id: r.reminder_id,
-                reminder_date: r.reminder_date,
-                reminder_date_formatted: r.reminder_date ? new Date(r.reminder_date).toLocaleDateString('ru-RU') : '',
-                reminder_time: r.reminder_date ? new Date(r.reminder_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '',
-                reminder_type: r.reminder_type,
-                is_sent: r.is_sent === 1
+            // Группируем напоминания по subscription_id
+            const remindersBySub = new Map();
+            (reminders || []).forEach(r => {
+                const list = remindersBySub.get(r.subscription_id) || [];
+                list.push({
+                    reminder_id: r.reminder_id,
+                    reminder_date: r.reminder_date,
+                    reminder_date_formatted: r.reminder_date ? new Date(r.reminder_date).toLocaleDateString('ru-RU') : '',
+                    reminder_time: r.reminder_date ? new Date(r.reminder_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '',
+                    reminder_type: r.reminder_type,
+                    is_sent: r.is_sent === 1
+                });
+                remindersBySub.set(r.subscription_id, list);
+            });
+            
+            const formattedSubscriptions = subscriptions.map(sub => ({
+                id: sub.id,
+                customer_name: sub.customer_name,
+                customer_email: sub.customer_email,
+                product_name: sub.product_name,
+                product_id: sub.product_id,
+                subscription_months: sub.subscription_months,
+                purchase_date: sub.purchase_date,
+                purchase_date_formatted: sub.purchase_date ? new Date(sub.purchase_date).toLocaleDateString('ru-RU') : '',
+                order_id: sub.order_id,
+                amount: sub.amount,
+                reminders: remindersBySub.get(sub.id) || []
             }));
             
             res.json({
                 success: true,
-                subscription: {
-                    id: subscription.id,
-                    customer_name: subscription.customer_name,
-                    customer_email: subscription.customer_email,
-                    product_name: subscription.product_name,
-                    product_id: subscription.product_id,
-                    subscription_months: subscription.subscription_months,
-                    purchase_date: subscription.purchase_date,
-                    purchase_date_formatted: subscription.purchase_date ? new Date(subscription.purchase_date).toLocaleDateString('ru-RU') : '',
-                    order_id: subscription.order_id,
-                    amount: subscription.amount
-                },
-                reminders: formattedReminders
+                subscriptions: formattedSubscriptions
             });
         });
     });

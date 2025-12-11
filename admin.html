@@ -798,8 +798,16 @@
                     return res.json();
                 })
                 .then(data => {
-                    if (data.success) {
-                        displayRenewalsModal(data.subscription, data.reminders);
+                    if (data.success && Array.isArray(data.subscriptions)) {
+                        displayRenewalsModalForSubscriptions(data.subscriptions);
+                    } else if (data.success && data.subscription) {
+                        // старый формат на всякий случай
+                        displayRenewalsModalForSubscriptions([{
+                            ...data.subscription,
+                            reminders: data.reminders || []
+                        }]);
+                    } else {
+                        content.innerHTML = '<div class="error">Продления не найдены</div>';
                     }
                 })
                 .catch(err => {
@@ -814,75 +822,94 @@
             document.getElementById('renewalsModal').classList.remove('active');
         }
 
-        function displayRenewalsModal(subscription, reminders) {
+        function displayRenewalsModalForSubscriptions(subscriptions) {
             const content = document.getElementById('modalContent');
             
-            const subscriptionInfo = `
-                <div class="subscription-info">
-                    <div class="subscription-info-item">
-                        <span class="subscription-info-label">Клиент:</span> ${subscription.customer_name}
-                    </div>
-                    <div class="subscription-info-item">
-                        <span class="subscription-info-label">Email:</span> ${subscription.customer_email}
-                    </div>
-                    <div class="subscription-info-item">
-                        <span class="subscription-info-label">Товар:</span> ${subscription.product_name}
-                    </div>
-                    <div class="subscription-info-item">
-                        <span class="subscription-info-label">Срок подписки:</span> ${subscription.subscription_months} ${subscription.subscription_months === 1 ? 'месяц' : subscription.subscription_months >= 2 && subscription.subscription_months <= 4 ? 'месяца' : 'месяцев'}
-                    </div>
-                    <div class="subscription-info-item">
-                        <span class="subscription-info-label">Дата покупки:</span> ${subscription.purchase_date_formatted}
-                    </div>
-                    <div class="subscription-info-item">
-                        <span class="subscription-info-label">Order ID:</span> ${subscription.order_id || 'Не указан'}
-                    </div>
-                </div>
-            `;
-            
-            if (reminders.length === 0) {
-                content.innerHTML = subscriptionInfo + '<div class="empty">Продления не найдены</div>';
+            if (!subscriptions || subscriptions.length === 0) {
+                content.innerHTML = '<div class="empty">Продления не найдены</div>';
                 return;
             }
             
-            const renewalsList = reminders.map(reminder => {
-                const reminderDate = new Date(reminder.reminder_date);
-                const dateStr = reminderDate.toISOString().split('T')[0];
-                // Используем UTC время для консистентности
-                const hours = String(reminderDate.getUTCHours()).padStart(2, '0');
-                const minutes = String(reminderDate.getUTCMinutes()).padStart(2, '0');
-                const timeStr = `${hours}:${minutes}`;
-                
-                const reminderTypeText = reminder.reminder_type === 'expiry' ? 'Окончание подписки' :
-                    reminder.reminder_type.startsWith('renewal_') ? 
-                    `Продление (${reminder.reminder_type.match(/renewal_(\d+)months/)?.[1] || '?'} мес. осталось)` :
-                    reminder.reminder_type;
-                
-                return `
-                    <div class="renewal-item-edit" data-reminder-id="${reminder.reminder_id}">
-                        <div class="renewal-item-info">
-                            <div style="font-weight: 600;">${reminderTypeText}</div>
-                            <div style="font-size: 0.85rem; color: var(--gray-600);">
-                                ${reminder.is_sent ? '✓ Отправлено' : '⏳ Ожидает отправки'}
-                            </div>
-                        </div>
-                        <div class="renewal-item-date">
-                            <input type="date" value="${dateStr}" id="date_${reminder.reminder_id}" onchange="updateReminderDate(${reminder.reminder_id})">
-                            <input type="time" value="${timeStr}" id="time_${reminder.reminder_id}" onchange="updateReminderDate(${reminder.reminder_id})">
-                        </div>
-                        <button class="save-btn" id="save_${reminder.reminder_id}" onclick="saveReminderDate(${reminder.reminder_id})" style="display: none;">
-                            Сохранить
-                        </button>
+            // Берём общую информацию по заказу из первой подписки
+            const base = subscriptions[0];
+            const header = `
+                <div class="subscription-info" style="margin-bottom: var(--space-6);">
+                    <div class="subscription-info-item">
+                        <span class="subscription-info-label">Клиент:</span> ${base.customer_name}
                     </div>
-                `;
-            }).join('');
-            
-            content.innerHTML = subscriptionInfo + `
-                <h3 style="margin-bottom: var(--space-4); font-size: 1.2rem; font-weight: 600;">Продления (${reminders.length})</h3>
-                <div class="renewals-list">
-                    ${renewalsList}
+                    <div class="subscription-info-item">
+                        <span class="subscription-info-label">Email:</span> ${base.customer_email}
+                    </div>
+                    <div class="subscription-info-item">
+                        <span class="subscription-info-label">Order ID:</span> ${base.order_id || 'Не указан'}
+                    </div>
                 </div>
             `;
+            
+            const blocks = subscriptions.map((subscription, index) => {
+                const title = `
+                    <h3 style="margin-bottom: var(--space-3); font-size: 1.1rem; font-weight: 600;">
+                        Товар ${subscriptions.length > 1 ? index + 1 : ''}: ${subscription.product_name}
+                    </h3>
+                `;
+                
+                const subInfo = `
+                    <div class="subscription-info" style="margin-bottom: var(--space-4);">
+                        <div class="subscription-info-item">
+                            <span class="subscription-info-label">Срок подписки:</span> ${subscription.subscription_months} ${subscription.subscription_months === 1 ? 'месяц' : subscription.subscription_months >= 2 && subscription.subscription_months <= 4 ? 'месяца' : 'месяцев'}
+                        </div>
+                        <div class="subscription-info-item">
+                            <span class="subscription-info-label">Дата покупки:</span> ${subscription.purchase_date_formatted}
+                        </div>
+                    </div>
+                `;
+                
+                const reminders = subscription.reminders || [];
+                
+                if (reminders.length === 0) {
+                    return title + subInfo + '<div class="empty">Продления не найдены</div>';
+                }
+                
+                const renewalsList = reminders.map(reminder => {
+                    const reminderDate = new Date(reminder.reminder_date);
+                    const dateStr = reminderDate.toISOString().split('T')[0];
+                    const hours = String(reminderDate.getUTCHours()).padStart(2, '0');
+                    const minutes = String(reminderDate.getUTCMinutes()).padStart(2, '0');
+                    const timeStr = `${hours}:${minutes}`;
+                    
+                    const reminderTypeText = reminder.reminder_type === 'expiry' ? 'Окончание подписки' :
+                        reminder.reminder_type.startsWith('renewal_') ? 
+                        `Продление (${reminder.reminder_type.match(/renewal_(\d+)months/)?.[1] || '?'} мес. осталось)` :
+                        reminder.reminder_type;
+                    
+                    return `
+                        <div class="renewal-item-edit" data-reminder-id="${reminder.reminder_id}">
+                            <div class="renewal-item-info">
+                                <div style="font-weight: 600;">${reminderTypeText}</div>
+                                <div style="font-size: 0.85rem; color: var(--gray-600);">
+                                    ${reminder.is_sent ? '✓ Отправлено' : '⏳ Ожидает отправки'}
+                                </div>
+                            </div>
+                            <div class="renewal-item-date">
+                                <input type="date" value="${dateStr}" id="date_${reminder.reminder_id}" onchange="updateReminderDate(${reminder.reminder_id})">
+                                <input type="time" value="${timeStr}" id="time_${reminder.reminder_id}" onchange="updateReminderDate(${reminder.reminder_id})">
+                            </div>
+                            <button class="save-btn" id="save_${reminder.reminder_id}" onclick="saveReminderDate(${reminder.reminder_id})" style="display: none;">
+                                Сохранить
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                
+                return title + subInfo + `
+                    <h4 style="margin-bottom: var(--space-3); font-size: 1rem; font-weight: 600;">Продления (${reminders.length})</h4>
+                    <div class="renewals-list" style="margin-bottom: var(--space-6);">
+                        ${renewalsList}
+                    </div>
+                `;
+            }).join('<hr style="margin: var(--space-4) 0; border: none; border-top: 1px solid var(--gray-200);">');
+            
+            content.innerHTML = header + blocks;
         }
 
         let pendingUpdates = {};
