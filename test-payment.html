@@ -225,7 +225,7 @@
                 
                 <div class="phone-section">
                     <div class="phone-label">Номер телефона для перевода:</div>
-                    <div class="phone-number" id="phoneNumber">010298762</div>
+                    <div class="phone-number" id="phoneNumber">098765435</div>
                     <button class="copy-btn" onclick="copyPhoneNumber()">
                         <i class="fas fa-copy"></i> Копировать номер
                     </button>
@@ -312,7 +312,7 @@
         })();
         
         function copyPhoneNumber() {
-            const phoneNumber = '010298762';
+            const phoneNumber = '098765435';
             navigator.clipboard.writeText(phoneNumber).then(() => {
                 const btn = event.target.closest('.copy-btn');
                 const originalText = btn.innerHTML;
