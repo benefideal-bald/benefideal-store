@@ -409,39 +409,81 @@
                 return;
             }
             
+            // Вспомогательная функция для правильных окончаний
+            function formatCount(count, one, few, many) {
+                if (count === 1) return `${count} ${one}`;
+                if (count >= 2 && count <= 4) return `${count} ${few}`;
+                return `${count} ${many}`;
+            }
+            
             container.innerHTML = calendar.map(day => {
-                // Если в этот день только окончания подписки (expiry), показываем "Конец подписки"
                 let countLabel = '';
                 const expiryCount = day.expiry_count || 0;
                 const renewalCount = day.renewal_count || 0;
                 
                 if (renewalCount === 0 && expiryCount > 0) {
                     // Только окончания
-                    countLabel = expiryCount === 1 ? 'Конец подписки' : `${expiryCount} окончаний подписки`;
+                    countLabel = expiryCount === 1 ? 'Конец подписки' : formatCount(expiryCount, 'окончание подписки', 'окончания подписки', 'окончаний подписки');
+                } else if (renewalCount > 0 && expiryCount === 0) {
+                    // Только продления
+                    countLabel = formatCount(renewalCount, 'продление', 'продления', 'продлений');
                 } else {
-                    // Есть хотя бы одно продление
-                    countLabel = `${day.count} продлений`;
+                    // И продления, и окончания
+                    const renewText = formatCount(renewalCount, 'продление', 'продления', 'продлений');
+                    const expiryText = formatCount(expiryCount, 'окончание', 'окончания', 'окончаний');
+                    countLabel = `${renewText}, ${expiryText}`;
                 }
                 
-                return `
+            return `
                 <div class="calendar-day">
                     <div class="calendar-day-header">
                         <div class="calendar-day-date">${day.date_formatted}</div>
                         <div class="calendar-day-count">${countLabel}</div>
                     </div>
                     <div class="calendar-day-renewals">
-                        ${day.renewals.map(renewal => `
+                        ${day.renewals.map(renewal => {
+                            // Текст для конкретного события: продление или конец подписки
+                            let typeText = '';
+                            if (renewal.reminder_type === 'expiry') {
+                                typeText = 'Конец подписки';
+                            } else if (renewal.reminder_type && renewal.reminder_type.startsWith('renewal_')) {
+                                const match = renewal.reminder_type.match(/renewal_(\d+)months/);
+                                const monthsLeft = match ? parseInt(match[1], 10) : null;
+                                if (monthsLeft !== null) {
+                                    let monthsText = '';
+                                    if (monthsLeft === 1) {
+                                        monthsText = '1 месяц до окончания';
+                                    } else if (monthsLeft >= 2 && monthsLeft <= 4) {
+                                        monthsText = `${monthsLeft} месяца до окончания`;
+                                    } else {
+                                        monthsText = `${monthsLeft} месяцев до окончания`;
+                                    }
+                                    typeText = `Продлить подписку — ${monthsText}`;
+                                } else {
+                                    typeText = 'Продление подписки';
+                                }
+                            } else {
+                                typeText = 'Продление подписки';
+                            }
+                            
+                            const typeColor = renewal.reminder_type === 'expiry' ? 'var(--error)' : 'var(--primary)';
+                            
+                            return `
                             <div class="calendar-renewal-item">
                                 <div>
                                     <div style="font-weight: 600;">${renewal.customer_name}</div>
                                     <div style="font-size: 0.85rem; color: var(--gray-600);">${renewal.customer_email}</div>
+                                    <div style="font-size: 0.85rem; color: ${typeColor}; margin-top: 4px;">
+                                        ${typeText}
+                                    </div>
                                 </div>
                                 <div style="text-align: right;">
                                     <div style="font-weight: 500;">${renewal.product_name}</div>
                                     <div style="font-size: 0.85rem; color: var(--primary);">${renewal.reminder_time}</div>
                                 </div>
                             </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>
                 </div>
                 `;
