@@ -605,11 +605,13 @@ app.get('/api/admin/sync-orders-to-db', (req, res) => {
     
     // Process each order
     const processOrder = (order, callback) => {
-        // Check if subscription already exists
+        // Check if subscription already exists.
+        // Важно: учитываем и срок подписки, иначе два одинаковых товара
+        // в одном заказе, но на разный срок, сольются в одну подписку.
         db.get(`
             SELECT id FROM subscriptions 
-            WHERE order_id = ? AND product_id = ? AND customer_email = ?
-        `, [order.order_id, order.product_id, order.customer_email], (err, existing) => {
+            WHERE order_id = ? AND product_id = ? AND customer_email = ? AND subscription_months = ?
+        `, [order.order_id, order.product_id, order.customer_email, order.subscription_months], (err, existing) => {
             if (err) {
                 console.error(`❌ Error checking subscription for order ${order.order_id}:`, err);
                 errors.push(`Order ${order.order_id}: ${err.message}`);
@@ -1326,11 +1328,15 @@ app.post('/api/subscription', (req, res) => {
         });
     };
     
-    // Проверяем, существует ли уже такая подписка в БД
+    // Проверяем, существует ли уже такая ПОДПИСКА в БД.
+    // Раньше проверяли только по order_id + product_id + email,
+    // из‑за чего в одном заказе нельзя было иметь два одинаковых товара
+    // с разным сроком (например, ChatGPT 1 месяц и 3 месяца) — вторая подписка
+    // считалась дубликатом. Теперь учитываем и subscription_months.
     db.get(`
         SELECT id FROM subscriptions 
-        WHERE order_id = ? AND product_id = ? AND customer_email = ?
-    `, [orderData.order_id, productId, normalizedEmail], (err, existing) => {
+        WHERE order_id = ? AND product_id = ? AND customer_email = ? AND subscription_months = ?
+    `, [orderData.order_id, productId, normalizedEmail, months], (err, existing) => {
         if (err) {
             console.error('❌ Error checking subscription in DB (will still return success to client):', err);
             return finishResponse();
@@ -2635,11 +2641,23 @@ function addOrderToJSON(order) {
     try {
         const existingOrders = readOrdersFromJSON();
         
-        // Проверяем, нет ли уже такого заказа (по order_id и product_id)
-        const isDuplicate = existingOrders.some(existing => 
-            existing.order_id === order.order_id && 
+        // Проверяем, нет ли уже такого ТОВАРА в рамках ЭТОГО заказа:
+        // Раньше мы считали дубликатом любую запись с тем же order_id + product_id + email.
+        // Это ломало случаи, когда в ОДНОМ заказе несколько одинаковых товаров,
+        // но на разный срок (например, ChatGPT на 1 месяц и ChatGPT на 3 месяца).
+        //
+        // Теперь считаем дубликатом только запись, у которой совпадают:
+        // - order_id
+        // - product_id
+        // - customer_email
+        // - subscription_months
+        // - amount (на всякий случай, чтобы не терять разные цены)
+        const isDuplicate = existingOrders.some(existing =>
+            existing.order_id === order.order_id &&
             existing.product_id === order.product_id &&
-            existing.customer_email === order.customer_email
+            existing.customer_email === order.customer_email &&
+            existing.subscription_months === order.subscription_months &&
+            existing.amount === order.amount
         );
         
         if (isDuplicate) {
