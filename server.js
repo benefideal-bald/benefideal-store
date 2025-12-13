@@ -200,6 +200,16 @@ db.serialize(() => {
         }
     });
     
+    // Add json_order_id column (уникальный ID строки из orders.json),
+    // чтобы можно было однозначно связать каждую подписку с КОНКРЕТНЫМ товаром из JSON.
+    db.run(`ALTER TABLE subscriptions ADD COLUMN json_order_id INTEGER`, (err) => {
+        if (err && !err.message.includes('duplicate column')) {
+            console.error('Error adding json_order_id column:', err);
+        } else if (!err) {
+            console.log('✅ Added json_order_id column to subscriptions table');
+        }
+    });
+    
     db.run(`
         CREATE TABLE IF NOT EXISTS reminders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -605,13 +615,12 @@ app.get('/api/admin/sync-orders-to-db', (req, res) => {
     
     // Process each order
     const processOrder = (order, callback) => {
-        // Check if subscription already exists.
-        // Важно: учитываем и срок подписки, иначе два одинаковых товара
-        // в одном заказе, но на разный срок, сольются в одну подписку.
+        // Проверяем, была ли уже создана подписка ИМЕННО для этой строки JSON.
+        // Для этого используем json_order_id, который равен order.id из orders.json.
         db.get(`
             SELECT id FROM subscriptions 
-            WHERE order_id = ? AND product_id = ? AND customer_email = ? AND subscription_months = ?
-        `, [order.order_id, order.product_id, order.customer_email, order.subscription_months], (err, existing) => {
+            WHERE json_order_id = ?
+        `, [order.id], (err, existing) => {
             if (err) {
                 console.error(`❌ Error checking subscription for order ${order.order_id}:`, err);
                 errors.push(`Order ${order.order_id}: ${err.message}`);
@@ -637,10 +646,21 @@ app.get('/api/admin/sync-orders-to-db', (req, res) => {
                 return;
             }
             
-            // Create new subscription
+            // Create new subscription, ЖЁСТКО привязанную к order.id через json_order_id
             const stmt = db.prepare(`
-                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                INSERT INTO subscriptions (
+                    customer_name,
+                    customer_email,
+                    product_name,
+                    product_id,
+                    subscription_months,
+                    purchase_date,
+                    order_id,
+                    amount,
+                    is_active,
+                    json_order_id
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
             `);
             
             stmt.run([
@@ -651,7 +671,8 @@ app.get('/api/admin/sync-orders-to-db', (req, res) => {
                 order.subscription_months,
                 order.purchase_date,
                 order.order_id,
-                order.amount
+                order.amount,
+                order.id
             ], function(insertErr) {
                 if (insertErr) {
                     console.error(`❌ Error inserting subscription for order ${order.order_id}:`, insertErr);
@@ -1054,10 +1075,12 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
             }
             
             const order = jsonOrders[processed];
+            // Для автосинхронизации календаря тоже используем json_order_id,
+            // чтобы на одну строку orders.json всегда была одна подписка.
             db.get(`
                 SELECT id FROM subscriptions 
-                WHERE order_id = ? AND product_id = ? AND customer_email = ? AND subscription_months = ?
-            `, [order.order_id, order.product_id, order.customer_email, order.subscription_months], (err, existing) => {
+                WHERE json_order_id = ?
+            `, [order.id], (err, existing) => {
                 if (err) {
                     console.error(`Error checking subscription:`, err);
                     processed++;
@@ -1069,8 +1092,19 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
                     // Need to create subscription
                     needsSync = true;
                     const stmt = db.prepare(`
-                        INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                        INSERT INTO subscriptions (
+                            customer_name,
+                            customer_email,
+                            product_name,
+                            product_id,
+                            subscription_months,
+                            purchase_date,
+                            order_id,
+                            amount,
+                            is_active,
+                            json_order_id
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
                     `);
                     
                     stmt.run([
@@ -1081,7 +1115,8 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
                         order.subscription_months,
                         order.purchase_date,
                         order.order_id,
-                        order.amount
+                        order.amount,
+                        order.id
                     ], function(insertErr) {
                         if (!insertErr) {
                             const subscriptionId = this.lastID;
@@ -1315,91 +1350,68 @@ app.post('/api/subscription', (req, res) => {
     console.log(`   Order ID: ${order_id || 'NULL'}`);
     
     // Дополнительно сохраняем/синхронизируем заказ в БД (subscriptions + reminders),
-    // чтобы система напоминаний в Telegram видела то же, что и админ-панель
+    // чтобы система напоминаний в Telegram видела то же, что и админ-панель.
+    // НОВОЕ ПРАВИЛО:
+    //   - КАЖДЫЙ товар в заказе (каждая строка в orders.json) = отдельная подписка.
+    //   - Даже если товар полностью совпадает (тот же продукт, тот же срок, та же цена).
+    // Поэтому здесь мы БОЛЬШЕ НЕ ИЩЕМ дубликаты в subscriptions, а всегда создаём новую запись,
+    // привязывая её к конкретной строке orders.json через json_order_id.
     const months = item.months || 1;
     const productId = item.id;
     
-    const finishResponse = () => {
-        // Отправляем ответ клиенту, даже если синхронизация в БД прошла с ошибками
-        res.json({ 
-            success: true, 
-            subscription_id: subscriptionId,
-            message: `Order saved for ${normalizedEmail}`
-        });
-    };
+    const stmt = db.prepare(`
+        INSERT INTO subscriptions (
+            customer_name,
+            customer_email,
+            product_name,
+            product_id,
+            subscription_months,
+            purchase_date,
+            order_id,
+            amount,
+            is_active,
+            json_order_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+    `);
     
-    // Проверяем, существует ли уже такая ПОДПИСКА в БД.
-    // Раньше проверяли только по order_id + product_id + email,
-    // из‑за чего в одном заказе нельзя было иметь два одинаковых товара
-    // с разным сроком (например, ChatGPT 1 месяц и 3 месяца) — вторая подписка
-    // считалась дубликатом. Теперь учитываем и subscription_months.
-    db.get(`
-        SELECT id FROM subscriptions 
-        WHERE order_id = ? AND product_id = ? AND customer_email = ? AND subscription_months = ?
-    `, [orderData.order_id, productId, normalizedEmail, months], (err, existing) => {
-        if (err) {
-            console.error('❌ Error checking subscription in DB (will still return success to client):', err);
-            return finishResponse();
+    stmt.run([
+        orderData.customer_name,
+        orderData.customer_email,
+        orderData.product_name,
+        orderData.product_id,
+        orderData.subscription_months,
+        orderData.purchase_date,
+        orderData.order_id,
+        orderData.amount,
+        orderData.id
+    ], function(insertErr) {
+        if (insertErr) {
+            console.error('❌ Error inserting subscription into DB (will still return success to client):', insertErr);
+            stmt.finalize();
+            
+            return res.json({ 
+                success: true, 
+                subscription_id: subscriptionId,
+                message: `Order saved for ${normalizedEmail}, but DB sync failed`
+            });
         }
         
-        if (existing) {
-            console.log(`⚠️ Subscription already exists in DB for order ${orderData.order_id} (product ${productId}), ID: ${existing.id}`);
-            
-            // Проверяем, есть ли напоминания; если нет — создаём
-            db.get(`
-                SELECT COUNT(*) as count FROM reminders WHERE subscription_id = ?
-            `, [existing.id], (err2, reminderCheck) => {
-                if (err2) {
-                    console.error('❌ Error checking reminders in DB:', err2);
-                    return finishResponse();
-                }
-                
-                if (!reminderCheck || reminderCheck.count === 0) {
-                    console.log(`ℹ️ No reminders found for subscription ${existing.id}, generating...`);
-                    generateReminders(existing.id, productId, months, purchaseDate);
-                } else {
-                    console.log(`✅ Reminders already exist for subscription ${existing.id}, count=${reminderCheck.count}`);
-                }
-                
-                return finishResponse();
-            });
-        } else {
-            // Создаём новую подписку в БД
-            console.log(`ℹ️ Creating new subscription in DB for order ${orderData.order_id} (product ${productId})`);
-            
-            const stmt = db.prepare(`
-                INSERT INTO subscriptions (customer_name, customer_email, product_name, product_id, subscription_months, purchase_date, order_id, amount, is_active)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-            `);
-            
-            stmt.run([
-                orderData.customer_name,
-                orderData.customer_email,
-                orderData.product_name,
-                orderData.product_id,
-                orderData.subscription_months,
-                orderData.purchase_date,
-                orderData.order_id,
-                orderData.amount
-            ], function(insertErr) {
-                if (insertErr) {
-                    console.error('❌ Error inserting subscription into DB (will still return success to client):', insertErr);
-                    stmt.finalize();
-                    return finishResponse();
-                }
-                
-                const dbSubscriptionId = this.lastID;
-                console.log(`✅ Created subscription ID ${dbSubscriptionId} in DB for order ${orderData.order_id}`);
-                
-                // Генерируем напоминания на основе данных подписки
-                if (productId === 1 || productId === 3 || productId === 7) {
-                    generateReminders(dbSubscriptionId, productId, months, new Date(orderData.purchase_date));
-                }
-                
-                stmt.finalize();
-                return finishResponse();
-            });
+        const dbSubscriptionId = this.lastID;
+        console.log(`✅ Created subscription ID ${dbSubscriptionId} in DB for order ${orderData.order_id}, json_order_id=${orderData.id}`);
+        
+        // Генерируем напоминания на основе данных подписки
+        if (productId === 1 || productId === 3 || productId === 7) {
+            generateReminders(dbSubscriptionId, productId, months, new Date(orderData.purchase_date));
         }
+        
+        stmt.finalize();
+        
+        return res.json({ 
+            success: true, 
+            subscription_id: dbSubscriptionId,
+            message: `Order saved and subscription created for ${normalizedEmail}`
+        });
     });
 });
 
@@ -2641,29 +2653,11 @@ function addOrderToJSON(order) {
     try {
         const existingOrders = readOrdersFromJSON();
         
-        // Проверяем, нет ли уже такого ТОВАРА в рамках ЭТОГО заказа:
-        // Раньше мы считали дубликатом любую запись с тем же order_id + product_id + email.
-        // Это ломало случаи, когда в ОДНОМ заказе несколько одинаковых товаров,
-        // но на разный срок (например, ChatGPT на 1 месяц и ChatGPT на 3 месяца).
-        //
-        // Теперь считаем дубликатом только запись, у которой совпадают:
-        // - order_id
-        // - product_id
-        // - customer_email
-        // - subscription_months
-        // - amount (на всякий случай, чтобы не терять разные цены)
-        const isDuplicate = existingOrders.some(existing =>
-            existing.order_id === order.order_id &&
-            existing.product_id === order.product_id &&
-            existing.customer_email === order.customer_email &&
-            existing.subscription_months === order.subscription_months &&
-            existing.amount === order.amount
-        );
-        
-        if (isDuplicate) {
-            console.log(`⚠️ Order ${order.order_id} (product ${order.product_id}) already exists in JSON, skipping`);
-            return false;
-        }
+        // ВАЖНО:
+        //  - Раньше мы пытались искать «дубликаты» по order_id + product_id + email + срок + цена
+        //  - Теперь по бизнес‑логике КАЖДЫЙ товар в заказе = ОТДЕЛЬНАЯ подписка,
+        //    даже если два товара полностью одинаковые.
+        // Поэтому здесь НИЧЕГО не считаем дубликатом, просто добавляем новую запись.
         
         existingOrders.push(order);
         return writeOrdersToJSON(existingOrders);
