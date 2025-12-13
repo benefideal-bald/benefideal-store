@@ -1056,8 +1056,8 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
             const order = jsonOrders[processed];
             db.get(`
                 SELECT id FROM subscriptions 
-                WHERE order_id = ? AND product_id = ? AND customer_email = ?
-            `, [order.order_id, order.product_id, order.customer_email], (err, existing) => {
+                WHERE order_id = ? AND product_id = ? AND customer_email = ? AND subscription_months = ?
+            `, [order.order_id, order.product_id, order.customer_email, order.subscription_months], (err, existing) => {
                 if (err) {
                     console.error(`Error checking subscription:`, err);
                     processed++;
