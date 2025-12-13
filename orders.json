@@ -6,32 +6,24 @@
     "product_name": "Adobe Creative Cloud",
     "product_id": 3,
     "subscription_months": 1,
-<<<<<<< HEAD
     "purchase_date": "2025-12-13T16:43:35.782Z",
     "order_id": "ORDER_1765644215506_28q8nfxl2",
-=======
-    "purchase_date": "2025-12-13T16:43:35.000Z",
-    "order_id": "ORDER_1765643010000_maxim",
->>>>>>> 0bf5818 (Добавлен пропавший заказ Максима на Adobe (1 и 3 месяца))
     "amount": 3400,
     "is_active": 1
   },
   {
-<<<<<<< HEAD
-=======
     "id": 11,
     "customer_name": "Максим",
     "customer_email": "jewishassnigga@gmail.com",
     "product_name": "Adobe Creative Cloud",
     "product_id": 3,
     "subscription_months": 3,
-    "purchase_date": "2025-12-13T16:43:35.000Z",
-    "order_id": "ORDER_1765643010000_maxim",
+    "purchase_date": "2025-12-13T16:43:35.782Z",
+    "order_id": "ORDER_1765644215506_28q8nfxl2",
     "amount": 9400,
     "is_active": 1
   },
   {
->>>>>>> 0bf5818 (Добавлен пропавший заказ Максима на Adobe (1 и 3 месяца))
     "id": 8,
     "customer_name": "олег",
     "customer_email": "olegacceptislam2@gmail.com",
