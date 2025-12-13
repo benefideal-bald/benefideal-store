@@ -655,6 +655,7 @@
                 <div class="table-row"
                      data-order-id="${orderId}"
                      data-product-id="${order.product_id || ''}"
+                     data-json-order-id="${order.id || ''}"
                      data-email="${customerEmail}"
                      onclick="openRenewalsModalFromRow(this)">
                     <div class="table-cell">${orderId}</div>
@@ -767,11 +768,12 @@
             const orderId = rowEl.getAttribute('data-order-id') || '';
             const productId = rowEl.getAttribute('data-product-id') || '';
             const email = rowEl.getAttribute('data-email') || '';
+            const jsonOrderId = rowEl.getAttribute('data-json-order-id') || '';
             
-            openRenewalsModal(orderId, productId, email);
+            openRenewalsModal(orderId, productId, email, jsonOrderId);
         }
 
-        function openRenewalsModal(orderId, productId, email) {
+        function openRenewalsModal(orderId, productId, email, jsonOrderId) {
             const modal = document.getElementById('renewalsModal');
             const content = document.getElementById('modalContent');
             
@@ -782,6 +784,7 @@
                 order_id: orderId || '',
                 product_id: productId || '',
                 email: email || '',
+                json_order_id: jsonOrderId || '',
                 password: adminPassword || ''
             });
             

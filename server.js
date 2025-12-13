@@ -910,8 +910,12 @@ app.get('/api/admin/subscription/:subscriptionId/renewals', (req, res) => {
     });
 });
 
-// Admin API - Get renewals by order info (order_id + email, МОЖЕТ БЫТЬ НЕСКОЛЬКО ТОВАРОВ В ОДНОМ ЗАКАЗЕ)
-// ВАЖНО: возвращаем ВСЕ подписки по этому заказу (CapCut, ChatGPT и т.д.), а не только первый товар
+// Admin API - Get renewals by order info.
+// РАНЬШЕ:
+//   - по order_id + email возвращались ВСЕ товары из заказа.
+// ТЕПЕРЬ (по запросу): 
+//   - если передан json_order_id (ID строки в orders.json), отдаем продления ТОЛЬКО по КОНКРЕТНОМУ товару;
+//   - иначе сохраняем старое поведение (все товары по order_id + email).
 app.get('/api/admin/order-renewals', (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || '2728276';
     const providedPassword = req.query.password || req.headers['x-admin-password'];
@@ -921,7 +925,8 @@ app.get('/api/admin/order-renewals', (req, res) => {
     }
     
     const orderId = req.query.order_id || null;
-    const productId = req.query.product_id ? parseInt(req.query.product_id) : null; // сейчас используется только как подсказка (можно игнорировать)
+    const productId = req.query.product_id ? parseInt(req.query.product_id) : null;
+    const jsonOrderId = req.query.json_order_id ? parseInt(req.query.json_order_id) : null;
     const emailRaw = req.query.email || '';
     const email = emailRaw.toLowerCase().trim();
     
@@ -929,14 +934,22 @@ app.get('/api/admin/order-renewals', (req, res) => {
         return res.status(400).json({ error: 'Missing required params: order_id and email' });
     }
     
-    // ВАЖНО: ищем ВСЕ подписки по этому заказу и email (одна подписка на каждый товар в корзине)
+    // Если пришёл json_order_id — ищем только подписку(и), которые относятся
+    // к КОНКРЕТНОЙ строке orders.json (каждый товар в заказе).
+    const whereClause = jsonOrderId && !isNaN(jsonOrderId)
+        ? 'json_order_id = ?'
+        : 'order_id = ? AND LOWER(customer_email) = LOWER(?)';
+    
+    const params = jsonOrderId && !isNaN(jsonOrderId)
+        ? [jsonOrderId]
+        : [orderId, email];
+    
     db.all(`
         SELECT * 
         FROM subscriptions 
-        WHERE order_id = ? 
-          AND LOWER(customer_email) = LOWER(?)
+        WHERE ${whereClause}
         ORDER BY id ASC
-    `, [orderId, email], (err, subscriptions) => {
+    `, params, (err, subscriptions) => {
         if (err) {
             console.error('❌ Error finding subscriptions by order info:', err);
             return res.status(500).json({ error: 'Database error', details: err.message });
