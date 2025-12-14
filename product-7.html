@@ -156,6 +156,15 @@
                 <!-- Cart items will be added here -->
             </div>
             <div class="cart-footer">
+                <div class="cart-promo">
+                    <div class="cart-promo-label">Промокод</div>
+                    <div class="cart-promo-row">
+                        <input type="text" id="cartPromoCode" class="cart-promo-input" placeholder="Введите промокод">
+                        <button type="button" class="cart-promo-apply" onclick="applyCartPromoCode()">
+                            Применить
+                        </button>
+                    </div>
+                </div>
                 <div class="cart-total">
                     <span>Итого: <span id="cartTotal">0</span> ₽</span>
                 </div>

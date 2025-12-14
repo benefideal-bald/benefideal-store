@@ -753,6 +753,23 @@ function checkout() {
 // Make checkout available globally
 window.checkout = checkout;
 
+// Apply promo code in cart (заглушка, логика скидки потом)
+function applyCartPromoCode() {
+    const input = document.getElementById('cartPromoCode');
+    if (!input) return;
+    
+    const code = input.value.trim();
+    if (!code) {
+        showNotification('Введите промокод', 'error');
+        return;
+    }
+    
+    // Здесь позже можно добавить реальную проверку и применение скидки
+    showNotification(`Промокод "${code}" пока работает как заглушка`, 'info');
+}
+
+window.applyCartPromoCode = applyCartPromoCode;
+
 // Show notification from cart
 function showCartNotification(message) {
     // Remove existing cart notification

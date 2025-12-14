@@ -1479,6 +1479,61 @@ body.cart-open {
     justify-content: center;
 }
 
+/* Поле промокода в корзине */
+.cart-promo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.cart-promo-label {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+}
+
+.cart-promo-row {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.cart-promo-input {
+    flex: 1;
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--gray-200);
+    background: var(--white);
+    font-size: 0.95rem;
+    outline: none;
+    transition: all var(--transition-fast);
+}
+
+.cart-promo-input:focus {
+    border-color: transparent;
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
+}
+
+.cart-promo-apply {
+    padding: 0 1.2rem;
+    border-radius: 12px;
+    border: none;
+    background: var(--gradient-primary);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.cart-promo-apply:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+}
+
 /* ========================================
    PRODUCT PAGES
    ======================================== */
