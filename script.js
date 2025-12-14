@@ -31,6 +31,7 @@ const subscriptions = [
 
 // Cart data
 let cart = [];
+let appliedPromoCode = null;
 
 // Load cart from localStorage
 function loadCart() {
@@ -753,7 +754,7 @@ function checkout() {
 // Make checkout available globally
 window.checkout = checkout;
 
-// Apply promo code in cart (заглушка, логика скидки потом)
+// Apply promo code in cart
 function applyCartPromoCode() {
     const input = document.getElementById('cartPromoCode');
     if (!input) return;
@@ -764,8 +765,30 @@ function applyCartPromoCode() {
         return;
     }
     
-    // Здесь позже можно добавить реальную проверку и применение скидки
-    showNotification(`Промокод "${code}" пока работает как заглушка`, 'info');
+    if (appliedPromoCode && appliedPromoCode === code) {
+        showNotification(`Промокод "${code}" уже применён`, 'info');
+        return;
+    }
+    
+    if (code === '2026') {
+        if (cart.length === 0) {
+            showNotification('Корзина пуста', 'error');
+            return;
+        }
+        
+        // Применяем скидку 10% к текущим ценам в корзине
+        cart = cart.map(item => ({
+            ...item,
+            price: Math.round(item.price * 0.9)
+        }));
+        
+        appliedPromoCode = code;
+        saveCart();
+        updateCartUI();
+        showNotification('Промокод 2026 применён: скидка 10%', 'success');
+    } else {
+        showNotification(`Промокод "${code}" не найден`, 'error');
+    }
 }
 
 window.applyCartPromoCode = applyCartPromoCode;
