@@ -38,7 +38,10 @@ function loadCart() {
     try {
         const savedCart = localStorage.getItem('benefideal_cart');
         const cartTimestamp = localStorage.getItem('benefideal_cart_timestamp');
-        const savedPromo = localStorage.getItem('benefideal_promo_code');
+        
+        // При новом открытии страницы промокод не восстанавливаем
+        // и сразу чистим возможный старый ключ из localStorage
+        localStorage.removeItem('benefideal_promo_code');
         
         if (savedCart && cartTimestamp) {
             const now = new Date().getTime();
@@ -49,7 +52,6 @@ function loadCart() {
             if (daysDiff > 30) {
                 localStorage.removeItem('benefideal_cart');
                 localStorage.removeItem('benefideal_cart_timestamp');
-                localStorage.removeItem('benefideal_promo_code');
                 cart = [];
                 appliedPromoCode = null;
                 updateCartUI();
@@ -60,7 +62,15 @@ function loadCart() {
             const parsedCart = JSON.parse(savedCart);
             if (Array.isArray(parsedCart)) {
                 cart = parsedCart;
-                appliedPromoCode = savedPromo || null;
+                // Всегда сбрасываем промокод при новом открытии страницы
+                appliedPromoCode = null;
+                
+                // Восстанавливаем базовые цены без скидок
+                cart = cart.map(item => ({
+                    ...item,
+                    price: calculatePrice(item.id, item.months)
+                }));
+                
                 console.log('Cart loaded:', cart.length, 'items');
                 updateCartUI();
                 
@@ -80,7 +90,7 @@ function loadCart() {
             if (cart.length === 0) {
                 cart = [];
             }
-            appliedPromoCode = savedPromo || null;
+            appliedPromoCode = null;
             updateCartUI();
         }
     } catch (e) {
@@ -100,11 +110,8 @@ function saveCart() {
         const now = new Date().getTime();
         localStorage.setItem('benefideal_cart', JSON.stringify(cart));
         localStorage.setItem('benefideal_cart_timestamp', now.toString());
-        if (appliedPromoCode) {
-            localStorage.setItem('benefideal_promo_code', appliedPromoCode);
-        } else {
-            localStorage.removeItem('benefideal_promo_code');
-        }
+        // Промокод между сессиями не сохраняем
+        localStorage.removeItem('benefideal_promo_code');
         console.log('Cart saved:', cart.length, 'items');
     } catch (e) {
         console.error('Error saving cart to localStorage:', e);
