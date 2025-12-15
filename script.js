@@ -517,9 +517,15 @@ function addToCart(subscriptionId) {
         
         // Calculate price based on duration
         const calculatedPrice = calculatePrice(subscriptionId, selectedDuration);
-        const finalPrice = (appliedPromoCode === '2026')
-            ? Math.round(calculatedPrice * 0.9)
-            : calculatedPrice;
+        
+        // Учитываем активный промокод для новых товаров
+        let discountMultiplier = 1;
+        if (appliedPromoCode === '2026') {
+            discountMultiplier = 0.9;   // 10% скидка
+        } else if (appliedPromoCode === 'jedetestelislam') {
+            discountMultiplier = 0.1;   // 90% скидка
+        }
+        const finalPrice = Math.round(calculatedPrice * discountMultiplier);
         
         // Check if item with same ID and duration exists
         const existingItem = cart.find(item => item.id === subscriptionId && item.months === selectedDuration);
@@ -787,25 +793,37 @@ function applyCartPromoCode() {
         return;
     }
     
+    let discountMultiplier = null;
+    let successMessage = '';
+    
     if (code === '2026') {
-        if (cart.length === 0) {
-            showNotification('Корзина пуста', 'error');
-            return;
-        }
-        
-        // Применяем скидку 10% к текущим ценам в корзине
-        cart = cart.map(item => ({
-            ...item,
-            price: Math.round(item.price * 0.9)
-        }));
-        
-        appliedPromoCode = code;
-        saveCart();
-        updateCartUI();
-        showNotification('Промокод 2026 применён: скидка 10%', 'success');
-    } else {
-        showNotification(`Промокод "${code}" не найден`, 'error');
+        discountMultiplier = 0.9; // 10% скидка
+        successMessage = 'Промокод 2026 применён: скидка 10%';
+    } else if (code === 'jedetestelislam') {
+        discountMultiplier = 0.1; // 90% скидка
+        successMessage = 'Промокод jedetestelislam применён: скидка 90%';
     }
+    
+    if (!discountMultiplier) {
+        showNotification(`Промокод "${code}" не найден`, 'error');
+        return;
+    }
+    
+    if (cart.length === 0) {
+        showNotification('Корзина пуста', 'error');
+        return;
+    }
+    
+    // Применяем скидку ко всем товарам в текущей корзине
+    cart = cart.map(item => ({
+        ...item,
+        price: Math.round(item.price * discountMultiplier)
+    }));
+    
+    appliedPromoCode = code;
+    saveCart();
+    updateCartUI();
+    showNotification(successMessage, 'success');
 }
 
 window.applyCartPromoCode = applyCartPromoCode;
