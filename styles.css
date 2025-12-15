@@ -357,18 +357,6 @@ body {
     pointer-events: none;
 }
 
-.promo-banner::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -10px;
-    height: 18px;
-    background: radial-gradient(ellipse at top, rgba(15, 23, 42, 0.4), transparent 70%);
-    opacity: 0.9;
-    pointer-events: none;
-}
-
 .promo-banner-inner {
     display: flex;
     align-items: center;
