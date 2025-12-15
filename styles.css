@@ -338,6 +338,66 @@ body {
     transition: all var(--transition-base);
 }
 
+/* Promo banner under header */
+.promo-banner {
+    position: relative;
+    margin-top: 64px; /* компенсируем фиксированный хедер */
+    z-index: 900;
+    background: linear-gradient(90deg, #f97316 0%, #ec4899 50%, #6366f1 100%);
+    box-shadow: var(--shadow-md);
+}
+
+.promo-banner-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    padding: var(--space-3) 0;
+    color: #ffffff;
+    text-align: center;
+    font-size: 0.95rem;
+}
+
+.promo-badge {
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    padding: 0.3rem 0.8rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.promo-text strong {
+    font-weight: 800;
+}
+
+.promo-code {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem 0.8rem;
+    margin-left: 0.4rem;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #7c3aed;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+@media (max-width: 768px) {
+    .promo-banner {
+        margin-top: 56px;
+    }
+    
+    .promo-banner-inner {
+        flex-direction: column;
+        gap: var(--space-2);
+        padding: var(--space-2) 0;
+        font-size: 0.85rem;
+    }
+}
+
 .header.scrolled {
     background: #ffffff;
     box-shadow: var(--shadow-sm);
