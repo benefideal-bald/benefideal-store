@@ -343,8 +343,30 @@ body {
     position: relative;
     margin-top: 64px; /* компенсируем фиксированный хедер */
     z-index: 900;
-    background: linear-gradient(90deg, #f97316 0%, #ec4899 50%, #6366f1 100%);
-    box-shadow: var(--shadow-md);
+    background: linear-gradient(110deg, #7f1d1d 0%, #b91c1c 25%, #be185d 55%, #4c1d95 85%, #1e3a8a 100%);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.45);
+    overflow: hidden;
+}
+
+.promo-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.22), transparent 45%, transparent 55%, rgba(15, 23, 42, 0.4));
+    mix-blend-mode: screen;
+    pointer-events: none;
+}
+
+.promo-banner::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -10px;
+    height: 18px;
+    background: radial-gradient(ellipse at top, rgba(15, 23, 42, 0.4), transparent 70%);
+    opacity: 0.9;
+    pointer-events: none;
 }
 
 .promo-banner-inner {
@@ -356,6 +378,8 @@ body {
     color: #ffffff;
     text-align: center;
     font-size: 0.95rem;
+    position: relative;
+    z-index: 1;
 }
 
 .promo-badge {
@@ -366,6 +390,13 @@ body {
     font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
+}
+
+.promo-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    line-height: 1.2;
 }
 
 .promo-text strong {
@@ -383,6 +414,7 @@ body {
     color: #7c3aed;
     font-weight: 700;
     letter-spacing: 0.08em;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
 }
 
 @media (max-width: 768px) {
