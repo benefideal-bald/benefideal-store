@@ -38,6 +38,7 @@ function loadCart() {
     try {
         const savedCart = localStorage.getItem('benefideal_cart');
         const cartTimestamp = localStorage.getItem('benefideal_cart_timestamp');
+        const savedPromo = localStorage.getItem('benefideal_promo_code');
         
         if (savedCart && cartTimestamp) {
             const now = new Date().getTime();
@@ -48,7 +49,9 @@ function loadCart() {
             if (daysDiff > 30) {
                 localStorage.removeItem('benefideal_cart');
                 localStorage.removeItem('benefideal_cart_timestamp');
+                localStorage.removeItem('benefideal_promo_code');
                 cart = [];
+                appliedPromoCode = null;
                 updateCartUI();
                 showNotification('Корзина была очищена (срок хранения 30 дней истек)', 'info');
                 return;
@@ -57,6 +60,7 @@ function loadCart() {
             const parsedCart = JSON.parse(savedCart);
             if (Array.isArray(parsedCart)) {
                 cart = parsedCart;
+                appliedPromoCode = savedPromo || null;
                 console.log('Cart loaded:', cart.length, 'items');
                 updateCartUI();
                 
@@ -68,6 +72,7 @@ function loadCart() {
             } else {
                 console.error('Invalid cart data in localStorage');
                 cart = [];
+                appliedPromoCode = null;
                 updateCartUI();
             }
         } else {
@@ -75,11 +80,13 @@ function loadCart() {
             if (cart.length === 0) {
                 cart = [];
             }
+            appliedPromoCode = savedPromo || null;
             updateCartUI();
         }
     } catch (e) {
         console.error('Error loading cart from localStorage:', e);
         cart = [];
+        appliedPromoCode = null;
         updateCartUI();
     }
 }
@@ -93,6 +100,11 @@ function saveCart() {
         const now = new Date().getTime();
         localStorage.setItem('benefideal_cart', JSON.stringify(cart));
         localStorage.setItem('benefideal_cart_timestamp', now.toString());
+        if (appliedPromoCode) {
+            localStorage.setItem('benefideal_promo_code', appliedPromoCode);
+        } else {
+            localStorage.removeItem('benefideal_promo_code');
+        }
         console.log('Cart saved:', cart.length, 'items');
     } catch (e) {
         console.error('Error saving cart to localStorage:', e);
@@ -505,6 +517,9 @@ function addToCart(subscriptionId) {
         
         // Calculate price based on duration
         const calculatedPrice = calculatePrice(subscriptionId, selectedDuration);
+        const finalPrice = (appliedPromoCode === '2026')
+            ? Math.round(calculatedPrice * 0.9)
+            : calculatedPrice;
         
         // Check if item with same ID and duration exists
         const existingItem = cart.find(item => item.id === subscriptionId && item.months === selectedDuration);
@@ -513,7 +528,7 @@ function addToCart(subscriptionId) {
         } else {
             cart.push({
                 ...subscription,
-                price: calculatedPrice,
+                price: finalPrice,
                 quantity: 1,
                 months: selectedDuration
             });
@@ -731,6 +746,8 @@ function clearCartAfterPurchase() {
     cart = [];
     localStorage.removeItem('benefideal_cart');
     localStorage.removeItem('benefideal_cart_timestamp');
+    appliedPromoCode = null;
+    localStorage.removeItem('benefideal_promo_code');
     updateCartUI();
     showNotification('Заказ успешно оформлен! Корзина очищена.', 'success');
 }
