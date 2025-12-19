@@ -1617,6 +1617,50 @@ body.cart-open {
     transform: translateY(-1px);
 }
 
+/* Оптимизация промокода для мобильных устройств */
+@media (max-width: 768px) {
+    .cart-footer {
+        padding: var(--space-4);
+    }
+    
+    .cart-promo {
+        margin-bottom: var(--space-3);
+        gap: var(--space-1);
+    }
+    
+    .cart-promo-label {
+        font-size: 0.85rem;
+    }
+    
+    .cart-promo-row {
+        display: flex;
+        gap: var(--space-2);
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .cart-promo-input {
+        flex: 1;
+        min-width: 0; /* Позволяет input сжиматься */
+        padding: 0.7rem 0.8rem;
+        font-size: 0.9rem;
+        border-radius: 10px;
+    }
+    
+    .cart-promo-apply {
+        padding: 0.7rem 1rem;
+        font-size: 0.85rem;
+        border-radius: 10px;
+        flex-shrink: 0; /* Кнопка не сжимается */
+        min-width: fit-content;
+    }
+    
+    .cart-total {
+        font-size: 1.3rem;
+        margin-bottom: var(--space-3);
+    }
+}
+
 /* ========================================
    PRODUCT PAGES
    ======================================== */
