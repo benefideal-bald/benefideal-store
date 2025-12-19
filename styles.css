@@ -343,18 +343,165 @@ body {
     position: relative;
     margin-top: 64px; /* компенсируем фиксированный хедер */
     z-index: 900;
-    background: linear-gradient(110deg, #7f1d1d 0%, #b91c1c 25%, #be185d 55%, #4c1d95 85%, #1e3a8a 100%);
+    background: linear-gradient(110deg, #dc2626 0%, #ef4444 20%, #f59e0b 40%, #10b981 60%, #059669 80%, #dc2626 100%);
     box-shadow: 0 10px 25px rgba(15, 23, 42, 0.45);
-    overflow: hidden;
+    overflow: visible; /* Изменено для видимости гирлянды */
+    padding: 8px; /* Отступ для гирлянды */
 }
 
+/* 3D Гирлянда вокруг баннера - верхняя линия */
 .promo-banner::before {
     content: '';
     position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.22), transparent 45%, transparent 55%, rgba(15, 23, 42, 0.4));
-    mix-blend-mode: screen;
+    top: -6px;
+    left: 0;
+    right: 0;
+    height: 12px;
+    background: 
+        radial-gradient(circle at 0%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 4%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 8%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 12%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 16%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 20%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 24%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 28%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 32%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 36%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 40%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 44%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 48%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 52%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 56%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 60%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 64%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 68%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 72%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 76%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 80%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 84%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 88%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 92%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 96%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 100%, #ff6b6b 4px, transparent 4px);
+    background-size: 4% 100%;
+    background-repeat: repeat-x;
+    animation: garlandBlink 1.5s ease-in-out infinite;
     pointer-events: none;
+    z-index: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Боковые элементы гирлянды */
+.garland-left,
+.garland-right {
+    position: absolute;
+    width: 12px;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.garland-left {
+    left: -6px;
+    background: 
+        radial-gradient(circle at 50% 0%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 50% 10%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 50% 20%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 50% 30%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 50% 40%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 50% 50%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 50% 60%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 50% 70%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 50% 80%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 50% 90%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 50% 100%, #ff6b6b 4px, transparent 4px);
+    background-size: 100% 10%;
+    animation: garlandBlink 1.5s ease-in-out infinite 0.3s;
+    filter: drop-shadow(-2px 0 4px rgba(0, 0, 0, 0.3));
+}
+
+.garland-right {
+    right: -6px;
+    background: 
+        radial-gradient(circle at 50% 0%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 50% 10%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 50% 20%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 50% 30%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 50% 40%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 50% 50%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 50% 60%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 50% 70%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 50% 80%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 50% 90%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 50% 100%, #4ecdc4 4px, transparent 4px);
+    background-size: 100% 10%;
+    animation: garlandBlink 1.5s ease-in-out infinite 0.6s;
+    filter: drop-shadow(2px 0 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Анимация мигания гирлянды */
+@keyframes garlandBlink {
+    0%, 100% {
+        opacity: 1;
+        filter: brightness(1) drop-shadow(0 0 4px rgba(255, 215, 0, 0.9));
+    }
+    25% {
+        opacity: 0.5;
+        filter: brightness(0.6) drop-shadow(0 0 2px rgba(255, 107, 107, 0.7));
+    }
+    50% {
+        opacity: 1;
+        filter: brightness(1.3) drop-shadow(0 0 6px rgba(78, 205, 196, 1));
+    }
+    75% {
+        opacity: 0.7;
+        filter: brightness(0.8) drop-shadow(0 0 3px rgba(255, 215, 0, 0.8));
+    }
+}
+
+/* 3D Гирлянда вокруг баннера - нижняя линия */
+.promo-banner::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    right: 0;
+    height: 12px;
+    background: 
+        radial-gradient(circle at 0%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 4%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 8%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 12%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 16%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 20%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 24%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 28%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 32%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 36%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 40%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 44%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 48%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 52%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 56%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 60%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 64%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 68%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 72%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 76%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 80%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 84%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 88%, #4ecdc4 4px, transparent 4px),
+        radial-gradient(circle at 92%, #ffd700 4px, transparent 4px),
+        radial-gradient(circle at 96%, #ff6b6b 4px, transparent 4px),
+        radial-gradient(circle at 100%, #4ecdc4 4px, transparent 4px);
+    background-size: 4% 100%;
+    background-repeat: repeat-x;
+    animation: garlandBlink 1.5s ease-in-out infinite 0.75s;
+    pointer-events: none;
+    z-index: 1;
+    filter: drop-shadow(0 -2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .promo-banner-inner {
@@ -362,62 +509,103 @@ body {
     align-items: center;
     justify-content: center;
     gap: var(--space-4);
-    padding: 0 var(--space-6);
+    padding: var(--space-4) var(--space-6);
     min-height: 56px; /* высота примерно как у хедера */
     color: #ffffff;
     text-align: center;
     font-size: 0.95rem;
     position: relative;
-    z-index: 1;
+    z-index: 2;
+    background: linear-gradient(110deg, #dc2626 0%, #ef4444 20%, #f59e0b 40%, #10b981 60%, #059669 80%, #dc2626 100%);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    line-height: 1.5; /* Улучшенное вертикальное выравнивание */
+}
+
+.promo-banner-inner > * {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
 }
 
 .promo-badge {
     display: inline-flex;
     align-items: center;
-    background: rgba(255, 255, 255, 0.16);
+    justify-content: center;
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 999px;
-    padding: 0.3rem 0.8rem;
-    font-weight: 600;
+    padding: 0.35rem 0.9rem;
+    font-weight: 700;
     font-size: 0.85rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .promo-text {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.4rem;
-    line-height: 1.2;
+    line-height: 1.4;
+    vertical-align: middle;
 }
 
 .promo-text strong {
     font-weight: 800;
+    color: #ffd700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .promo-code {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.3rem 0.8rem;
+    padding: 0.35rem 0.9rem;
     margin-left: 0.4rem;
     border-radius: 999px;
-    background: #ffffff;
-    color: #7c3aed;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #dc2626;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+    animation: codePulse 2s ease-in-out infinite;
+}
+
+/* Анимация пульсации промокода */
+@keyframes codePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 6px 16px rgba(255, 215, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
 }
 
 @media (max-width: 768px) {
     .promo-banner {
         margin-top: 56px;
+        padding: 6px;
     }
     
     .promo-banner-inner {
         flex-direction: column;
         gap: var(--space-2);
-        padding: var(--space-2) var(--space-4);
+        padding: var(--space-3) var(--space-4);
         font-size: 0.85rem;
+        min-height: auto;
+    }
+    
+    .promo-badge,
+    .promo-code {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.7rem;
     }
 }
 
