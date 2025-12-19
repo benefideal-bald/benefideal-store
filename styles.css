@@ -345,7 +345,7 @@ body {
     z-index: 900;
     background: linear-gradient(110deg, #991b1b 0%, #b91c1c 20%, #92400e 40%, #065f46 60%, #047857 80%, #991b1b 100%);
     box-shadow: 0 10px 25px rgba(15, 23, 42, 0.45);
-    overflow: visible; /* Изменено для видимости гирлянды */
+    overflow: hidden; /* Скрываем гирлянду, которая выходит за границы */
     padding: 6px; /* Отступ для гирлянды */
 }
 
@@ -353,10 +353,10 @@ body {
 .promo-banner::before {
     content: '';
     position: absolute;
-    top: -5px;
-    left: -5px;
-    right: -5px;
-    bottom: -5px;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
     border-radius: 10px;
     background: 
         /* Верхняя гирлянда */
@@ -383,9 +383,9 @@ body {
 .promo-banner::after {
     content: '';
     position: absolute;
-    bottom: -5px;
-    left: -5px;
-    right: -5px;
+    bottom: 0;
+    left: 0;
+    right: 0;
     height: 3px;
     background: 
         repeating-linear-gradient(
@@ -408,9 +408,9 @@ body {
 /* Боковые элементы гирлянды - левая */
 .garland-left {
     position: absolute;
-    left: -5px;
-    top: -5px;
-    bottom: -5px;
+    left: 0;
+    top: 0;
+    bottom: 0;
     width: 3px;
     background: 
         repeating-linear-gradient(
@@ -433,9 +433,9 @@ body {
 /* Боковые элементы гирлянды - правая */
 .garland-right {
     position: absolute;
-    right: -5px;
-    top: -5px;
-    bottom: -5px;
+    right: 0;
+    top: 0;
+    bottom: 0;
     width: 3px;
     background: 
         repeating-linear-gradient(
