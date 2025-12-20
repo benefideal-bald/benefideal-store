@@ -5098,8 +5098,21 @@ app.post('/api/track-visit', async (req, res) => {
         // Get country
         const country = await getCountryFromIP(ip);
         
+        // Format time in Moscow timezone
+        const now = new Date();
+        const moscowTime = new Intl.DateTimeFormat('ru-RU', {
+            timeZone: 'Europe/Moscow',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        }).format(now);
+        
         // Format Telegram message
-        const message = `👤 Новый посетитель\n\n📄 Страница: ${pageName}\n🌍 Страна: ${country}\n🕐 Время: ${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`;
+        const message = `👤 Новый посетитель\n\n📄 Страница: ${pageName}\n🌍 Страна: ${country}\n🕐 Время (МСК): ${moscowTime}`;
         
         // Send to Telegram (async, don't wait)
         sendTelegramMessage(message)
