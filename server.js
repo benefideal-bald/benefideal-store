@@ -16,6 +16,12 @@ const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = '8460494431:AAFOmSEPrzQ1j4_L-4vBG_c38iL2rfx41us';
 const CHAT_ID = 8334777900;
 
+// Health check endpoint - FIRST, before any middleware or DB initialization
+// This ensures Railway/Render healthcheck passes immediately
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -163,20 +169,6 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
                 console.warn(`⚠️ Ошибка при проверке reviews.json при старте: ${error.message}`);
             }
         }
-    }
-});
-
-// Health check endpoint for Render (prevents timeout, but won't prevent sleep on free plan)
-// This endpoint should be available immediately, even before DB initialization
-app.get('/health', (req, res) => {
-    try {
-        res.status(200).json({ 
-            status: 'ok', 
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime()
-        });
-    } catch (error) {
-        res.status(500).json({ status: 'error', message: error.message });
     }
 });
 
