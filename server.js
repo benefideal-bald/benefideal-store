@@ -19,7 +19,13 @@ const CHAT_ID = 8334777900;
 // Health check endpoint - FIRST, before any middleware or DB initialization
 // This ensures Railway/Render healthcheck passes immediately
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok' });
+    try {
+        console.log('Healthcheck called');
+        res.status(200).json({ status: 'ok' });
+    } catch (error) {
+        console.error('Healthcheck error:', error);
+        res.status(500).json({ status: 'error', message: error.message });
+    }
 });
 
 // Middleware
@@ -114,20 +120,9 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
             }
         });
         
-        // Проверяем количество отзывов сразу после открытия базы
-        db.get(`SELECT COUNT(*) as count FROM reviews`, [], (err, countRow) => {
-            if (!err && countRow) {
-                console.log(`📊 Reviews count on startup: ${countRow.count}`);
-                if (countRow.count > 0) {
-                    console.log(`✅ Reviews database is NOT empty - all reviews are safe!`);
-                } else {
-                    console.warn(`⚠️ Reviews database is EMPTY - this might be a new database or reviews were lost!`);
-                }
-            }
-        });
-        
-        // Проверяем количество отзывов при старте
-        console.log(`🔍 Проверка отзывов при старте сервера...`);
+        // Проверяем количество отзывов при старте (после создания таблиц)
+        // НЕ проверяем здесь, так как таблицы еще не созданы
+        console.log(`🔍 База данных открыта, таблицы будут созданы в db.serialize()`);
         
         // КРИТИЧЕСКИ ВАЖНО: При первом запуске копируем начальные отзывы из Git в data/reviews.json
         // Это гарантирует, что все отзывы будут в одном месте (data/reviews.json) и не потеряются
@@ -5165,35 +5160,42 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Error handler for unhandled errors
-process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
-    // Don't exit on Render - let it restart
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // Don't exit on Render - let it restart
-});
-
-// Start server - bind to 0.0.0.0 for Render
+// Start server FIRST - before any DB operations that might block
+// This ensures healthcheck works even if DB has issues
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`Database path: ${dbPath}`);
+    console.log(`Healthcheck: http://0.0.0.0:${PORT}/health`);
     console.log('Subscription reminders scheduled');
     console.log('API routes available:');
+    console.log('  GET  /health - Health check');
     console.log('  GET  /api/test - Test endpoint');
     console.log('  GET  /api/reviews - Get reviews');
     console.log('  POST /api/review - Submit review');
     console.log('  POST /api/review/verify - Verify review eligibility');
     console.log('  POST /api/subscription - Submit subscription');
-    console.log('  GET  /api/debug/sync-reviews-from-root - Sync reviews from root to data/');
 }).on('error', (err) => {
-    console.error('❌ Server error:', err);
+    console.error('❌ Server listen error:', err);
     if (err.code === 'EADDRINUSE') {
         console.error(`Port ${PORT} is already in use`);
     }
+    process.exit(1);
+});
+
+// Error handler for unhandled errors (after server starts)
+process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught Exception:', err);
+    console.error('Stack:', err.stack);
+    // Don't exit - let Railway restart
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    if (reason && reason.stack) {
+        console.error('Stack:', reason.stack);
+    }
+    // Don't exit - let Railway restart
 });
 
 // Test payment endpoint (СБП с загрузкой чека)
