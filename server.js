@@ -167,8 +167,17 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
 });
 
 // Health check endpoint for Render (prevents timeout, but won't prevent sleep on free plan)
+// This endpoint should be available immediately, even before DB initialization
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+    try {
+        res.status(200).json({ 
+            status: 'ok', 
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime()
+        });
+    } catch (error) {
+        res.status(500).json({ status: 'error', message: error.message });
+    }
 });
 
 // API routes must come BEFORE static files
