@@ -124,6 +124,10 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
         // НЕ проверяем здесь, так как таблицы еще не созданы
         console.log(`🔍 База данных открыта, таблицы будут созданы в db.serialize()`);
         
+        // КРИТИЧЕСКИ ВАЖНО: Вызываем serialize ТОЛЬКО после успешного открытия базы данных
+        // Это гарантирует, что база данных полностью готова перед созданием таблиц
+        initializeDatabaseTables();
+        
         // КРИТИЧЕСКИ ВАЖНО: При первом запуске копируем начальные отзывы из Git в data/reviews.json
         // Это гарантирует, что все отзывы будут в одном месте (data/reviews.json) и не потеряются
         if (fs.existsSync(reviewsJsonPathGit)) {
@@ -170,8 +174,9 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
 // API routes must come BEFORE static files
 // This ensures /api/* requests are handled by Express, not static files
 
-// Create tables
-db.serialize(() => {
+// Create tables function - вызывается только после успешного открытия базы данных
+function initializeDatabaseTables() {
+    db.serialize(() => {
     db.run(`
         CREATE TABLE IF NOT EXISTS subscriptions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -428,7 +433,8 @@ db.serialize(() => {
             });
         }
     });
-});
+    });
+}
 
 // API endpoint to receive subscription purchases
 // КРИТИЧЕСКИ ВАЖНО: Этот endpoint должен ВСЕГДА сохранять заказы в базу данных!
