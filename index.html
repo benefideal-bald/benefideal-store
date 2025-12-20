@@ -304,6 +304,32 @@
 
     <script src="script.js?v=4.0"></script>
     <script>
+        // Track page visit
+        (function() {
+            try {
+                const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
+                    ? 'http://localhost:3000/api/track-visit'
+                    : `${window.location.origin}/api/track-visit`;
+                
+                fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        page: window.location.pathname + window.location.search
+                    })
+                }).catch(err => {
+                    // Silently fail - don't interrupt user experience
+                    console.log('Visit tracking failed:', err);
+                });
+            } catch (e) {
+                // Silently fail
+                console.log('Visit tracking error:', e);
+            }
+        })();
+    </script>
+    <script>
         // Мобильное меню - открытие/закрытие
         function toggleMobileMenu() {
             const mobileMenu = document.getElementById('mobileMenu');

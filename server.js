@@ -549,9 +549,9 @@ app.get('/api/admin/orders', (req, res) => {
             console.log(`📋 Linked ${subMap.size} subscriptions to orders by order_id+product_id+email`);
         } else {
             console.log('⚠️ No subscriptions found in database for linking (this is ok for very fresh installs)');
-        }
-        
-        // Форматируем ВСЕ заказы из JSON (без ограничений, показываем все!)
+    }
+    
+    // Форматируем ВСЕ заказы из JSON (без ограничений, показываем все!)
         const formattedOrders = jsonOrders.map(order => {
             const emailKey = (order.customer_email || '').toLowerCase().trim();
             const mapKey = `${order.order_id || 'null'}_${order.product_id || 'null'}_${emailKey}`;
@@ -560,34 +560,34 @@ app.get('/api/admin/orders', (req, res) => {
             return {
                 id: order.id, // ID заказа в JSON (для отладки/таблицы)
                 subscription_id: subscriptionId, // ID подписки в БД (для продлений)
-                order_id: order.order_id,
-                customer_name: order.customer_name,
-                customer_email: order.customer_email,
-                product_name: order.product_name,
-                product_id: order.product_id,
-                subscription_months: order.subscription_months,
-                purchase_date: order.purchase_date,
-                purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
-                purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
-                amount: order.amount,
-                amount_formatted: order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
-                duration_text: order.subscription_months === 1 ? '1 месяц' : 
-                              order.subscription_months >= 2 && order.subscription_months <= 4 ? `${order.subscription_months} месяца` : 
-                              `${order.subscription_months} месяцев`,
-                is_active: order.is_active || 1
+        order_id: order.order_id,
+        customer_name: order.customer_name,
+        customer_email: order.customer_email,
+        product_name: order.product_name,
+        product_id: order.product_id,
+        subscription_months: order.subscription_months,
+        purchase_date: order.purchase_date,
+        purchase_time: order.purchase_date ? new Date(order.purchase_date).toLocaleTimeString('ru-RU') : '',
+        purchase_date_formatted: order.purchase_date ? new Date(order.purchase_date).toLocaleDateString('ru-RU') : '',
+        amount: order.amount,
+        amount_formatted: order.amount ? order.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽',
+        duration_text: order.subscription_months === 1 ? '1 месяц' : 
+                      order.subscription_months >= 2 && order.subscription_months <= 4 ? `${order.subscription_months} месяца` : 
+                      `${order.subscription_months} месяцев`,
+        is_active: order.is_active || 1
             };
         });
-        
-        // Сортируем по дате (новые первыми)
-        formattedOrders.sort((a, b) => {
-            const timeA = new Date(a.purchase_date || 0).getTime();
-            const timeB = new Date(b.purchase_date || 0).getTime();
-            return timeB - timeA;
-        });
-        
+    
+    // Сортируем по дате (новые первыми)
+    formattedOrders.sort((a, b) => {
+        const timeA = new Date(a.purchase_date || 0).getTime();
+        const timeB = new Date(b.purchase_date || 0).getTime();
+        return timeB - timeA;
+    });
+    
         console.log(`✅ Returning ${formattedOrders.length} orders from JSON with linked subscriptions`);
-        
-        res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
+    
+    res.json({ success: true, orders: formattedOrders, total: formattedOrders.length });
     });
 });
 
@@ -1178,7 +1178,7 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
         const pastStart = new Date(today);
         pastStart.setFullYear(pastStart.getFullYear() - 1);
         const pastStartStr = pastStart.toISOString().split('T')[0];
-        
+    
         const isPast = mode === 'past';
         
         // Условия для выборки
@@ -1190,63 +1190,63 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
         const paramsForDetailed = isPast ? [todayStr, pastStartStr] : [todayStr];
         
         // Get grouped counts per day (мы не используем rows напрямую, но запрос полезен для планов расширения и логов)
+    db.all(`
+        SELECT 
+            DATE(r.reminder_date) as reminder_day,
+                COUNT(*) as count
+        FROM reminders r
+        INNER JOIN subscriptions s ON r.subscription_id = s.id
+            WHERE ${whereClause}
+        GROUP BY DATE(r.reminder_date)
+            ORDER BY reminder_day ${isPast ? 'DESC' : 'ASC'}
+        `, paramsForGrouped, (err) => {
+        if (err) {
+                console.error('Error fetching renewals calendar (grouped):', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
+            // Get detailed data for each date
         db.all(`
             SELECT 
                 DATE(r.reminder_date) as reminder_day,
-                COUNT(*) as count
+                r.id as reminder_id,
+                r.reminder_date,
+                r.reminder_type,
+                r.is_sent,
+                s.id as subscription_id,
+                s.customer_name,
+                s.customer_email,
+                s.product_name,
+                s.product_id,
+                s.subscription_months,
+                s.purchase_date,
+                s.order_id,
+                s.amount
             FROM reminders r
             INNER JOIN subscriptions s ON r.subscription_id = s.id
-            WHERE ${whereClause}
-            GROUP BY DATE(r.reminder_date)
-            ORDER BY reminder_day ${isPast ? 'DESC' : 'ASC'}
-        `, paramsForGrouped, (err) => {
-            if (err) {
-                console.error('Error fetching renewals calendar (grouped):', err);
-                return res.status(500).json({ error: 'Database error', details: err.message });
-            }
-            
-            // Get detailed data for each date
-            db.all(`
-                SELECT 
-                    DATE(r.reminder_date) as reminder_day,
-                    r.id as reminder_id,
-                    r.reminder_date,
-                    r.reminder_type,
-                    r.is_sent,
-                    s.id as subscription_id,
-                    s.customer_name,
-                    s.customer_email,
-                    s.product_name,
-                    s.product_id,
-                    s.subscription_months,
-                    s.purchase_date,
-                    s.order_id,
-                    s.amount
-                FROM reminders r
-                INNER JOIN subscriptions s ON r.subscription_id = s.id
                 WHERE ${whereClause}
                 ORDER BY r.reminder_date ${isPast ? 'DESC' : 'ASC'}
             `, paramsForDetailed, (err2, detailedRows) => {
-                if (err2) {
-                    console.error('Error fetching detailed renewals:', err2);
-                    return res.status(500).json({ error: 'Database error', details: err2.message });
-                }
-                
-                // Group by date
-                const calendar = {};
-                detailedRows.forEach(row => {
-                    const day = row.reminder_day;
-                    if (!calendar[day]) {
-                        calendar[day] = {
-                            date: day,
-                            date_formatted: new Date(day).toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-                            count: 0,
+            if (err2) {
+                console.error('Error fetching detailed renewals:', err2);
+                return res.status(500).json({ error: 'Database error', details: err2.message });
+            }
+            
+            // Group by date
+            const calendar = {};
+            detailedRows.forEach(row => {
+                const day = row.reminder_day;
+                if (!calendar[day]) {
+                    calendar[day] = {
+                        date: day,
+                        date_formatted: new Date(day).toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                        count: 0,
                             renewal_count: 0,
                             expiry_count: 0,
-                            renewals: []
-                        };
-                    }
-                    calendar[day].count++;
+                        renewals: []
+                    };
+                }
+                calendar[day].count++;
                     
                     // Отдельно считаем продления и окончания подписки
                     if (row.reminder_type === 'expiry') {
@@ -1255,47 +1255,47 @@ app.get('/api/admin/renewals-calendar', (req, res) => {
                         calendar[day].renewal_count++;
                     }
                     
-                    // Форматируем время в UTC на сервере, чтобы оно было одинаковым везде
-                    let reminderTime = '';
-                    if (row.reminder_date) {
-                        const reminderDate = new Date(row.reminder_date);
-                        const hours = String(reminderDate.getUTCHours()).padStart(2, '0');
-                        const minutes = String(reminderDate.getUTCMinutes()).padStart(2, '0');
-                        reminderTime = `${hours}:${minutes}`;
-                    }
-                    
-                    calendar[day].renewals.push({
-                        reminder_id: row.reminder_id,
-                        reminder_time: reminderTime,
-                        reminder_type: row.reminder_type,
-                        is_sent: row.is_sent === 1,
-                        customer_name: row.customer_name,
-                        customer_email: row.customer_email,
-                        product_name: row.product_name,
-                        product_id: row.product_id,
-                        subscription_months: row.subscription_months,
-                        purchase_date_formatted: row.purchase_date ? new Date(row.purchase_date).toLocaleDateString('ru-RU') : '',
-                        order_id: row.order_id,
-                        amount_formatted: row.amount ? row.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽'
-                    });
-                });
+                // Форматируем время в UTC на сервере, чтобы оно было одинаковым везде
+                let reminderTime = '';
+                if (row.reminder_date) {
+                    const reminderDate = new Date(row.reminder_date);
+                    const hours = String(reminderDate.getUTCHours()).padStart(2, '0');
+                    const minutes = String(reminderDate.getUTCMinutes()).padStart(2, '0');
+                    reminderTime = `${hours}:${minutes}`;
+                }
                 
+                calendar[day].renewals.push({
+                    reminder_id: row.reminder_id,
+                    reminder_time: reminderTime,
+                    reminder_type: row.reminder_type,
+                    is_sent: row.is_sent === 1,
+                    customer_name: row.customer_name,
+                    customer_email: row.customer_email,
+                    product_name: row.product_name,
+                    product_id: row.product_id,
+                    subscription_months: row.subscription_months,
+                    purchase_date_formatted: row.purchase_date ? new Date(row.purchase_date).toLocaleDateString('ru-RU') : '',
+                    order_id: row.order_id,
+                    amount_formatted: row.amount ? row.amount.toLocaleString('ru-RU') + ' ₽' : '0 ₽'
+                });
+            });
+            
                 // Sort calendar by date (closest first for future, latest first for past)
-                const sortedCalendar = Object.values(calendar).sort((a, b) => {
+            const sortedCalendar = Object.values(calendar).sort((a, b) => {
                     return isPast
                         ? new Date(b.date) - new Date(a.date)
                         : new Date(a.date) - new Date(b.date);
-                });
-                
-                res.json({ 
-                    success: true, 
-                    calendar: sortedCalendar,
+            });
+            
+            res.json({ 
+                success: true, 
+                calendar: sortedCalendar,
                     start_date: isPast ? pastStartStr : todayStr,
                     mode,
-                    total: detailedRows.length
-                });
+                total: detailedRows.length
             });
         });
+    });
     }
 });
 
@@ -1404,8 +1404,8 @@ app.post('/api/subscription', (req, res) => {
             stmt.finalize();
             
             return res.json({ 
-                success: true, 
-                subscription_id: subscriptionId,
+        success: true, 
+        subscription_id: subscriptionId,
                 message: `Order saved for ${normalizedEmail}, but DB sync failed`
             });
         }
@@ -1613,48 +1613,74 @@ app.post('/api/review/verify', (req, res) => {
         if (syncErr) {
             console.error('❌ Error syncing orders before review verify:', syncErr);
         }
+    
+    // First check if email exists in subscriptions at all (protection against spam)
+    // Try multiple query strategies to find the email
+    // 1. Exact match (normalized)
+    // 2. LOWER() comparison
+    // 3. TRIM() + LOWER() comparison
+    db.get(`
+        SELECT COUNT(*) as count 
+        FROM subscriptions 
+        WHERE customer_email = ? 
+           OR LOWER(customer_email) = LOWER(?)
+           OR LOWER(TRIM(customer_email)) = LOWER(TRIM(?))
+    `, [normalizedEmail, normalizedEmail, normalizedEmail], (err, emailCheck) => {
+        if (err) {
+            console.error('❌ Error checking email:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
         
-        // First check if email exists in subscriptions at all (protection against spam)
-        // Try multiple query strategies to find the email
-        // 1. Exact match (normalized)
-        // 2. LOWER() comparison
-        // 3. TRIM() + LOWER() comparison
-        db.get(`
-            SELECT COUNT(*) as count 
-            FROM subscriptions 
-            WHERE customer_email = ? 
-               OR LOWER(customer_email) = LOWER(?)
-               OR LOWER(TRIM(customer_email)) = LOWER(TRIM(?))
-        `, [normalizedEmail, normalizedEmail, normalizedEmail], (err, emailCheck) => {
+            console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found for "${normalizedEmail}" (after sync added ${added || 0})`);
+        // Also check all emails in database for debugging
+        db.all(`SELECT DISTINCT customer_email FROM subscriptions ORDER BY purchase_date DESC LIMIT 20`, [], (err, allEmails) => {
+            if (!err && allEmails) {
+                console.log(`📋 Found ${allEmails.length} unique emails in database (showing last 20):`);
+                allEmails.forEach((e, i) => {
+                    const normalized = e.customer_email.toLowerCase().trim();
+                    const matches = normalized === normalizedEmail;
+                    console.log(`   ${i+1}. ${e.customer_email} ${matches ? '✅ MATCH!' : ''}`);
+                });
+                
+                // Check if normalized email matches any email in database
+                const matches = allEmails.filter(e => e.customer_email.toLowerCase().trim() === normalizedEmail);
+                if (matches.length > 0) {
+                    console.log(`✅ Found ${matches.length} matching email(s) in database:`, matches.map(m => m.customer_email));
+                } else {
+                    console.log(`❌ No matching email found. Looking for: "${normalizedEmail}"`);
+                    console.log(`   Available emails:`, allEmails.map(e => e.customer_email));
+                }
+            }
+        });
+        
+        if (!emailCheck || emailCheck.count === 0) {
+                console.error(`❌ Email "${normalizedEmail}" NOT FOUND in subscriptions table even after sync!`);
+            return res.json({ 
+                success: false, 
+                error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
+                can_review: false 
+            });
+        }
+        
+        console.log(`✅ Email "${normalizedEmail}" found in ${emailCheck.count} subscription(s) - review is allowed!`);
+        
+        // Check all orders (with or without order_id), get newest first
+        // Use LOWER() for case-insensitive comparison
+        db.all(`
+            SELECT DISTINCT 
+                COALESCE(s.order_id, 'NULL_ORDER') as order_id,
+                MIN(s.purchase_date) as purchase_date
+            FROM subscriptions s
+            WHERE LOWER(s.customer_email) = LOWER(?)
+            GROUP BY COALESCE(s.order_id, 'NULL_ORDER')
+            ORDER BY purchase_date DESC
+        `, [normalizedEmail], (err, allOrders) => {
             if (err) {
-                console.error('❌ Error checking email:', err);
-                return res.status(500).json({ error: 'Database error', details: err.message });
+                console.error('Error checking orders:', err);
+                return res.status(500).json({ error: 'Database error' });
             }
             
-            console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found for "${normalizedEmail}" (after sync added ${added || 0})`);
-            // Also check all emails in database for debugging
-            db.all(`SELECT DISTINCT customer_email FROM subscriptions ORDER BY purchase_date DESC LIMIT 20`, [], (err, allEmails) => {
-                if (!err && allEmails) {
-                    console.log(`📋 Found ${allEmails.length} unique emails in database (showing last 20):`);
-                    allEmails.forEach((e, i) => {
-                        const normalized = e.customer_email.toLowerCase().trim();
-                        const matches = normalized === normalizedEmail;
-                        console.log(`   ${i+1}. ${e.customer_email} ${matches ? '✅ MATCH!' : ''}`);
-                    });
-                    
-                    // Check if normalized email matches any email in database
-                    const matches = allEmails.filter(e => e.customer_email.toLowerCase().trim() === normalizedEmail);
-                    if (matches.length > 0) {
-                        console.log(`✅ Found ${matches.length} matching email(s) in database:`, matches.map(m => m.customer_email));
-                    } else {
-                        console.log(`❌ No matching email found. Looking for: "${normalizedEmail}"`);
-                        console.log(`   Available emails:`, allEmails.map(e => e.customer_email));
-                    }
-                }
-            });
-            
-            if (!emailCheck || emailCheck.count === 0) {
-                console.error(`❌ Email "${normalizedEmail}" NOT FOUND in subscriptions table even after sync!`);
+            if (!allOrders || allOrders.length === 0) {
                 return res.json({ 
                     success: false, 
                     error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
@@ -1662,77 +1688,51 @@ app.post('/api/review/verify', (req, res) => {
                 });
             }
             
-            console.log(`✅ Email "${normalizedEmail}" found in ${emailCheck.count} subscription(s) - review is allowed!`);
+            // Get the newest order (first in sorted list)
+            const newestOrder = allOrders[0];
+            const newestOrderId = newestOrder.order_id === 'NULL_ORDER' ? null : newestOrder.order_id;
             
-            // Check all orders (with or without order_id), get newest first
-            // Use LOWER() for case-insensitive comparison
-            db.all(`
-                SELECT DISTINCT 
-                    COALESCE(s.order_id, 'NULL_ORDER') as order_id,
-                    MIN(s.purchase_date) as purchase_date
-                FROM subscriptions s
-                WHERE LOWER(s.customer_email) = LOWER(?)
-                GROUP BY COALESCE(s.order_id, 'NULL_ORDER')
-                ORDER BY purchase_date DESC
-            `, [normalizedEmail], (err, allOrders) => {
+            // Check if this order already has a review
+            let reviewCheckQuery;
+            let reviewCheckParams;
+            
+            if (newestOrderId === null) {
+                // For orders without order_id, check reviews with NULL order_id
+                reviewCheckQuery = `
+                    SELECT COUNT(*) as count 
+                    FROM reviews 
+                    WHERE LOWER(customer_email) = LOWER(?) AND (order_id IS NULL OR order_id = '')
+                `;
+                reviewCheckParams = [normalizedEmail];
+            } else {
+                // For orders with order_id, check reviews with that order_id
+                reviewCheckQuery = `
+                    SELECT COUNT(*) as count 
+                    FROM reviews 
+                    WHERE LOWER(customer_email) = LOWER(?) AND order_id = ?
+                `;
+                reviewCheckParams = [normalizedEmail, newestOrderId];
+            }
+            
+            db.get(reviewCheckQuery, reviewCheckParams, (err, reviewedCheck) => {
                 if (err) {
-                    console.error('Error checking orders:', err);
+                    console.error('Error checking reviews:', err);
                     return res.status(500).json({ error: 'Database error' });
                 }
                 
-                if (!allOrders || allOrders.length === 0) {
+                if (reviewedCheck && reviewedCheck.count > 0) {
                     return res.json({ 
                         success: false, 
-                        error: 'Email не найден в системе. Проверьте правильность введенного адреса.',
+                        error: 'Вы уже оставили отзыв для вашего последнего заказа',
                         can_review: false 
                     });
                 }
                 
-                // Get the newest order (first in sorted list)
-                const newestOrder = allOrders[0];
-                const newestOrderId = newestOrder.order_id === 'NULL_ORDER' ? null : newestOrder.order_id;
-                
-                // Check if this order already has a review
-                let reviewCheckQuery;
-                let reviewCheckParams;
-                
-                if (newestOrderId === null) {
-                    // For orders without order_id, check reviews with NULL order_id
-                    reviewCheckQuery = `
-                        SELECT COUNT(*) as count 
-                        FROM reviews 
-                        WHERE LOWER(customer_email) = LOWER(?) AND (order_id IS NULL OR order_id = '')
-                    `;
-                    reviewCheckParams = [normalizedEmail];
-                } else {
-                    // For orders with order_id, check reviews with that order_id
-                    reviewCheckQuery = `
-                        SELECT COUNT(*) as count 
-                        FROM reviews 
-                        WHERE LOWER(customer_email) = LOWER(?) AND order_id = ?
-                    `;
-                    reviewCheckParams = [normalizedEmail, newestOrderId];
-                }
-                
-                db.get(reviewCheckQuery, reviewCheckParams, (err, reviewedCheck) => {
-                    if (err) {
-                        console.error('Error checking reviews:', err);
-                        return res.status(500).json({ error: 'Database error' });
-                    }
-                    
-                    if (reviewedCheck && reviewedCheck.count > 0) {
-                        return res.json({ 
-                            success: false, 
-                            error: 'Вы уже оставили отзыв для вашего последнего заказа',
-                            can_review: false 
-                        });
-                    }
-                    
-                    res.json({ 
-                        success: true, 
-                        can_review: true,
-                        message: 'Email найден. Вы можете оставить отзыв.',
-                        available_orders: 1
+                res.json({ 
+                    success: true, 
+                    can_review: true,
+                    message: 'Email найден. Вы можете оставить отзыв.',
+                    available_orders: 1
                     });
                 });
             });
@@ -1764,31 +1764,31 @@ app.post('/api/review', (req, res) => {
             console.error('❌ Error syncing orders before review submit:', syncErr);
         }
         
-        // Use LOWER() for case-insensitive comparison
-        db.get(`
-            SELECT COUNT(*) as count 
-            FROM subscriptions 
-            WHERE LOWER(customer_email) = LOWER(?)
-        `, [normalizedEmail], (err, emailCheck) => {
-            if (err) {
-                console.error('❌ Error checking email:', err);
-                return res.status(500).json({ error: 'Database error', details: err.message });
-            }
-            
+    // Use LOWER() for case-insensitive comparison
+    db.get(`
+        SELECT COUNT(*) as count 
+        FROM subscriptions 
+        WHERE LOWER(customer_email) = LOWER(?)
+    `, [normalizedEmail], (err, emailCheck) => {
+        if (err) {
+            console.error('❌ Error checking email:', err);
+            return res.status(500).json({ error: 'Database error', details: err.message });
+        }
+        
             console.log(`📧 Email check result: ${emailCheck ? emailCheck.count : 0} subscriptions found for ${normalizedEmail} (after sync added ${added || 0})`);
-            
-            // ЗАЩИТА ОТ СПАМА: Отзыв можно оставить ТОЛЬКО с почты, с которой покупал
-            // Если email не найден в базе покупок - отказываем
-            if (!emailCheck || emailCheck.count === 0) {
-                console.error(`❌ Email ${normalizedEmail} not found in subscriptions - SPAM PROTECTION`);
-                return res.status(400).json({ 
-                    success: false,
-                    error: 'Email не найден в системе. Отзыв можно оставить только с почты, с которой вы совершали покупку.' 
-                });
-            }
-            
-            // Email найден в базе покупок - продолжаем
-            continueWithEmail(normalizedEmail);
+        
+        // ЗАЩИТА ОТ СПАМА: Отзыв можно оставить ТОЛЬКО с почты, с которой покупал
+        // Если email не найден в базе покупок - отказываем
+        if (!emailCheck || emailCheck.count === 0) {
+            console.error(`❌ Email ${normalizedEmail} not found in subscriptions - SPAM PROTECTION`);
+            return res.status(400).json({ 
+                success: false,
+                error: 'Email не найден в системе. Отзыв можно оставить только с почты, с которой вы совершали покупку.' 
+            });
+        }
+        
+        // Email найден в базе покупок - продолжаем
+        continueWithEmail(normalizedEmail);
         });
     });
     
@@ -2251,30 +2251,30 @@ async function readReviewsFromJSON() {
                 allReviewsFromGit = [];
             }
         }
-
+        
         // Читаем отзывы из базы данных (основное хранилище) асинхронно
         const dbReviews = await new Promise((resolve) => {
-            db.all(`
-                SELECT 
-                    'review_' || id as id,
-                    customer_name,
-                    customer_email,
-                    review_text,
-                    rating,
-                    order_id,
-                    created_at,
-                    0 as is_static
-                FROM reviews
-                ORDER BY created_at DESC
-            `, [], (err, rows) => {
-                if (err) {
-                    console.error('❌ Error reading reviews from database:', err);
+        db.all(`
+            SELECT 
+                'review_' || id as id,
+                customer_name,
+                customer_email,
+                review_text,
+                rating,
+                order_id,
+                created_at,
+                0 as is_static
+            FROM reviews
+            ORDER BY created_at DESC
+        `, [], (err, rows) => {
+            if (err) {
+                console.error('❌ Error reading reviews from database:', err);
                     return resolve([]);
                 }
                 resolve(rows || []);
             });
         });
-
+        
         // 1) Статические отзывы (STATIC_*) берём ТОЛЬКО из Git-версии reviews.json
         //    DB-версии статических отзывов не используем, чтобы не получать старые тексты
         const dynamicDbReviews = dbReviews.filter(review => {
@@ -2653,7 +2653,7 @@ function writeOrdersToJSON(orders) {
                 }
             })();
         }
-
+        
         return true;
     } catch (error) {
         console.error('❌ Error writing orders.json:', error);
@@ -2950,50 +2950,50 @@ app.get('/api/debug/restore-all-reviews', (req, res) => {
 app.get('/api/debug/remove-duplicates', (req, res) => {
     try {
         readReviewsFromJSON().then((allReviews) => {
-            const beforeCount = allReviews.length;
+        const beforeCount = allReviews.length;
+        
+        console.log(`🔍 Checking for duplicates in ${beforeCount} reviews...`);
+        
+        // Remove duplicates
+        const uniqueReviews = removeDuplicateReviews(allReviews);
+        const afterCount = uniqueReviews.length;
+        
+        if (afterCount < beforeCount) {
+            // Sort by created_at (newest first)
+            uniqueReviews.sort((a, b) => {
+                const timeA = new Date(a.created_at).getTime();
+                const timeB = new Date(b.created_at).getTime();
+                return timeB - timeA;
+            });
             
-            console.log(`🔍 Checking for duplicates in ${beforeCount} reviews...`);
+            // Save cleaned version
+            const saved = writeReviewsToJSON(uniqueReviews);
             
-            // Remove duplicates
-            const uniqueReviews = removeDuplicateReviews(allReviews);
-            const afterCount = uniqueReviews.length;
-            
-            if (afterCount < beforeCount) {
-                // Sort by created_at (newest first)
-                uniqueReviews.sort((a, b) => {
-                    const timeA = new Date(a.created_at).getTime();
-                    const timeB = new Date(b.created_at).getTime();
-                    return timeB - timeA;
-                });
-                
-                // Save cleaned version
-                const saved = writeReviewsToJSON(uniqueReviews);
-                
-                if (saved) {
-                    res.json({
-                        success: true,
-                        message: `Removed ${beforeCount - afterCount} duplicate reviews`,
-                        before: beforeCount,
-                        after: afterCount,
-                        removed: beforeCount - afterCount
-                    });
-                } else {
-                    res.status(500).json({
-                        success: false,
-                        error: 'Failed to save cleaned reviews'
-                    });
-                }
-            } else {
+            if (saved) {
                 res.json({
                     success: true,
-                    message: 'No duplicates found',
+                    message: `Removed ${beforeCount - afterCount} duplicate reviews`,
                     before: beforeCount,
                     after: afterCount,
-                    removed: 0
+                    removed: beforeCount - afterCount
+                });
+            } else {
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to save cleaned reviews'
                 });
             }
+        } else {
+            res.json({
+                success: true,
+                message: 'No duplicates found',
+                before: beforeCount,
+                after: afterCount,
+                removed: 0
+            });
+        }
         }).catch((error) => {
-            console.error('❌ Error removing duplicates:', error);
+        console.error('❌ Error removing duplicates:', error);
             res.status(500).json({
                 success: false,
                 error: error.message
@@ -5017,6 +5017,96 @@ cron.schedule('*/10 * * * *', async () => {
         // Silently ignore errors (server might be starting up or sleeping)
         // This is expected behavior on free plan
         console.log(`⚠️ Auto-ping failed (this is normal if server is sleeping): ${error.message}`);
+    }
+});
+
+// Track visitor and send Telegram notification
+// Store recent IPs to prevent spam (last 5 minutes)
+const recentVisitors = new Map();
+
+async function getCountryFromIP(ip) {
+    try {
+        // Skip localhost IPs
+        if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
+            return 'Локальный';
+        }
+        
+        // Use ip-api.com free API
+        const response = await axios.get(`http://ip-api.com/json/${ip}?fields=status,country,countryCode`, {
+            timeout: 3000
+        });
+        
+        if (response.data && response.data.status === 'success') {
+            return response.data.country || 'Неизвестно';
+        }
+        return 'Неизвестно';
+    } catch (error) {
+        console.error('Error getting country from IP:', error.message);
+        return 'Неизвестно';
+    }
+}
+
+app.post('/api/track-visit', async (req, res) => {
+    try {
+        // Get IP address
+        const ip = req.headers['x-forwarded-for']?.split(',')[0] || 
+                   req.headers['x-real-ip'] || 
+                   req.connection.remoteAddress || 
+                   req.socket.remoteAddress ||
+                   'unknown';
+        
+        // Get page URL from request
+        const page = req.body.page || req.headers.referer || 'Главная';
+        const pageName = page.includes('index.html') || page === '/' ? 'Главная' :
+                        page.includes('checkout') ? 'Оформление' :
+                        page.includes('chatgpt') ? 'ChatGPT' :
+                        page.includes('adobe') ? 'Adobe' :
+                        page.includes('capcut') ? 'CapCut' :
+                        page.includes('reviews') ? 'Отзывы' :
+                        'Другая страница';
+        
+        // Check if we already sent notification for this IP in last 5 minutes
+        const now = Date.now();
+        const visitorKey = ip;
+        const lastVisit = recentVisitors.get(visitorKey);
+        
+        if (lastVisit && (now - lastVisit) < 5 * 60 * 1000) {
+            // Skip notification if visited less than 5 minutes ago
+            return res.json({ success: true, message: 'Visit tracked (duplicate)' });
+        }
+        
+        // Update last visit time
+        recentVisitors.set(visitorKey, now);
+        
+        // Clean old entries (older than 10 minutes)
+        for (const [key, time] of recentVisitors.entries()) {
+            if (now - time > 10 * 60 * 1000) {
+                recentVisitors.delete(key);
+            }
+        }
+        
+        // Get country
+        const country = await getCountryFromIP(ip);
+        
+        // Format Telegram message
+        const message = `👤 Новый посетитель\n\n📄 Страница: ${pageName}\n🌍 Страна: ${country}\n🕐 Время: ${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`;
+        
+        // Send to Telegram (async, don't wait)
+        sendTelegramMessage(message).catch(err => {
+            console.error('Error sending visit notification:', err);
+        });
+        
+        res.json({ 
+            success: true, 
+            message: 'Visit tracked',
+            country: country
+        });
+    } catch (error) {
+        console.error('Error tracking visit:', error);
+        res.json({ 
+            success: false, 
+            message: 'Error tracking visit'
+        });
     }
 });
 
