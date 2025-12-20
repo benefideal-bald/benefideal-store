@@ -304,8 +304,14 @@
 
     <script src="script.js?v=4.0"></script>
     <script>
-        // Track page visit
+        // Track page visit (only once per page load)
         (function() {
+            // Prevent duplicate calls
+            if (window.visitTracked) {
+                return;
+            }
+            window.visitTracked = true;
+            
             try {
                 const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
                     ? 'http://localhost:3000/api/track-visit'

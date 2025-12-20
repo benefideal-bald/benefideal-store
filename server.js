@@ -5023,6 +5023,7 @@ cron.schedule('*/10 * * * *', async () => {
 // Track visitor and send Telegram notification
 // Store recent IPs to prevent spam (last 5 minutes)
 const recentVisitors = new Map();
+const processingIPs = new Set(); // Track IPs currently being processed
 
 async function getCountryFromIP(ip) {
     try {
@@ -5070,18 +5071,27 @@ app.post('/api/track-visit', async (req, res) => {
         const visitorKey = ip;
         const lastVisit = recentVisitors.get(visitorKey);
         
+        // Check if already processing this IP (prevent race condition)
+        if (processingIPs.has(visitorKey)) {
+            return res.json({ success: true, message: 'Visit tracked (already processing)' });
+        }
+        
         if (lastVisit && (now - lastVisit) < 5 * 60 * 1000) {
             // Skip notification if visited less than 5 minutes ago
             return res.json({ success: true, message: 'Visit tracked (duplicate)' });
         }
         
-        // Update last visit time
+        // Mark as processing immediately to prevent duplicate requests
+        processingIPs.add(visitorKey);
+        
+        // Update last visit time immediately
         recentVisitors.set(visitorKey, now);
         
         // Clean old entries (older than 10 minutes)
         for (const [key, time] of recentVisitors.entries()) {
             if (now - time > 10 * 60 * 1000) {
                 recentVisitors.delete(key);
+                processingIPs.delete(key);
             }
         }
         
@@ -5092,9 +5102,18 @@ app.post('/api/track-visit', async (req, res) => {
         const message = `👤 Новый посетитель\n\n📄 Страница: ${pageName}\n🌍 Страна: ${country}\n🕐 Время: ${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`;
         
         // Send to Telegram (async, don't wait)
-        sendTelegramMessage(message).catch(err => {
-            console.error('Error sending visit notification:', err);
-        });
+        sendTelegramMessage(message)
+            .then(() => {
+                // Remove from processing set after successful send
+                setTimeout(() => {
+                    processingIPs.delete(visitorKey);
+                }, 1000);
+            })
+            .catch(err => {
+                console.error('Error sending visit notification:', err);
+                // Remove from processing set even on error
+                processingIPs.delete(visitorKey);
+            });
         
         res.json({ 
             success: true, 
