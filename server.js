@@ -4933,6 +4933,78 @@ app.get('/api/debug/remove-duplicate-subscriptions/:email', (req, res) => {
     });
 });
 
+// Force remove duplicate orders from JSON for specific email and product
+// More aggressive: removes ALL duplicates except the first one (by ID)
+app.get('/api/debug/force-remove-duplicates/:email', (req, res) => {
+    const email = req.params.email.toLowerCase().trim();
+    
+    console.log(`🔧 Force removing ALL duplicates for: ${email}`);
+    
+    try {
+        const jsonOrders = readOrdersFromJSON();
+        const originalCount = jsonOrders.length;
+        
+        // Group by email + product_id
+        const seen = new Map();
+        const ordersToKeep = [];
+        let removedCount = 0;
+        
+        jsonOrders.forEach(order => {
+            const orderEmail = (order.customer_email || '').toLowerCase().trim();
+            
+            // If not for this email, keep it
+            if (orderEmail !== email) {
+                ordersToKeep.push(order);
+                return;
+            }
+            
+            // For this email, check for duplicates by product_id
+            const key = `${order.product_id}_${order.product_name}`;
+            
+            if (!seen.has(key)) {
+                // First occurrence of this product for this email - keep it
+                seen.set(key, true);
+                ordersToKeep.push(order);
+            } else {
+                // Duplicate - remove it
+                removedCount++;
+                console.log(`🗑️ Removing duplicate: ID=${order.id}, product=${order.product_name}, date=${order.purchase_date}`);
+            }
+        });
+        
+        if (removedCount > 0) {
+            const saved = writeOrdersToJSON(ordersToKeep);
+            if (saved) {
+                console.log(`✅ Force removed ${removedCount} duplicate order(s) from orders.json`);
+                res.json({ 
+                    success: true, 
+                    message: `Force removed ${removedCount} duplicate order(s) from orders.json for ${email}`,
+                    removed: removedCount,
+                    original_count: originalCount,
+                    new_count: ordersToKeep.length
+                });
+            } else {
+                res.status(500).json({ 
+                    success: false, 
+                    error: 'Failed to save orders.json after removing duplicates' 
+                });
+            }
+        } else {
+            res.json({ 
+                success: true, 
+                message: `No duplicates found for ${email}`,
+                removed: 0
+            });
+        }
+    } catch (error) {
+        console.error('❌ Error force removing duplicates:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
 // Emergency endpoint to manually add subscription if email was not saved
 // Use this if email is not found after purchase
 app.post('/api/debug/add-subscription', (req, res) => {
