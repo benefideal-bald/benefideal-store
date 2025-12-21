@@ -18,18 +18,9 @@ const CHAT_ID = 8334777900;
 
 // Health check endpoint - FIRST, before any middleware or DB initialization
 // This ensures Railway/Render healthcheck passes immediately
+// УПРОЩЕННЫЙ: Минимальный ответ без логирования для максимальной скорости
 app.get('/health', (req, res) => {
-    try {
-        console.log(`[${new Date().toISOString()}] Healthcheck called from ${req.ip || req.connection.remoteAddress}`);
-        res.status(200).json({ 
-            status: 'ok',
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime()
-        });
-    } catch (error) {
-        console.error('Healthcheck error:', error);
-        res.status(500).json({ status: 'error', message: error.message });
-    }
+    res.status(200).json({ status: 'ok' });
 });
 
 // Middleware
