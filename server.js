@@ -20,8 +20,12 @@ const CHAT_ID = 8334777900;
 // This ensures Railway/Render healthcheck passes immediately
 app.get('/health', (req, res) => {
     try {
-        console.log('Healthcheck called');
-        res.status(200).json({ status: 'ok' });
+        console.log(`[${new Date().toISOString()}] Healthcheck called from ${req.ip || req.connection.remoteAddress}`);
+        res.status(200).json({ 
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime()
+        });
     } catch (error) {
         console.error('Healthcheck error:', error);
         res.status(500).json({ status: 'error', message: error.message });
@@ -36,17 +40,30 @@ app.use(express.static('.')); // Для статических файлов
 
 // Start server IMMEDIATELY - before any blocking operations
 // This ensures healthcheck works even if DB initialization fails or is slow
-app.listen(PORT, '0.0.0.0', () => {
+console.log(`🚀 Starting server on port ${PORT}...`);
+console.log(`📡 Listening on 0.0.0.0:${PORT}`);
+console.log(`🔍 Healthcheck endpoint: http://0.0.0.0:${PORT}/health`);
+
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Healthcheck: http://0.0.0.0:${PORT}/health`);
-    console.log('⚠️ Database initialization in progress...');
+    console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`✅ Healthcheck: http://0.0.0.0:${PORT}/health`);
+    console.log(`✅ Server is ready to accept connections!`);
+    console.log('⚠️ Database initialization in progress (non-blocking)...');
 }).on('error', (err) => {
     console.error('❌ Server listen error:', err);
+    console.error('❌ Error code:', err.code);
+    console.error('❌ Error message:', err.message);
     if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use`);
+        console.error(`❌ Port ${PORT} is already in use`);
     }
     process.exit(1);
+});
+
+// Log when server is actually listening
+server.on('listening', () => {
+    const addr = server.address();
+    console.log(`✅ Server is listening on ${addr.address}:${addr.port}`);
 });
 
 // Initialize SQLite database AFTER server starts
