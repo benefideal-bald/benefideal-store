@@ -4844,6 +4844,7 @@ app.get('/api/debug/remove-duplicate-subscriptions/:email', (req, res) => {
                         
                         const ordersToKeep = [];
                         let jsonRemovedCount = 0;
+                        const removedOrderIds = [];
                         
                         jsonGroups.forEach((orders, key) => {
                             if (orders.length <= 1) {
@@ -4856,8 +4857,14 @@ app.get('/api/debug/remove-duplicate-subscriptions/:email', (req, res) => {
                                 (o.customer_email || '').toLowerCase().trim() === email
                             );
                             
+                            // Add non-email orders immediately (they are not duplicates for this user)
+                            orders.filter(o => 
+                                (o.customer_email || '').toLowerCase().trim() !== email
+                            ).forEach(o => ordersToKeep.push(o));
+                            
                             if (emailOrders.length <= 1) {
-                                ordersToKeep.push(...orders);
+                                // No duplicates for this email, add all
+                                ordersToKeep.push(...emailOrders);
                                 return;
                             }
                             
@@ -4883,19 +4890,16 @@ app.get('/api/debug/remove-duplicate-subscriptions/:email', (req, res) => {
                                 
                                 if (timeDiff < 10000) {
                                     jsonRemovedCount++;
-                                    console.log(`🗑️ Marking JSON duplicate for removal: ID=${order.id}, product=${order.product_name}`);
+                                    removedOrderIds.push(order.id);
+                                    console.log(`🗑️ Marking JSON duplicate for removal: ID=${order.id}, product=${order.product_name}, date=${order.purchase_date}`);
                                 } else {
+                                    // Not a duplicate (time difference > 10 seconds), keep it
                                     ordersToKeep.push(order);
                                 }
                             });
                             
                             // Add the one to keep
                             ordersToKeep.push(toKeep);
-                            
-                            // Add non-email orders back
-                            orders.filter(o => 
-                                (o.customer_email || '').toLowerCase().trim() !== email
-                            ).forEach(o => ordersToKeep.push(o));
                         });
                         
                         if (jsonRemovedCount > 0) {
