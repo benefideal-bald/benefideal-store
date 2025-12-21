@@ -64,6 +64,13 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 server.on('listening', () => {
     const addr = server.address();
     console.log(`✅ Server is listening on ${addr.address}:${addr.port}`);
+    console.log(`✅ Healthcheck is ready at http://${addr.address}:${addr.port}/health`);
+    
+    // Initialize database AFTER server is confirmed listening
+    // This ensures healthcheck works even if DB init fails
+    setImmediate(() => {
+        initializeDatabase();
+    });
 });
 
 // Initialize SQLite database AFTER server starts
@@ -87,42 +94,59 @@ const reviewsJsonPathGit = path.join(process.cwd(), 'reviews.json'); // Файл
 const ordersJsonPath = path.join(process.cwd(), 'orders.json'); // Файл в Git для заказов
 const fs = require('fs');
 
-// КРИТИЧЕСКИ ВАЖНО: Проверяем, существует ли база данных и её размер
-// Если база существует, но пустая - это проблема!
-if (fs.existsSync(dbPath)) {
-    const stats = fs.statSync(dbPath);
-    if (stats.size < 1000) {
-        console.warn('⚠️ WARNING: Database file exists but is very small (' + stats.size + ' bytes) - might be empty or corrupted!');
-    }
-}
-
-console.log('📂 Database initialization:');
-console.log('   Current directory (__dirname):', __dirname);
-console.log('   Database path:', dbPath);
-console.log('   RENDER environment:', process.env.RENDER || 'not set');
-console.log('   Database file exists:', fs.existsSync(dbPath));
-console.log('   Process working directory:', process.cwd());
-if (fs.existsSync(dbPath)) {
-    const stats = fs.statSync(dbPath);
-    console.log('   Database file size:', stats.size, 'bytes');
-    console.log('   Database file modified:', stats.mtime);
-} else {
-    console.log('   Database file size: N/A (file does not exist)');
-}
-
-// КРИТИЧЕСКИ ВАЖНО: Создаем директорию data/ для базы данных, если её нет
-// Эта директория НЕ в Git, поэтому база данных не будет перезаписана при деплое
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
+// Initialize database function - called AFTER server starts
+function initializeDatabase() {
     try {
-        fs.mkdirSync(dbDir, { recursive: true });
-        console.log(`✅ Created database directory: ${dbDir}`);
-    } catch (mkdirErr) {
-        console.error(`❌ Error creating database directory: ${mkdirErr}`);
+        console.log('📂 Starting database initialization...');
+        
+        // КРИТИЧЕСКИ ВАЖНО: Проверяем, существует ли база данных и её размер
+        // Если база существует, но пустая - это проблема!
+        if (fs.existsSync(dbPath)) {
+            const stats = fs.statSync(dbPath);
+            if (stats.size < 1000) {
+                console.warn('⚠️ WARNING: Database file exists but is very small (' + stats.size + ' bytes) - might be empty or corrupted!');
+            }
+        }
+
+        console.log('📂 Database initialization:');
+        console.log('   Current directory (__dirname):', __dirname);
+        console.log('   Database path:', dbPath);
+        console.log('   RENDER environment:', process.env.RENDER || 'not set');
+        console.log('   Database file exists:', fs.existsSync(dbPath));
+        console.log('   Process working directory:', process.cwd());
+        if (fs.existsSync(dbPath)) {
+            const stats = fs.statSync(dbPath);
+            console.log('   Database file size:', stats.size, 'bytes');
+            console.log('   Database file modified:', stats.mtime);
+        } else {
+            console.log('   Database file size: N/A (file does not exist)');
+        }
+
+        // КРИТИЧЕСКИ ВАЖНО: Создаем директорию data/ для базы данных, если её нет
+        // Эта директория НЕ в Git, поэтому база данных не будет перезаписана при деплое
+        const dbDir = path.dirname(dbPath);
+        if (!fs.existsSync(dbDir)) {
+            try {
+                fs.mkdirSync(dbDir, { recursive: true });
+                console.log(`✅ Created database directory: ${dbDir}`);
+            } catch (mkdirErr) {
+                console.error(`❌ Error creating database directory: ${mkdirErr}`);
+            }
+        }
+        
+        // Now open the database
+        openDatabase();
+    } catch (error) {
+        console.error('❌ Error during database initialization setup:', error);
+        // Don't crash - server is already running
     }
 }
 
-const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
+// Global db variable - will be set when database opens
+let db = null;
+
+function openDatabase() {
+    db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
         console.error('❌ Error opening database:', err);
         console.error('Database path:', dbPath);
