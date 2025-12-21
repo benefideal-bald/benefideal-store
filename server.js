@@ -4720,6 +4720,125 @@ app.get('/api/debug/email/:email', (req, res) => {
     });
 });
 
+// Remove duplicate subscriptions for a specific email
+// Finds duplicates by: same email + same product_id + same purchase_date (within 10 seconds)
+// Keeps the earliest one, deletes the rest
+app.get('/api/debug/remove-duplicate-subscriptions/:email', (req, res) => {
+    const email = req.params.email.toLowerCase().trim();
+    
+    console.log(`🔧 Removing duplicate subscriptions for: ${email}`);
+    
+    // Find all subscriptions for this email
+    db.all(`
+        SELECT * FROM subscriptions 
+        WHERE LOWER(customer_email) = LOWER(?)
+        ORDER BY purchase_date ASC, id ASC
+    `, [email], (err, allSubs) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        
+        if (allSubs.length === 0) {
+            return res.json({ 
+                success: true, 
+                message: `No subscriptions found for ${email}`,
+                removed: 0
+            });
+        }
+        
+        // Group by product_id and find duplicates (same product, same date within 10 seconds)
+        const groups = new Map();
+        allSubs.forEach(sub => {
+            const key = `${sub.product_id}_${sub.product_name}`;
+            if (!groups.has(key)) {
+                groups.set(key, []);
+            }
+            groups.get(key).push(sub);
+        });
+        
+        let removedCount = 0;
+        const removedIds = [];
+        const errors = [];
+        
+        // Process each group
+        groups.forEach((subs, key) => {
+            if (subs.length <= 1) {
+                return; // No duplicates
+            }
+            
+            // Sort by purchase_date and id (keep earliest)
+            subs.sort((a, b) => {
+                const dateA = new Date(a.purchase_date).getTime();
+                const dateB = new Date(b.purchase_date).getTime();
+                if (dateA !== dateB) {
+                    return dateA - dateB;
+                }
+                return a.id - b.id; // If same date, keep lower ID
+            });
+            
+            // Keep the first one, mark others for deletion
+            const toKeep = subs[0];
+            const toRemove = subs.slice(1);
+            
+            // Check if they are real duplicates (same date within 10 seconds)
+            toRemove.forEach(sub => {
+                const keepDate = new Date(toKeep.purchase_date).getTime();
+                const removeDate = new Date(sub.purchase_date).getTime();
+                const timeDiff = Math.abs(keepDate - removeDate);
+                
+                // If within 10 seconds, consider it a duplicate
+                if (timeDiff < 10000) {
+                    console.log(`🗑️ Marking duplicate for removal: ID=${sub.id}, product=${sub.product_name}, date=${sub.purchase_date}`);
+                    removedIds.push(sub.id);
+                }
+            });
+        });
+        
+        if (removedIds.length === 0) {
+            return res.json({ 
+                success: true, 
+                message: `No duplicates found for ${email}`,
+                removed: 0,
+                subscriptions: allSubs
+            });
+        }
+        
+        // Remove duplicates one by one
+        let processed = 0;
+        removedIds.forEach((id, index) => {
+            // First, delete reminders for this subscription
+            db.run('DELETE FROM reminders WHERE subscription_id = ?', [id], (remErr) => {
+                if (remErr) {
+                    console.error(`❌ Error deleting reminders for subscription ${id}:`, remErr);
+                }
+            });
+            
+            // Then delete the subscription
+            db.run('DELETE FROM subscriptions WHERE id = ?', [id], (delErr) => {
+                processed++;
+                
+                if (delErr) {
+                    console.error(`❌ Error deleting subscription ${id}:`, delErr);
+                    errors.push(`Subscription ${id}: ${delErr.message}`);
+                } else {
+                    removedCount++;
+                    console.log(`✅ Deleted duplicate subscription ID=${id}`);
+                }
+                
+                // When all processed, return response
+                if (processed === removedIds.length) {
+                    res.json({ 
+                        success: true, 
+                        message: `Removed ${removedCount} duplicate subscription(s) for ${email}`,
+                        removed: removedCount,
+                        errors: errors.length > 0 ? errors : undefined
+                    });
+                }
+            });
+        });
+    });
+});
+
 // Emergency endpoint to manually add subscription if email was not saved
 // Use this if email is not found after purchase
 app.post('/api/debug/add-subscription', (req, res) => {
