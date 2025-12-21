@@ -18,7 +18,6 @@ const CHAT_ID = 8334777900;
 
 // Health check endpoint - FIRST, before any middleware or DB initialization
 // This ensures Railway/Render healthcheck passes immediately
-// УПРОЩЕННЫЙ: Минимальный ответ без логирования для максимальной скорости
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
 });
@@ -29,42 +28,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // Для обработки form-urlencoded (нужно для enot.io webhook)
 app.use(express.static('.')); // Для статических файлов
 
-// Start server IMMEDIATELY - before any blocking operations
-// This ensures healthcheck works even if DB initialization fails or is slow
-console.log(`🚀 Starting server on port ${PORT}...`);
-console.log(`📡 Listening on 0.0.0.0:${PORT}`);
-console.log(`🔍 Healthcheck endpoint: http://0.0.0.0:${PORT}/health`);
-
-const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`✅ Healthcheck: http://0.0.0.0:${PORT}/health`);
-    console.log(`✅ Server is ready to accept connections!`);
-    console.log('⚠️ Database initialization in progress (non-blocking)...');
-}).on('error', (err) => {
-    console.error('❌ Server listen error:', err);
-    console.error('❌ Error code:', err.code);
-    console.error('❌ Error message:', err.message);
-    if (err.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use`);
-    }
-    process.exit(1);
-});
-
-// Log when server is actually listening
-server.on('listening', () => {
-    const addr = server.address();
-    console.log(`✅ Server is listening on ${addr.address}:${addr.port}`);
-    console.log(`✅ Healthcheck is ready at http://${addr.address}:${addr.port}/health`);
-    
-    // Initialize database AFTER server is confirmed listening
-    // This ensures healthcheck works even if DB init fails
-    setImmediate(() => {
-        initializeDatabase();
-    });
-});
-
-// Initialize SQLite database AFTER server starts
+// Initialize SQLite database FIRST
 // КРИТИЧЕСКИ ВАЖНО: На Render нужно использовать персистентное хранилище
 // На Render Free плане файлы сохраняются в /opt/render/project/src/
 // Используем переменную окружения DATABASE_PATH для указания пути
@@ -85,59 +49,42 @@ const reviewsJsonPathGit = path.join(process.cwd(), 'reviews.json'); // Файл
 const ordersJsonPath = path.join(process.cwd(), 'orders.json'); // Файл в Git для заказов
 const fs = require('fs');
 
-// Initialize database function - called AFTER server starts
-function initializeDatabase() {
-    try {
-        console.log('📂 Starting database initialization...');
-        
-        // КРИТИЧЕСКИ ВАЖНО: Проверяем, существует ли база данных и её размер
-        // Если база существует, но пустая - это проблема!
-        if (fs.existsSync(dbPath)) {
-            const stats = fs.statSync(dbPath);
-            if (stats.size < 1000) {
-                console.warn('⚠️ WARNING: Database file exists but is very small (' + stats.size + ' bytes) - might be empty or corrupted!');
-            }
-        }
-
-        console.log('📂 Database initialization:');
-        console.log('   Current directory (__dirname):', __dirname);
-        console.log('   Database path:', dbPath);
-        console.log('   RENDER environment:', process.env.RENDER || 'not set');
-        console.log('   Database file exists:', fs.existsSync(dbPath));
-        console.log('   Process working directory:', process.cwd());
-        if (fs.existsSync(dbPath)) {
-            const stats = fs.statSync(dbPath);
-            console.log('   Database file size:', stats.size, 'bytes');
-            console.log('   Database file modified:', stats.mtime);
-        } else {
-            console.log('   Database file size: N/A (file does not exist)');
-        }
-
-        // КРИТИЧЕСКИ ВАЖНО: Создаем директорию data/ для базы данных, если её нет
-        // Эта директория НЕ в Git, поэтому база данных не будет перезаписана при деплое
-        const dbDir = path.dirname(dbPath);
-        if (!fs.existsSync(dbDir)) {
-            try {
-                fs.mkdirSync(dbDir, { recursive: true });
-                console.log(`✅ Created database directory: ${dbDir}`);
-            } catch (mkdirErr) {
-                console.error(`❌ Error creating database directory: ${mkdirErr}`);
-            }
-        }
-        
-        // Now open the database
-        openDatabase();
-    } catch (error) {
-        console.error('❌ Error during database initialization setup:', error);
-        // Don't crash - server is already running
+// КРИТИЧЕСКИ ВАЖНО: Проверяем, существует ли база данных и её размер
+// Если база существует, но пустая - это проблема!
+if (fs.existsSync(dbPath)) {
+    const stats = fs.statSync(dbPath);
+    if (stats.size < 1000) {
+        console.warn('⚠️ WARNING: Database file exists but is very small (' + stats.size + ' bytes) - might be empty or corrupted!');
     }
 }
 
-// Global db variable - will be set when database opens
-let db = null;
+console.log('📂 Database initialization:');
+console.log('   Current directory (__dirname):', __dirname);
+console.log('   Database path:', dbPath);
+console.log('   RENDER environment:', process.env.RENDER || 'not set');
+console.log('   Database file exists:', fs.existsSync(dbPath));
+console.log('   Process working directory:', process.cwd());
+if (fs.existsSync(dbPath)) {
+    const stats = fs.statSync(dbPath);
+    console.log('   Database file size:', stats.size, 'bytes');
+    console.log('   Database file modified:', stats.mtime);
+} else {
+    console.log('   Database file size: N/A (file does not exist)');
+}
 
-function openDatabase() {
-    db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
+// КРИТИЧЕСКИ ВАЖНО: Создаем директорию data/ для базы данных, если её нет
+// Эта директория НЕ в Git, поэтому база данных не будет перезаписана при деплое
+const dbDir = path.dirname(dbPath);
+if (!fs.existsSync(dbDir)) {
+    try {
+        fs.mkdirSync(dbDir, { recursive: true });
+        console.log(`✅ Created database directory: ${dbDir}`);
+    } catch (mkdirErr) {
+        console.error(`❌ Error creating database directory: ${mkdirErr}`);
+    }
+}
+
+const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
         console.error('❌ Error opening database:', err);
         console.error('Database path:', dbPath);
@@ -167,13 +114,20 @@ function openDatabase() {
             }
         });
         
-        // Проверяем количество отзывов при старте (после создания таблиц)
-        // НЕ проверяем здесь, так как таблицы еще не созданы
-        console.log(`🔍 База данных открыта, таблицы будут созданы в db.serialize()`);
+        // Проверяем количество отзывов сразу после открытия базы
+        db.get(`SELECT COUNT(*) as count FROM reviews`, [], (err, countRow) => {
+            if (!err && countRow) {
+                console.log(`📊 Reviews count on startup: ${countRow.count}`);
+                if (countRow.count > 0) {
+                    console.log(`✅ Reviews database is NOT empty - all reviews are safe!`);
+                } else {
+                    console.warn(`⚠️ Reviews database is EMPTY - this might be a new database or reviews were lost!`);
+                }
+            }
+        });
         
-        // КРИТИЧЕСКИ ВАЖНО: Вызываем serialize ТОЛЬКО после успешного открытия базы данных
-        // Это гарантирует, что база данных полностью готова перед созданием таблиц
-        initializeDatabaseTables();
+        // Проверяем количество отзывов при старте
+        console.log(`🔍 Проверка отзывов при старте сервера...`);
         
         // КРИТИЧЕСКИ ВАЖНО: При первом запуске копируем начальные отзывы из Git в data/reviews.json
         // Это гарантирует, что все отзывы будут в одном месте (data/reviews.json) и не потеряются
@@ -218,12 +172,13 @@ function openDatabase() {
     }
 });
 
+// Health check endpoint moved to beginning of file (duplicate removed)
+
 // API routes must come BEFORE static files
 // This ensures /api/* requests are handled by Express, not static files
 
-// Create tables function - вызывается только после успешного открытия базы данных
-function initializeDatabaseTables() {
-    db.serialize(() => {
+// Create tables
+db.serialize(() => {
     db.run(`
         CREATE TABLE IF NOT EXISTS subscriptions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -480,8 +435,7 @@ function initializeDatabaseTables() {
             });
         }
     });
-    });
-}
+});
 
 // API endpoint to receive subscription purchases
 // КРИТИЧЕСКИ ВАЖНО: Этот endpoint должен ВСЕГДА сохранять заказы в базу данных!
@@ -5000,11 +4954,6 @@ app.post('/api/debug/remove-dashes', (req, res) => {
 
 // Cron job to check and send reminders (runs every minute)
 cron.schedule('* * * * *', async () => {
-    // Skip if database is not initialized yet
-    if (!db) {
-        return;
-    }
-    
     const now = new Date();
     const nowISO = now.toISOString().split('.')[0].replace('T', ' ');
     
@@ -5152,21 +5101,8 @@ app.post('/api/track-visit', async (req, res) => {
         // Get country
         const country = await getCountryFromIP(ip);
         
-        // Format time in Moscow timezone
-        const now = new Date();
-        const moscowTime = new Intl.DateTimeFormat('ru-RU', {
-            timeZone: 'Europe/Moscow',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        }).format(now);
-        
         // Format Telegram message
-        const message = `👤 Новый посетитель\n\n📄 Страница: ${pageName}\n🌍 Страна: ${country}\n🕐 Время (МСК): ${moscowTime}`;
+        const message = `👤 Новый посетитель\n\n📄 Страница: ${pageName}\n🌍 Страна: ${country}\n🕐 Время: ${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`;
         
         // Send to Telegram (async, don't wait)
         sendTelegramMessage(message)
@@ -5218,30 +5154,35 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Server already started above - log completion info
-console.log(`📊 Database path: ${dbPath}`);
-console.log('Subscription reminders scheduled');
-console.log('API routes available:');
-console.log('  GET  /health - Health check');
-console.log('  GET  /api/test - Test endpoint');
-console.log('  GET  /api/reviews - Get reviews');
-console.log('  POST /api/review - Submit review');
-console.log('  POST /api/review/verify - Verify review eligibility');
-console.log('  POST /api/subscription - Submit subscription');
-
-// Error handler for unhandled errors (after server starts)
+// Error handler for unhandled errors
 process.on('uncaughtException', (err) => {
-    console.error('❌ Uncaught Exception:', err);
-    console.error('Stack:', err.stack);
-    // Don't exit - let Railway restart
+    console.error('Uncaught Exception:', err);
+    // Don't exit on Render - let it restart
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-    if (reason && reason.stack) {
-        console.error('Stack:', reason.stack);
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // Don't exit on Render - let it restart
+});
+
+// Start server - bind to 0.0.0.0 for Render
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Database path: ${dbPath}`);
+    console.log('Subscription reminders scheduled');
+    console.log('API routes available:');
+    console.log('  GET  /api/test - Test endpoint');
+    console.log('  GET  /api/reviews - Get reviews');
+    console.log('  POST /api/review - Submit review');
+    console.log('  POST /api/review/verify - Verify review eligibility');
+    console.log('  POST /api/subscription - Submit subscription');
+    console.log('  GET  /api/debug/sync-reviews-from-root - Sync reviews from root to data/');
+}).on('error', (err) => {
+    console.error('❌ Server error:', err);
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use`);
     }
-    // Don't exit - let Railway restart
 });
 
 // Test payment endpoint (СБП с загрузкой чека)
