@@ -4825,14 +4825,104 @@ app.get('/api/debug/remove-duplicate-subscriptions/:email', (req, res) => {
                     console.log(`✅ Deleted duplicate subscription ID=${id}`);
                 }
                 
-                // When all processed, return response
+                // When all processed, also remove duplicates from orders.json
                 if (processed === removedIds.length) {
-                    res.json({ 
-                        success: true, 
-                        message: `Removed ${removedCount} duplicate subscription(s) for ${email}`,
-                        removed: removedCount,
-                        errors: errors.length > 0 ? errors : undefined
-                    });
+                    // Also remove duplicates from orders.json
+                    try {
+                        const jsonOrders = readOrdersFromJSON();
+                        const originalCount = jsonOrders.length;
+                        
+                        // Find duplicates in JSON (same email + product_id + purchase_date within 10 seconds)
+                        const jsonGroups = new Map();
+                        jsonOrders.forEach(order => {
+                            const key = `${order.product_id}_${order.product_name}`;
+                            if (!jsonGroups.has(key)) {
+                                jsonGroups.set(key, []);
+                            }
+                            jsonGroups.get(key).push(order);
+                        });
+                        
+                        const ordersToKeep = [];
+                        let jsonRemovedCount = 0;
+                        
+                        jsonGroups.forEach((orders, key) => {
+                            if (orders.length <= 1) {
+                                ordersToKeep.push(...orders);
+                                return;
+                            }
+                            
+                            // Filter by email
+                            const emailOrders = orders.filter(o => 
+                                (o.customer_email || '').toLowerCase().trim() === email
+                            );
+                            
+                            if (emailOrders.length <= 1) {
+                                ordersToKeep.push(...orders);
+                                return;
+                            }
+                            
+                            // Sort by purchase_date and id (keep earliest)
+                            emailOrders.sort((a, b) => {
+                                const dateA = new Date(a.purchase_date || 0).getTime();
+                                const dateB = new Date(b.purchase_date || 0).getTime();
+                                if (dateA !== dateB) {
+                                    return dateA - dateB;
+                                }
+                                return (a.id || 0) - (b.id || 0);
+                            });
+                            
+                            // Keep first, remove others
+                            const toKeep = emailOrders[0];
+                            const toRemove = emailOrders.slice(1);
+                            
+                            // Check if they are real duplicates (same date within 10 seconds)
+                            toRemove.forEach(order => {
+                                const keepDate = new Date(toKeep.purchase_date || 0).getTime();
+                                const removeDate = new Date(order.purchase_date || 0).getTime();
+                                const timeDiff = Math.abs(keepDate - removeDate);
+                                
+                                if (timeDiff < 10000) {
+                                    jsonRemovedCount++;
+                                    console.log(`🗑️ Marking JSON duplicate for removal: ID=${order.id}, product=${order.product_name}`);
+                                } else {
+                                    ordersToKeep.push(order);
+                                }
+                            });
+                            
+                            // Add the one to keep
+                            ordersToKeep.push(toKeep);
+                            
+                            // Add non-email orders back
+                            orders.filter(o => 
+                                (o.customer_email || '').toLowerCase().trim() !== email
+                            ).forEach(o => ordersToKeep.push(o));
+                        });
+                        
+                        if (jsonRemovedCount > 0) {
+                            const saved = writeOrdersToJSON(ordersToKeep);
+                            if (saved) {
+                                console.log(`✅ Removed ${jsonRemovedCount} duplicate order(s) from orders.json`);
+                            } else {
+                                console.error('❌ Failed to save orders.json after removing duplicates');
+                            }
+                        }
+                        
+                        res.json({ 
+                            success: true, 
+                            message: `Removed ${removedCount} duplicate subscription(s) from DB and ${jsonRemovedCount} from orders.json for ${email}`,
+                            removed: removedCount,
+                            json_removed: jsonRemovedCount,
+                            errors: errors.length > 0 ? errors : undefined
+                        });
+                    } catch (jsonErr) {
+                        console.error('❌ Error removing duplicates from orders.json:', jsonErr);
+                        res.json({ 
+                            success: true, 
+                            message: `Removed ${removedCount} duplicate subscription(s) from DB for ${email} (JSON cleanup failed)`,
+                            removed: removedCount,
+                            errors: errors.length > 0 ? errors : undefined
+                        });
+                    }
                 }
             });
         });
