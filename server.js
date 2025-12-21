@@ -34,7 +34,22 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // Для обработки form-urlencoded (нужно для enot.io webhook)
 app.use(express.static('.')); // Для статических файлов
 
-// Initialize SQLite database FIRST
+// Start server IMMEDIATELY - before any blocking operations
+// This ensures healthcheck works even if DB initialization fails or is slow
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Healthcheck: http://0.0.0.0:${PORT}/health`);
+    console.log('⚠️ Database initialization in progress...');
+}).on('error', (err) => {
+    console.error('❌ Server listen error:', err);
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use`);
+    }
+    process.exit(1);
+});
+
+// Initialize SQLite database AFTER server starts
 // КРИТИЧЕСКИ ВАЖНО: На Render нужно использовать персистентное хранилище
 // На Render Free плане файлы сохраняются в /opt/render/project/src/
 // Используем переменную окружения DATABASE_PATH для указания пути
@@ -5166,28 +5181,16 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start server FIRST - before any DB operations that might block
-// This ensures healthcheck works even if DB has issues
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Database path: ${dbPath}`);
-    console.log(`Healthcheck: http://0.0.0.0:${PORT}/health`);
-    console.log('Subscription reminders scheduled');
-    console.log('API routes available:');
-    console.log('  GET  /health - Health check');
-    console.log('  GET  /api/test - Test endpoint');
-    console.log('  GET  /api/reviews - Get reviews');
-    console.log('  POST /api/review - Submit review');
-    console.log('  POST /api/review/verify - Verify review eligibility');
-    console.log('  POST /api/subscription - Submit subscription');
-}).on('error', (err) => {
-    console.error('❌ Server listen error:', err);
-    if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use`);
-    }
-    process.exit(1);
-});
+// Server already started above - log completion info
+console.log(`📊 Database path: ${dbPath}`);
+console.log('Subscription reminders scheduled');
+console.log('API routes available:');
+console.log('  GET  /health - Health check');
+console.log('  GET  /api/test - Test endpoint');
+console.log('  GET  /api/reviews - Get reviews');
+console.log('  POST /api/review - Submit review');
+console.log('  POST /api/review/verify - Verify review eligibility');
+console.log('  POST /api/subscription - Submit subscription');
 
 // Error handler for unhandled errors (after server starts)
 process.on('uncaughtException', (err) => {
