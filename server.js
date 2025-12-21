@@ -5009,6 +5009,11 @@ app.post('/api/debug/remove-dashes', (req, res) => {
 
 // Cron job to check and send reminders (runs every minute)
 cron.schedule('* * * * *', async () => {
+    // Skip if database is not initialized yet
+    if (!db) {
+        return;
+    }
+    
     const now = new Date();
     const nowISO = now.toISOString().split('.')[0].replace('T', ' ');
     
