@@ -2932,7 +2932,6 @@ label.subscription-btn:focus-visible {
 
 /* Базовые стили для галочки выбора оплаты */
 .payment-radio,
-#paymentSBP,
 input[type="radio"][name="paymentMethod"] {
     width: 18px;
     height: 18px;
@@ -3003,7 +3002,6 @@ input[type="radio"][name="paymentMethod"] {
     
     /* Уменьшаем размер галочки на мобильных через transform */
     .payment-radio,
-    #paymentSBP,
     input[type="radio"][name="paymentMethod"] {
         width: 18px !important;
         height: 18px !important;

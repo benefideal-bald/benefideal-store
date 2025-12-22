@@ -56,21 +56,6 @@
                                 <span style="line-height: 1.4;">Оплата картой (Cardlink)</span>
                             </span>
                         </label>
-                        
-                        <label class="payment-method-label" style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer; padding: var(--space-3) var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); transition: all 0.3s ease;" 
-                               onmouseover="this.style.background='var(--gray-100)'" 
-                               onmouseout="this.style.background='var(--gray-50)'">
-                            <input type="radio" 
-                                   name="paymentMethod" 
-                                   id="paymentSbpPhone" 
-                                   value="sbp-phone" 
-                                   required
-                                   style="cursor: pointer; accent-color: var(--primary);" class="payment-radio">
-                            <span class="payment-method-text" style="font-weight: 600; color: var(--gray-900); flex: 1; font-size: 0.95rem; display: flex; align-items: center; gap: var(--space-2);">
-                                <i class="fas fa-mobile-alt" style="color: var(--primary); font-size: 1rem; flex-shrink: 0;"></i>
-                                <span style="line-height: 1.4;">Оплата по СБП переводом на номер 098765435</span>
-                            </span>
-                        </label>
                     </div>
                     
                     <button type="submit" id="payButton" class="btn btn-primary">Перейти к оплате</button>
@@ -177,12 +162,8 @@
                 const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
                 console.log('💾 Saved to localStorage:', { name, email, paymentMethod });
                 
-                // Выбор способа оплаты
-                if (paymentMethod === 'sbp-phone') {
-                    processSbpPhonePayment(name, email);
-                } else {
-                    processCardlinkPayment(name, email);
-                }
+                // Оплата через Cardlink
+                processCardlinkPayment(name, email);
             });
             
             // Функция для обработки оплаты через Cardlink
@@ -289,16 +270,6 @@
                     console.error('Ошибка обработки оплаты Cardlink:', error);
                     alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз или обратитесь в поддержку.');
                 }
-            }
-            
-            // Оплата по СБП переводом на номер (показываем инструкцию на отдельной странице)
-            function processSbpPhonePayment(name, email) {
-                // Сохраняем данные для страницы оплаты
-                localStorage.setItem('benefideal_checkout_name', name);
-                localStorage.setItem('benefideal_checkout_email', email);
-                
-                // Переходим на страницу оплаты по СБП
-                window.location.href = 'test-payment.html';
             }
 
         })();
