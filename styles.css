@@ -360,8 +360,8 @@ body {
     width: 100vw;
     height: 100px;
     background-image: 
-        /* Волнистая линия через SVG с овальной формой */
-        url("data:image/svg+xml,%3Csvg width='200' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,50 Q50,15 100,50 T200,50' stroke='%231a1a1a' stroke-width='2.5' fill='none'/%3E%3C/svg%3E"),
+        /* Волнистая линия через SVG с овальной формой (x2 волны, толщина в половину) */
+        url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,50 Q25,15 50,50 T100,50' stroke='%231a1a1a' stroke-width='1.25' fill='none'/%3E%3C/svg%3E"),
         /* Оранжевые лампочки */
         radial-gradient(circle at 8% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
         radial-gradient(circle at 18% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
@@ -378,7 +378,7 @@ body {
         radial-gradient(circle at 15% 50%, #ef4444 0%, #ef4444 40%, transparent 45%),
         radial-gradient(circle at 25% 50%, #ef4444 0%, #ef4444 40%, transparent 45%),
         radial-gradient(circle at 35% 50%, #ef4444 0%, #ef4444 40%, transparent 45%);
-    background-size: 200px 100px, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%;
+    background-size: 100px 100px, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%;
     background-repeat: repeat-x;
     background-position: 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%;
     animation: garlandBlink 2s ease-in-out infinite;
@@ -396,8 +396,8 @@ body {
     width: 100vw;
     height: 100px;
     background-image: 
-        /* Волнистая линия через SVG с овальной формой */
-        url("data:image/svg+xml,%3Csvg width='200' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,50 Q50,85 100,50 T200,50' stroke='%231a1a1a' stroke-width='2.5' fill='none'/%3E%3C/svg%3E"),
+        /* Волнистая линия через SVG с овальной формой (x2 волны, толщина в половину) */
+        url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,50 Q25,85 50,50 T100,50' stroke='%231a1a1a' stroke-width='1.25' fill='none'/%3E%3C/svg%3E"),
         /* Оранжевые лампочки */
         radial-gradient(circle at 8% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
         radial-gradient(circle at 18% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
@@ -414,7 +414,7 @@ body {
         radial-gradient(circle at 15% 50%, #ef4444 0%, #ef4444 40%, transparent 45%),
         radial-gradient(circle at 25% 50%, #ef4444 0%, #ef4444 40%, transparent 45%),
         radial-gradient(circle at 35% 50%, #ef4444 0%, #ef4444 40%, transparent 45%);
-    background-size: 200px 100px, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%;
+    background-size: 100px 100px, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%;
     background-repeat: repeat-x;
     background-position: 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%;
     animation: garlandBlink 2s ease-in-out infinite 1s;
