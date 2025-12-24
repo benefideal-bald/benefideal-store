@@ -355,52 +355,36 @@ body {
 .promo-banner::before {
     content: '';
     position: absolute;
-    top: -8px;
+    top: -10px;
     left: calc((100vw - 100%) / -2); /* Выравниваем по левому краю экрана */
     width: 100vw; /* Растягиваем на всю ширину экрана */
-    height: 16px;
+    height: 20px;
     background-image: 
-        /* Новогодние лампочки - повторяющийся паттерн */
-        radial-gradient(circle at 0% 50%, #ff6b00 6px, transparent 6px),
-        radial-gradient(circle at 4% 50%, #22c55e 6px, transparent 6px),
-        radial-gradient(circle at 8% 50%, #3b82f6 6px, transparent 6px),
-        radial-gradient(circle at 12% 50%, #ef4444 6px, transparent 6px),
-        radial-gradient(circle at 16% 50%, #ef4444 6px, transparent 6px),
-        radial-gradient(circle at 20% 50%, #ef4444 6px, transparent 6px),
-        /* Провод между лампочками */
+        /* Провод (темная линия) */
         linear-gradient(to right, 
-            transparent 0%, 
-            #1a1a1a 1%, 
-            #1a1a1a 3%, 
-            transparent 3.5%,
-            transparent 4%,
-            #1a1a1a 4.5%,
-            #1a1a1a 6.5%,
-            transparent 7%,
-            transparent 8%,
-            #1a1a1a 8.5%,
-            #1a1a1a 10.5%,
-            transparent 11%,
-            transparent 12%,
-            #1a1a1a 12.5%,
-            #1a1a1a 14.5%,
-            transparent 15%,
-            transparent 16%,
-            #1a1a1a 16.5%,
-            #1a1a1a 18.5%,
-            transparent 19%,
-            transparent 20%,
-            #1a1a1a 20.5%,
-            #1a1a1a 22.5%,
-            transparent 23%
-        );
-    background-size: 24% 100%;
+            #1a1a1a 0%, 
+            #1a1a1a 100%
+        ),
+        /* Новогодние лампочки с эффектом свечения - паттерн из 6 лампочек */
+        /* Оранжевая */
+        radial-gradient(circle at 2% 50%, rgba(255, 107, 0, 0.9) 4px, rgba(255, 107, 0, 0.3) 6px, transparent 8px),
+        /* Зеленая */
+        radial-gradient(circle at 6% 50%, rgba(34, 197, 94, 0.9) 4px, rgba(34, 197, 94, 0.3) 6px, transparent 8px),
+        /* Синяя */
+        radial-gradient(circle at 10% 50%, rgba(59, 130, 246, 0.9) 4px, rgba(59, 130, 246, 0.3) 6px, transparent 8px),
+        /* Красная 1 */
+        radial-gradient(circle at 14% 50%, rgba(239, 68, 68, 0.9) 4px, rgba(239, 68, 68, 0.3) 6px, transparent 8px),
+        /* Красная 2 */
+        radial-gradient(circle at 18% 50%, rgba(239, 68, 68, 0.9) 4px, rgba(239, 68, 68, 0.3) 6px, transparent 8px),
+        /* Красная 3 */
+        radial-gradient(circle at 22% 50%, rgba(239, 68, 68, 0.9) 4px, rgba(239, 68, 68, 0.3) 6px, transparent 8px);
+    background-size: 24% 100%, 24% 100%, 24% 100%, 24% 100%, 24% 100%, 24% 100%, 24% 100%;
     background-repeat: repeat-x;
-    background-position: 0 50%;
+    background-position: 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%;
     animation: garlandBlink 2s ease-in-out infinite;
     pointer-events: none;
     z-index: 0;
-    filter: drop-shadow(0 2px 8px rgba(255, 107, 0, 0.6));
+    filter: drop-shadow(0 2px 10px rgba(255, 107, 0, 0.5));
 }
 
 /* Нижняя гирлянда удалена - используется только один вариант ниже */
@@ -601,52 +585,36 @@ body {
 .promo-banner::after {
     content: '';
     position: absolute;
-    bottom: -8px;
+    bottom: -10px;
     left: calc((100vw - 100%) / -2); /* Выравниваем по левому краю экрана */
     width: 100vw; /* Растягиваем на всю ширину экрана */
-    height: 16px;
+    height: 20px;
     background-image: 
-        /* Новогодние лампочки - повторяющийся паттерн */
-        radial-gradient(circle at 0% 50%, #ff6b00 6px, transparent 6px),
-        radial-gradient(circle at 4% 50%, #22c55e 6px, transparent 6px),
-        radial-gradient(circle at 8% 50%, #3b82f6 6px, transparent 6px),
-        radial-gradient(circle at 12% 50%, #ef4444 6px, transparent 6px),
-        radial-gradient(circle at 16% 50%, #ef4444 6px, transparent 6px),
-        radial-gradient(circle at 20% 50%, #ef4444 6px, transparent 6px),
-        /* Провод между лампочками */
+        /* Провод (темная линия) */
         linear-gradient(to right, 
-            transparent 0%, 
-            #1a1a1a 1%, 
-            #1a1a1a 3%, 
-            transparent 3.5%,
-            transparent 4%,
-            #1a1a1a 4.5%,
-            #1a1a1a 6.5%,
-            transparent 7%,
-            transparent 8%,
-            #1a1a1a 8.5%,
-            #1a1a1a 10.5%,
-            transparent 11%,
-            transparent 12%,
-            #1a1a1a 12.5%,
-            #1a1a1a 14.5%,
-            transparent 15%,
-            transparent 16%,
-            #1a1a1a 16.5%,
-            #1a1a1a 18.5%,
-            transparent 19%,
-            transparent 20%,
-            #1a1a1a 20.5%,
-            #1a1a1a 22.5%,
-            transparent 23%
-        );
-    background-size: 24% 100%;
+            #1a1a1a 0%, 
+            #1a1a1a 100%
+        ),
+        /* Новогодние лампочки с эффектом свечения - паттерн из 6 лампочек */
+        /* Оранжевая */
+        radial-gradient(circle at 2% 50%, rgba(255, 107, 0, 0.9) 4px, rgba(255, 107, 0, 0.3) 6px, transparent 8px),
+        /* Зеленая */
+        radial-gradient(circle at 6% 50%, rgba(34, 197, 94, 0.9) 4px, rgba(34, 197, 94, 0.3) 6px, transparent 8px),
+        /* Синяя */
+        radial-gradient(circle at 10% 50%, rgba(59, 130, 246, 0.9) 4px, rgba(59, 130, 246, 0.3) 6px, transparent 8px),
+        /* Красная 1 */
+        radial-gradient(circle at 14% 50%, rgba(239, 68, 68, 0.9) 4px, rgba(239, 68, 68, 0.3) 6px, transparent 8px),
+        /* Красная 2 */
+        radial-gradient(circle at 18% 50%, rgba(239, 68, 68, 0.9) 4px, rgba(239, 68, 68, 0.3) 6px, transparent 8px),
+        /* Красная 3 */
+        radial-gradient(circle at 22% 50%, rgba(239, 68, 68, 0.9) 4px, rgba(239, 68, 68, 0.3) 6px, transparent 8px);
+    background-size: 24% 100%, 24% 100%, 24% 100%, 24% 100%, 24% 100%, 24% 100%, 24% 100%;
     background-repeat: repeat-x;
-    background-position: 0 50%;
+    background-position: 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%;
     animation: garlandBlink 2s ease-in-out infinite 1s;
     pointer-events: none;
     z-index: 1;
-    filter: drop-shadow(0 -2px 8px rgba(255, 107, 0, 0.6));
+    filter: drop-shadow(0 -2px 10px rgba(255, 107, 0, 0.5));
 }
 
 .promo-banner-inner {
