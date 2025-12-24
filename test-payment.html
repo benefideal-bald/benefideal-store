@@ -65,7 +65,7 @@
             
             <div class="status info">
                 <strong>Информация:</strong><br>
-                Эта страница создаст тестовый платеж на сумму <strong>1 рубль</strong>.<br>
+                Эта страница создаст тестовый платеж на сумму <strong>10 рублей</strong>.<br>
                 Вы сможете проверить, что система правильно принимает платежи через CardLink.
             </div>
             
@@ -93,7 +93,7 @@
             statusContainer.innerHTML = '';
             resultContainer.innerHTML = '';
             
-            // Тестовые данные
+            // Тестовые данные (минимальная сумма для CardLink обычно 10-100 рублей)
             const testData = {
                 name: 'Тестовый пользователь',
                 email: 'test@example.com',
@@ -101,7 +101,7 @@
                     {
                         id: 1,
                         title: 'Тестовый товар',
-                        price: 1, // 1 рубль для теста
+                        price: 10, // Минимум 10 рублей для CardLink
                         quantity: 1,
                         months: 1
                     }
@@ -140,7 +140,7 @@
                         <div class="status info">
                             <strong>Детали платежа:</strong><br>
                             Order ID: ${testData.orderId}<br>
-                            Сумма: 1 рубль<br>
+                            Сумма: 10 рублей<br>
                             Email: ${testData.email}
                         </div>
                         <div class="code-block">Payment URL: ${result.payment_url}</div>
@@ -152,11 +152,13 @@
                         <div class="status info" style="margin-top: 1rem;">
                             <strong>Что проверить:</strong><br>
                             1. Откройте страницу оплаты<br>
-                            2. Оплатите 1 рубль (тестовая оплата)<br>
+                            2. Оплатите 10 рублей (тестовая оплата)<br>
                             3. После оплаты проверьте:<br>
                                - Заказ появился в админ-панели<br>
                                - Пришло уведомление в Telegram<br>
-                               - В логах Railway есть запись о callback
+                               - В логах Railway есть запись о callback<br><br>
+                            <strong>Или протестируйте реальную оплату:</strong><br>
+                            Просто добавьте товар в корзину на главной странице и пройдите обычный процесс оплаты через checkout.html
                         </div>
                     `;
                     

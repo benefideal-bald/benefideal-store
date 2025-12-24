@@ -4037,7 +4037,17 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
         // Формируем данные для оплаты
         // ВАЖНО: CardLink ожидает сумму в рублях (не в копейках) для валюты RUB
         // Также важно: после 50,000 рублей доступна только криптовалюта
+        // Минимальная сумма для CardLink обычно 10-100 рублей
         const amountInRubles = Math.round(total * 100) / 100; // Округляем до 2 знаков после запятой
+        
+        // Проверяем минимальную сумму
+        if (amountInRubles < 10) {
+            return res.status(400).json({
+                success: false,
+                error: 'Минимальная сумма для оплаты через CardLink: 10 рублей',
+                details: { amount: amountInRubles, minimum: 10 }
+            });
+        }
         
         const paymentData = {
             shop_id: CARDLINK_SHOP_ID,
