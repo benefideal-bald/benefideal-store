@@ -356,10 +356,9 @@ body {
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: 100vw; /* Растягиваем на всю ширину экрана */
-    margin-left: calc(-50vw + 50%); /* Центрируем относительно контейнера */
     height: 3px;
     background: 
         /* Верхняя гирлянда */
@@ -580,10 +579,9 @@ body {
     content: '';
     position: absolute;
     bottom: -6px;
-    left: 0;
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: 100vw; /* Растягиваем на всю ширину экрана */
-    margin-left: calc(-50vw + 50%); /* Центрируем относительно контейнера */
     height: 12px;
     background: 
         radial-gradient(circle at 0%, #ff6b6b 4px, transparent 4px),
