@@ -629,7 +629,7 @@ body {
     position: relative;
     z-index: 2;
     background: linear-gradient(110deg, #991b1b 0%, #b91c1c 20%, #92400e 40%, #065f46 60%, #047857 80%, #991b1b 100%);
-    border-radius: 8px;
+    border-radius: 0; /* Убираем скругление для единого слоя */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     line-height: 1.5; /* Улучшенное вертикальное выравнивание */
 }
@@ -703,7 +703,7 @@ body {
 @media (max-width: 768px) {
     .promo-banner {
         margin-top: 56px;
-        padding: 6px;
+        padding: 0; /* Убираем padding для единого слоя */
     }
     
     .promo-banner-inner {
