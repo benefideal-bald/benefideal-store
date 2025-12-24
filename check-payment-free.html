@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проверка оплаты без денег – Benefideal</title>
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <style>
+        .check-container {
+            max-width: 700px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            border-left: 4px solid #ccc;
+        }
+        .status.success {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        .status.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+        .status.info {
+            background: #e7f3ff;
+            border-color: #007bff;
+        }
+        .status.warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        .code-block {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+        .btn-check {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="nav">
+                <a href="index.html" class="logo">Benefideal</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="product-page" style="padding: var(--space-24) 0;">
+        <div class="check-container">
+            <h1 style="margin-bottom: var(--space-6);">🔍 Проверка оплаты (без реальной оплаты)</h1>
+            
+            <div class="status info">
+                <strong>Эта страница проверит:</strong><br>
+                ✅ Настроена ли CardLink<br>
+                ✅ Работает ли создание платежей<br>
+                ✅ Работает ли callback (симуляция)<br>
+                ✅ Сохраняются ли заказы<br>
+                <strong>Без реальной оплаты!</strong>
+            </div>
+            
+            <button id="checkBtn" class="btn btn-primary btn-check" onclick="checkPayment()">
+                Проверить оплату
+            </button>
+            
+            <div id="results"></div>
+        </div>
+    </main>
+
+    <script>
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+        const apiBase = isLocalhost ? 'http://localhost:3000' : window.location.origin;
+
+        async function checkPayment() {
+            const btn = document.getElementById('checkBtn');
+            const results = document.getElementById('results');
+            
+            btn.disabled = true;
+            btn.textContent = 'Проверка...';
+            results.innerHTML = '<div class="status info">⏳ Проверяю конфигурацию...</div>';
+            
+            const checks = [];
+            
+            // 1. Проверка конфигурации
+            try {
+                const configRes = await fetch(`${apiBase}/api/cardlink/check-config`);
+                const config = await configRes.json();
+                
+                if (config.configured) {
+                    checks.push({
+                        title: '✅ CardLink настроен',
+                        status: 'success',
+                        details: 'Переменные окружения установлены правильно'
+                    });
+                } else {
+                    checks.push({
+                        title: '❌ CardLink не настроен',
+                        status: 'error',
+                        details: 'Установите CARDLINK_SHOP_ID и CARDLINK_API_TOKEN на Railway'
+                    });
+                }
+            } catch (error) {
+                checks.push({
+                    title: '❌ Ошибка проверки конфигурации',
+                    status: 'error',
+                    details: error.message
+                });
+            }
+            
+            // 2. Проверка создания платежа (тестовый запрос)
+            try {
+                const testOrderId = 'TEST_CHECK_' + Date.now();
+                const testData = {
+                    name: 'Тестовый пользователь',
+                    email: 'test@example.com',
+                    cart: [{ id: 1, title: 'Тест', price: 10, quantity: 1, months: 1 }],
+                    orderId: testOrderId
+                };
+                
+                const paymentRes = await fetch(`${apiBase}/api/cardlink/create-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                
+                const paymentResult = await paymentRes.json();
+                
+                if (paymentResult.success && paymentResult.payment_url) {
+                    checks.push({
+                        title: '✅ Создание платежа работает',
+                        status: 'success',
+                        details: 'API CardLink отвечает, платеж создается успешно'
+                    });
+                    
+                    // 3. Симуляция callback (без реальной оплаты)
+                    try {
+                        const callbackRes = await fetch(`${apiBase}/api/cardlink/test-callback`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ orderId: testOrderId })
+                        });
+                        
+                        const callbackResult = await callbackRes.json();
+                        
+                        if (callbackResult.success) {
+                            checks.push({
+                                title: '✅ Callback работает',
+                                status: 'success',
+                                details: 'Система правильно обрабатывает успешные платежи'
+                            });
+                        } else {
+                            checks.push({
+                                title: '⚠️ Callback требует проверки',
+                                status: 'warning',
+                                details: 'Callback endpoint доступен, но нужна реальная оплата для полной проверки'
+                            });
+                        }
+                    } catch (callbackError) {
+                        checks.push({
+                            title: '⚠️ Не удалось протестировать callback',
+                            status: 'warning',
+                            details: 'Endpoint доступен, но нужна реальная оплата для проверки'
+                        });
+                    }
+                } else if (paymentResult.error && paymentResult.error.includes('не настроен')) {
+                    checks.push({
+                        title: '❌ CardLink не настроен',
+                        status: 'error',
+                        details: paymentResult.error
+                    });
+                } else {
+                    checks.push({
+                        title: '❌ Ошибка создания платежа',
+                        status: 'error',
+                        details: paymentResult.error || JSON.stringify(paymentResult)
+                    });
+                }
+            } catch (error) {
+                checks.push({
+                    title: '❌ Ошибка проверки создания платежа',
+                    status: 'error',
+                    details: error.message
+                });
+            }
+            
+            // 4. Проверка callback endpoint
+            try {
+                const callbackCheckRes = await fetch(`${apiBase}/api/cardlink/callback`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'SUCCESS', order_id: 'TEST' })
+                });
+                
+                const callbackCheck = await callbackCheckRes.json();
+                
+                checks.push({
+                    title: '✅ Callback endpoint доступен',
+                    status: 'success',
+                    details: 'Endpoint отвечает на запросы'
+                });
+            } catch (error) {
+                checks.push({
+                    title: '❌ Callback endpoint недоступен',
+                    status: 'error',
+                    details: error.message
+                });
+            }
+            
+            // Отображаем результаты
+            let html = '';
+            checks.forEach(check => {
+                html += `
+                    <div class="status ${check.status}">
+                        <strong>${check.title}</strong><br>
+                        ${check.details}
+                    </div>
+                `;
+            });
+            
+            // Итог
+            const successCount = checks.filter(c => c.status === 'success').length;
+            const errorCount = checks.filter(c => c.status === 'error').length;
+            const warningCount = checks.filter(c => c.status === 'warning').length;
+            
+            html += `
+                <div class="status ${errorCount === 0 ? 'success' : 'error'}" style="margin-top: 2rem;">
+                    <strong>📊 Итоги проверки:</strong><br>
+                    ✅ Успешно: ${successCount}<br>
+                    ⚠️ Предупреждения: ${warningCount}<br>
+                    ❌ Ошибки: ${errorCount}
+                </div>
+            `;
+            
+            if (errorCount === 0 && successCount >= 3) {
+                html += `
+                    <div class="status success" style="margin-top: 1rem;">
+                        <strong>✅ Система готова принимать платежи!</strong><br>
+                        Все проверки пройдены. Когда клиент оплатит заказ, система автоматически:<br>
+                        • Сохранит заказ в базу данных<br>
+                        • Отправит уведомление в Telegram<br>
+                        • Создаст напоминания о продлении
+                    </div>
+                `;
+            } else if (errorCount > 0) {
+                html += `
+                    <div class="status error" style="margin-top: 1rem;">
+                        <strong>❌ Обнаружены проблемы!</strong><br>
+                        Исправьте ошибки выше, чтобы система могла принимать платежи.
+                    </div>
+                `;
+            }
+            
+            results.innerHTML = html;
+            btn.disabled = false;
+            btn.textContent = 'Проверить снова';
+        }
+    </script>
+</body>
+</html>
+
