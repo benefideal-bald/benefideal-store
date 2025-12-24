@@ -355,13 +355,13 @@ body {
 .promo-banner::before {
     content: '';
     position: absolute;
-    top: -12px;
+    top: -20px;
     left: calc((100vw - 100%) / -2);
     width: 100vw;
-    height: 24px;
+    height: 40px;
     background-image: 
-        /* Волнистая линия через SVG */
-        url("data:image/svg+xml,%3Csvg width='200' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,10 Q50,5 100,10 T200,10' stroke='%231a1a1a' stroke-width='2.5' fill='none'/%3E%3C/svg%3E"),
+        /* Волнистая линия через SVG с овальной формой */
+        url("data:image/svg+xml,%3Csvg width='200' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,20 Q50,8 100,20 T200,20' stroke='%231a1a1a' stroke-width='2.5' fill='none'/%3E%3C/svg%3E"),
         /* Оранжевые лампочки */
         radial-gradient(circle at 8% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
         radial-gradient(circle at 18% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
@@ -391,13 +391,13 @@ body {
 .promo-banner::after {
     content: '';
     position: absolute;
-    bottom: -12px;
+    bottom: -20px;
     left: calc((100vw - 100%) / -2);
     width: 100vw;
-    height: 24px;
+    height: 40px;
     background-image: 
-        /* Волнистая линия через SVG */
-        url("data:image/svg+xml,%3Csvg width='200' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,10 Q50,15 100,10 T200,10' stroke='%231a1a1a' stroke-width='2.5' fill='none'/%3E%3C/svg%3E"),
+        /* Волнистая линия через SVG с овальной формой */
+        url("data:image/svg+xml,%3Csvg width='200' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,20 Q50,32 100,20 T200,20' stroke='%231a1a1a' stroke-width='2.5' fill='none'/%3E%3C/svg%3E"),
         /* Оранжевые лампочки */
         radial-gradient(circle at 8% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
         radial-gradient(circle at 18% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
@@ -414,7 +414,7 @@ body {
         radial-gradient(circle at 15% 50%, #ef4444 0%, #ef4444 40%, transparent 45%),
         radial-gradient(circle at 25% 50%, #ef4444 0%, #ef4444 40%, transparent 45%),
         radial-gradient(circle at 35% 50%, #ef4444 0%, #ef4444 40%, transparent 45%);
-    background-size: 200px 20px, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%;
+    background-size: 200px 40px, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%;
     background-repeat: repeat-x;
     background-position: 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%;
     animation: garlandBlink 2s ease-in-out infinite 1s;
