@@ -551,53 +551,7 @@ body {
 }
 
 /* Боковые элементы гирлянды */
-.garland-left,
-.garland-right {
-    position: absolute;
-    width: 12px;
-    top: 0;
-    bottom: 0;
-    z-index: 1;
-    pointer-events: none;
-}
-
-.garland-left {
-    left: -6px;
-    background: 
-        radial-gradient(circle at 50% 0%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 50% 10%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 50% 20%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 50% 30%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 50% 40%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 50% 50%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 50% 60%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 50% 70%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 50% 80%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 50% 90%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 50% 100%, #ff6b6b 4px, transparent 4px);
-    background-size: 100% 10%;
-    animation: garlandBlink 1.5s ease-in-out infinite 0.3s;
-    filter: drop-shadow(-2px 0 4px rgba(0, 0, 0, 0.3));
-}
-
-.garland-right {
-    right: -6px;
-    background: 
-        radial-gradient(circle at 50% 0%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 50% 10%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 50% 20%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 50% 30%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 50% 40%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 50% 50%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 50% 60%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 50% 70%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 50% 80%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 50% 90%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 50% 100%, #4ecdc4 4px, transparent 4px);
-    background-size: 100% 10%;
-    animation: garlandBlink 1.5s ease-in-out infinite 0.6s;
-    filter: drop-shadow(2px 0 4px rgba(0, 0, 0, 0.3));
-}
+/* Боковые элементы гирлянды удалены - они скрыты выше через display: none */
 
 /* Анимация мигания гирлянды */
 @keyframes garlandBlink {
