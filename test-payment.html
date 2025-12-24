@@ -3,205 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Оплата по СБП – Benefideal</title>
+    <title>Тест оплаты CardLink – Benefideal</title>
     <link rel="stylesheet" href="styles.css?v=2.0">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
-        .test-payment-container {
+        .test-container {
             max-width: 600px;
-            margin: 0 auto;
-            padding: var(--space-8) var(--space-4);
-            min-height: 80vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        
-        .test-payment-card {
-            background: var(--white);
-            border-radius: var(--radius-2xl);
-            padding: var(--space-8);
-            box-shadow: var(--shadow-xl);
+        .status {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            border-left: 4px solid #ccc;
+        }
+        .status.success {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        .status.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+        .status.info {
+            background: #e7f3ff;
+            border-color: #007bff;
+        }
+        .btn-test {
             width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            margin-top: 1rem;
         }
-        
-        .payment-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: var(--space-6);
-            text-align: center;
-        }
-        
-        .phone-section {
-            background: var(--gray-50);
-            padding: var(--space-6);
-            border-radius: var(--radius-lg);
-            margin-bottom: var(--space-6);
-            text-align: center;
-        }
-        
-        .phone-label {
-            font-size: 0.9rem;
-            color: var(--gray-600);
-            margin-bottom: var(--space-2);
-        }
-        
-        .phone-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
+        .code-block {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
             font-family: monospace;
-            letter-spacing: 2px;
-            margin-bottom: var(--space-4);
-        }
-        
-        .copy-btn {
-            background: var(--gradient-primary);
-            color: white;
-            border: none;
-            padding: var(--space-2) var(--space-4);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            font-weight: 500;
-            transition: transform 0.2s;
-        }
-        
-        .copy-btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .copy-btn.copied {
-            background: var(--success);
-        }
-        
-        .receipt-section {
-            margin-bottom: var(--space-6);
-        }
-        
-        .receipt-label {
-            display: block;
-            margin-bottom: var(--space-3);
-            font-weight: 600;
-            color: var(--gray-700);
-            font-size: 1rem;
-        }
-        
-        .receipt-input {
-            width: 100%;
-            padding: var(--space-4);
-            border: 2px dashed var(--gray-300);
-            border-radius: var(--radius-md);
-            background: var(--gray-50);
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 0.95rem;
-        }
-        
-        .receipt-input:hover {
-            border-color: var(--primary);
-            background: var(--white);
-        }
-        
-        .receipt-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            background: var(--white);
-        }
-        
-        .receipt-preview {
-            margin-top: var(--space-3);
-            padding: var(--space-3);
-            background: var(--gray-50);
-            border-radius: var(--radius-md);
-            display: none;
-            align-items: center;
-            gap: var(--space-2);
-        }
-        
-        .receipt-preview.show {
-            display: flex;
-        }
-        
-        .receipt-preview i {
-            color: var(--success);
-        }
-        
-        .receipt-preview span {
-            flex: 1;
-            font-size: 0.9rem;
-            color: var(--gray-700);
-        }
-        
-        .receipt-preview button {
-            background: none;
-            border: none;
-            color: var(--error);
-            cursor: pointer;
-            padding: var(--space-1);
-        }
-        
-        .confirm-btn {
-            width: 100%;
-            padding: var(--space-4);
-            background: var(--gradient-primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-lg);
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-            margin-bottom: var(--space-4);
-        }
-        
-        .confirm-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-        }
-        
-        .confirm-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .order-info {
-            background: var(--gray-50);
-            padding: var(--space-4);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-6);
-        }
-        
-        .order-info-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: var(--space-2);
-            font-size: 0.95rem;
-        }
-        
-        .order-info-item:last-child {
-            margin-bottom: 0;
-            font-weight: 600;
-            font-size: 1.1rem;
-            padding-top: var(--space-2);
-            border-top: 1px solid var(--gray-200);
-        }
-        
-        .back-link {
-            display: block;
-            text-align: center;
-            color: var(--gray-600);
-            text-decoration: none;
-            margin-top: var(--space-4);
-            font-size: 0.9rem;
-        }
-        
-        .back-link:hover {
-            color: var(--primary);
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            word-break: break-all;
+            white-space: pre-wrap;
         }
     </style>
 </head>
@@ -214,221 +59,164 @@
         </div>
     </header>
 
-    <main class="product-page" style="padding: var(--space-24) 0; background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%); min-height:80vh;">
-        <div class="test-payment-container">
-            <div class="test-payment-card">
-                <h1 class="payment-title">Оплата по СБП</h1>
-                
-                <div class="order-info" id="orderInfo">
-                    <!-- Order info will be loaded here -->
-                </div>
-                
-                <div class="phone-section">
-                    <div class="phone-label">Номер телефона для перевода:</div>
-                    <div class="phone-number" id="phoneNumber">098765435</div>
-                    <button class="copy-btn" onclick="copyPhoneNumber()">
-                        <i class="fas fa-copy"></i> Копировать номер
-                    </button>
-                </div>
-                
-                <form id="testPaymentForm">
-                    <div class="receipt-section">
-                        <label for="receiptFile" class="receipt-label">
-                            <i class="fas fa-file-upload"></i> Загрузите чек об оплате
-                        </label>
-                        <input type="file" 
-                               id="receiptFile" 
-                               name="receiptFile" 
-                               accept="image/*,.pdf"
-                               class="receipt-input"
-                               required
-                               onchange="handleReceiptUpload(event)">
-                        <div class="receipt-preview" id="receiptPreview">
-                            <i class="fas fa-file-check"></i>
-                            <span id="receiptFileName"></span>
-                            <button type="button" onclick="removeReceipt()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="confirm-btn" id="confirmBtn">
-                        Подтвердить оплату
-                    </button>
-                </form>
-                
-                <a href="checkout.html" class="back-link">
-                    <i class="fas fa-arrow-left"></i> Вернуться к выбору способа оплаты
-                </a>
+    <main class="product-page" style="padding: var(--space-24) 0;">
+        <div class="test-container">
+            <h1 style="margin-bottom: var(--space-6);">🧪 Тест оплаты CardLink</h1>
+            
+            <div class="status info">
+                <strong>Информация:</strong><br>
+                Эта страница создаст тестовый платеж на сумму <strong>1 рубль</strong>.<br>
+                Вы сможете проверить, что система правильно принимает платежи через CardLink.
             </div>
+            
+            <div id="statusContainer"></div>
+            
+            <button id="testBtn" class="btn btn-primary btn-test" onclick="createTestPayment()">
+                Создать тестовый платеж
+            </button>
+            
+            <div id="resultContainer" style="margin-top: 2rem;"></div>
         </div>
     </main>
 
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-bottom" style="text-align:center;">
-                <p>&copy; 2024 Benefideal</p>
-            </div>
-        </div>
-    </footer>
-
     <script>
-        // Load order info
-        (function() {
-            try {
-                const cart = JSON.parse(localStorage.getItem('benefideal_cart') || '[]');
-                const name = localStorage.getItem('benefideal_checkout_name') || 'Не указано';
-                const email = localStorage.getItem('benefideal_checkout_email') || 'Не указано';
-                
-                if (cart.length === 0) {
-                    window.location.href = 'checkout.html';
-                    return;
-                }
-                
-                const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
-                
-                const orderInfo = document.getElementById('orderInfo');
-                orderInfo.innerHTML = `
-                    <div class="order-info-item">
-                        <span>Имя:</span>
-                        <span>${name}</span>
-                    </div>
-                    <div class="order-info-item">
-                        <span>Email:</span>
-                        <span>${email}</span>
-                    </div>
-                    <div class="order-info-item">
-                        <span>Товары:</span>
-                        <span>${cart.map(i => i.title).join(', ')}</span>
-                    </div>
-                    <div class="order-info-item">
-                        <span>Итого к оплате:</span>
-                        <span>${total.toLocaleString('ru-RU')} ₽</span>
-                    </div>
-                `;
-            } catch (e) {
-                console.error('Error loading order info:', e);
-            }
-        })();
-        
-        function copyPhoneNumber() {
-            const phoneNumber = '098765435';
-            navigator.clipboard.writeText(phoneNumber).then(() => {
-                const btn = event.target.closest('.copy-btn');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Скопировано!';
-                btn.classList.add('copied');
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-            });
-        }
-        
-        function handleReceiptUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const preview = document.getElementById('receiptPreview');
-                const fileName = document.getElementById('receiptFileName');
-                fileName.textContent = file.name;
-                preview.classList.add('show');
-            }
-        }
-        
-        function removeReceipt() {
-            const fileInput = document.getElementById('receiptFile');
-            const preview = document.getElementById('receiptPreview');
-            fileInput.value = '';
-            preview.classList.remove('show');
-        }
-        
-        // Handle form submission
-        document.getElementById('testPaymentForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+        const apiBase = isLocalhost ? 'http://localhost:3000' : window.location.origin;
+
+        async function createTestPayment() {
+            const btn = document.getElementById('testBtn');
+            const statusContainer = document.getElementById('statusContainer');
+            const resultContainer = document.getElementById('resultContainer');
             
-            const receiptFile = document.getElementById('receiptFile').files[0];
-            if (!receiptFile) {
-                const fileInput = document.getElementById('receiptFile');
-                fileInput.focus();
-                fileInput.style.borderColor = 'var(--error)';
-                setTimeout(() => {
-                    fileInput.style.borderColor = '';
-                }, 3000);
-                return;
-            }
+            btn.disabled = true;
+            btn.textContent = 'Создание платежа...';
+            statusContainer.innerHTML = '';
+            resultContainer.innerHTML = '';
             
-            const confirmBtn = document.getElementById('confirmBtn');
-            confirmBtn.disabled = true;
-            confirmBtn.textContent = 'Обработка...';
+            // Тестовые данные
+            const testData = {
+                name: 'Тестовый пользователь',
+                email: 'test@example.com',
+                cart: [
+                    {
+                        id: 1,
+                        title: 'Тестовый товар',
+                        price: 1, // 1 рубль для теста
+                        quantity: 1,
+                        months: 1
+                    }
+                ],
+                orderId: 'TEST_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+            };
+            
+            statusContainer.innerHTML = `
+                <div class="status info">
+                    <strong>Создание платежа...</strong><br>
+                    Order ID: ${testData.orderId}<br>
+                    Сумма: 1 рубль
+                </div>
+            `;
             
             try {
-                const cart = JSON.parse(localStorage.getItem('benefideal_cart') || '[]');
-                const name = localStorage.getItem('benefideal_checkout_name') || '';
-                const email = localStorage.getItem('benefideal_checkout_email') || '';
-                
-                if (cart.length === 0) {
-                    alert('Корзина пуста');
-                    window.location.href = 'checkout.html';
-                    return;
-                }
-                
-                const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
-                const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                
-                // Сохраняем данные заказа
-                localStorage.setItem('benefideal_pending_order', JSON.stringify({
-                    orderId,
-                    name,
-                    email,
-                    cart,
-                    total,
-                    paymentMethod: 'test',
-                    timestamp: Date.now()
-                }));
-                
-                // Отправляем данные на сервер
-                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
-                const apiUrl = isLocalhost
-                    ? 'http://localhost:3000/api/test-payment'
-                    : `${window.location.origin}/api/test-payment`;
-                
-                const formData = new FormData();
-                formData.append('name', name);
-                formData.append('email', email);
-                formData.append('order_id', orderId);
-                formData.append('cart', JSON.stringify(cart));
-                formData.append('total', total);
-                formData.append('receipt', receiptFile);
-                
-                const response = await fetch(apiUrl, {
+                const response = await fetch(`${apiBase}/api/cardlink/create-payment`, {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
                 });
                 
                 const result = await response.json();
                 
-                if (result.success) {
-                    // Очищаем корзину
-                    localStorage.removeItem('benefideal_cart');
-                    localStorage.removeItem('benefideal_cart_timestamp');
+                if (result.success && result.payment_url) {
+                    statusContainer.innerHTML = `
+                        <div class="status success">
+                            <strong>✅ Платеж успешно создан!</strong><br>
+                            Система готова принимать платежи.
+                        </div>
+                    `;
                     
-                    // Переходим на страницу успеха
-                    window.location.href = `payment-success.html?order_id=${orderId}`;
+                    resultContainer.innerHTML = `
+                        <div class="status info">
+                            <strong>Детали платежа:</strong><br>
+                            Order ID: ${testData.orderId}<br>
+                            Сумма: 1 рубль<br>
+                            Email: ${testData.email}
+                        </div>
+                        <div class="code-block">Payment URL: ${result.payment_url}</div>
+                        <div style="margin-top: 1rem;">
+                            <a href="${result.payment_url}" target="_blank" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
+                                Открыть страницу оплаты
+                            </a>
+                        </div>
+                        <div class="status info" style="margin-top: 1rem;">
+                            <strong>Что проверить:</strong><br>
+                            1. Откройте страницу оплаты<br>
+                            2. Оплатите 1 рубль (тестовая оплата)<br>
+                            3. После оплаты проверьте:<br>
+                               - Заказ появился в админ-панели<br>
+                               - Пришло уведомление в Telegram<br>
+                               - В логах Railway есть запись о callback
+                        </div>
+                    `;
+                    
+                    btn.textContent = 'Платеж создан';
+                } else if (result.error) {
+                    statusContainer.innerHTML = `
+                        <div class="status error">
+                            <strong>❌ Ошибка создания платежа</strong><br>
+                            ${result.error}
+                        </div>
+                    `;
+                    
+                    resultContainer.innerHTML = `
+                        <div class="code-block">${JSON.stringify(result, null, 2)}</div>
+                        <div class="status error" style="margin-top: 1rem;">
+                            <strong>Что проверить:</strong><br>
+                            1. Установлены ли переменные окружения на Railway:<br>
+                               - CARDLINK_SHOP_ID<br>
+                               - CARDLINK_API_TOKEN<br>
+                            2. Правильные ли значения в переменных окружения<br>
+                            3. Проверьте логи Railway на наличие ошибок
+                        </div>
+                    `;
+                    
+                    btn.disabled = false;
+                    btn.textContent = 'Попробовать снова';
                 } else {
-                    alert('Ошибка при обработке оплаты: ' + (result.error || 'Неизвестная ошибка'));
-                    confirmBtn.disabled = false;
-                    confirmBtn.textContent = 'Подтвердить оплату';
+                    statusContainer.innerHTML = `
+                        <div class="status error">
+                            <strong>❌ Неожиданный ответ</strong>
+                        </div>
+                    `;
+                    
+                    resultContainer.innerHTML = `
+                        <div class="code-block">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                    
+                    btn.disabled = false;
+                    btn.textContent = 'Попробовать снова';
                 }
             } catch (error) {
-                console.error('Ошибка при обработке оплаты:', error);
-                alert('Произошла ошибка при обработке оплаты. Попробуйте еще раз.');
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = 'Подтвердить оплату';
+                statusContainer.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ Ошибка подключения</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+                
+                resultContainer.innerHTML = `
+                    <div class="status error">
+                        <strong>Проблема:</strong><br>
+                        Не удалось подключиться к серверу.<br>
+                        Проверьте, что сервер запущен и доступен.
+                    </div>
+                `;
+                
+                btn.disabled = false;
+                btn.textContent = 'Попробовать снова';
             }
-        });
+        }
     </script>
 </body>
 </html>
-
