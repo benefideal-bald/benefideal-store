@@ -351,24 +351,29 @@ body {
     margin-left: calc(-50vw + 50%); /* Центрируем относительно контейнера */
 }
 
-/* Простая гирлянда с разноцветными точками - верхняя */
+/* Новогодняя гирлянда с лампочками - верхняя */
 .promo-banner::before {
     content: '';
     position: absolute;
-    top: -6px;
+    top: -8px;
     left: calc((100vw - 100%) / -2); /* Выравниваем по левому краю экрана */
     width: 100vw; /* Растягиваем на всю ширину экрана */
-    height: 12px;
+    height: 16px;
     background-image: 
-        /* Темная ниточка */
+        /* Темная ниточка (провод) */
         linear-gradient(to right, #1a1a1a 0%, #1a1a1a 100%),
-        /* Разноцветные точки-лампочки: оранжевая, зеленая, синяя, красная, красная, красная */
-        radial-gradient(circle at 2% 50%, #ff6b00 5px, transparent 5px),
-        radial-gradient(circle at 6% 50%, #22c55e 5px, transparent 5px),
-        radial-gradient(circle at 10% 50%, #3b82f6 5px, transparent 5px),
-        radial-gradient(circle at 14% 50%, #ef4444 5px, transparent 5px),
-        radial-gradient(circle at 18% 50%, #ef4444 5px, transparent 5px),
-        radial-gradient(circle at 22% 50%, #ef4444 5px, transparent 5px);
+        /* Оранжевая лампочка с эффектом свечения */
+        radial-gradient(ellipse at 2% 50%, rgba(255, 107, 0, 0.8) 0px, rgba(255, 107, 0, 0.6) 3px, rgba(255, 107, 0, 0.3) 5px, transparent 8px),
+        /* Зеленая лампочка с эффектом свечения */
+        radial-gradient(ellipse at 6% 50%, rgba(34, 197, 94, 0.8) 0px, rgba(34, 197, 94, 0.6) 3px, rgba(34, 197, 94, 0.3) 5px, transparent 8px),
+        /* Синяя лампочка с эффектом свечения */
+        radial-gradient(ellipse at 10% 50%, rgba(59, 130, 246, 0.8) 0px, rgba(59, 130, 246, 0.6) 3px, rgba(59, 130, 246, 0.3) 5px, transparent 8px),
+        /* Красная лампочка 1 с эффектом свечения */
+        radial-gradient(ellipse at 14% 50%, rgba(239, 68, 68, 0.8) 0px, rgba(239, 68, 68, 0.6) 3px, rgba(239, 68, 68, 0.3) 5px, transparent 8px),
+        /* Красная лампочка 2 с эффектом свечения */
+        radial-gradient(ellipse at 18% 50%, rgba(239, 68, 68, 0.8) 0px, rgba(239, 68, 68, 0.6) 3px, rgba(239, 68, 68, 0.3) 5px, transparent 8px),
+        /* Красная лампочка 3 с эффектом свечения */
+        radial-gradient(ellipse at 22% 50%, rgba(239, 68, 68, 0.8) 0px, rgba(239, 68, 68, 0.6) 3px, rgba(239, 68, 68, 0.3) 5px, transparent 8px);
     background-size: 100% 2px, 24% 100%, 24% 100%, 24% 100%, 24% 100%, 24% 100%, 24% 100%;
     background-repeat: repeat-x;
     background-position: 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%;
@@ -389,11 +394,11 @@ body {
 @keyframes garlandBlink {
     0%, 100% {
         opacity: 1;
-        filter: brightness(1);
+        filter: brightness(1) drop-shadow(0 0 4px rgba(255, 107, 0, 0.6));
     }
     50% {
-        opacity: 0.5;
-        filter: brightness(1.3);
+        opacity: 0.7;
+        filter: brightness(1.4) drop-shadow(0 0 8px rgba(255, 107, 0, 0.9));
     }
 }
         2% -3px 0 0 #dc2626,
@@ -571,24 +576,29 @@ body {
     }
 }
 
-/* Простая гирлянда с разноцветными точками - нижняя */
+/* Новогодняя гирлянда с лампочками - нижняя */
 .promo-banner::after {
     content: '';
     position: absolute;
-    bottom: -6px;
+    bottom: -8px;
     left: calc((100vw - 100%) / -2); /* Выравниваем по левому краю экрана */
     width: 100vw; /* Растягиваем на всю ширину экрана */
-    height: 12px;
+    height: 16px;
     background-image: 
-        /* Темная ниточка */
+        /* Темная ниточка (провод) */
         linear-gradient(to right, #1a1a1a 0%, #1a1a1a 100%),
-        /* Разноцветные точки-лампочки: оранжевая, зеленая, синяя, красная, красная, красная */
-        radial-gradient(circle at 2% 50%, #ff6b00 5px, transparent 5px),
-        radial-gradient(circle at 6% 50%, #22c55e 5px, transparent 5px),
-        radial-gradient(circle at 10% 50%, #3b82f6 5px, transparent 5px),
-        radial-gradient(circle at 14% 50%, #ef4444 5px, transparent 5px),
-        radial-gradient(circle at 18% 50%, #ef4444 5px, transparent 5px),
-        radial-gradient(circle at 22% 50%, #ef4444 5px, transparent 5px);
+        /* Оранжевая лампочка с эффектом свечения */
+        radial-gradient(ellipse at 2% 50%, rgba(255, 107, 0, 0.8) 0px, rgba(255, 107, 0, 0.6) 3px, rgba(255, 107, 0, 0.3) 5px, transparent 8px),
+        /* Зеленая лампочка с эффектом свечения */
+        radial-gradient(ellipse at 6% 50%, rgba(34, 197, 94, 0.8) 0px, rgba(34, 197, 94, 0.6) 3px, rgba(34, 197, 94, 0.3) 5px, transparent 8px),
+        /* Синяя лампочка с эффектом свечения */
+        radial-gradient(ellipse at 10% 50%, rgba(59, 130, 246, 0.8) 0px, rgba(59, 130, 246, 0.6) 3px, rgba(59, 130, 246, 0.3) 5px, transparent 8px),
+        /* Красная лампочка 1 с эффектом свечения */
+        radial-gradient(ellipse at 14% 50%, rgba(239, 68, 68, 0.8) 0px, rgba(239, 68, 68, 0.6) 3px, rgba(239, 68, 68, 0.3) 5px, transparent 8px),
+        /* Красная лампочка 2 с эффектом свечения */
+        radial-gradient(ellipse at 18% 50%, rgba(239, 68, 68, 0.8) 0px, rgba(239, 68, 68, 0.6) 3px, rgba(239, 68, 68, 0.3) 5px, transparent 8px),
+        /* Красная лампочка 3 с эффектом свечения */
+        radial-gradient(ellipse at 22% 50%, rgba(239, 68, 68, 0.8) 0px, rgba(239, 68, 68, 0.6) 3px, rgba(239, 68, 68, 0.3) 5px, transparent 8px);
     background-size: 100% 2px, 24% 100%, 24% 100%, 24% 100%, 24% 100%, 24% 100%, 24% 100%;
     background-repeat: repeat-x;
     background-position: 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%;
