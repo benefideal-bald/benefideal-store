@@ -379,31 +379,7 @@ body {
     clip-path: polygon(0 0, 100% 0, 100% 3px, 0 3px);
 }
 
-/* Нижняя гирлянда */
-.promo-banner::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: 
-        repeating-linear-gradient(
-            90deg,
-            #dc2626 0px,
-            #dc2626 8px,
-            #059669 8px,
-            #059669 16px,
-            #d97706 16px,
-            #d97706 24px
-        );
-    background-size: 24px 3px;
-    animation: garlandBlink 2s ease-in-out infinite 1s;
-    pointer-events: none;
-    z-index: 0;
-    filter: drop-shadow(0 0 6px rgba(217, 119, 6, 0.8));
-    border-radius: 0 0 10px 10px;
-}
+/* Нижняя гирлянда удалена - используется только один вариант ниже */
 
 /* Боковые элементы гирлянды - левая */
 .garland-left {
