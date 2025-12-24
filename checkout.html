@@ -30,7 +30,7 @@
                     <div class="form-group">
                         <label for="email">Электронная почта</label>
                         <input type="text" id="email" name="email" required placeholder="you@example.com">
-                        <div id="emailError" style="display: none; color: var(--error); font-size: 0.875rem; margin-top: var(--space-1);">Извините, разрешены только буквы (a-z), цифры (0-9), и точки (.)</div>
+                        <div id="emailError" style="display: none; color: var(--error); font-size: 0.875rem; margin-top: var(--space-1);">Пожалуйста, введите корректный email адрес</div>
                     </div>
                     <div class="checkout-total">
                         <div class="label">Итого к оплате:</div>
@@ -145,10 +145,11 @@
                 let email = document.getElementById('email').value.trim().toLowerCase(); // Normalize email to lowercase
                 const emailError = document.getElementById('emailError');
                 
-                // Валидация email: только буквы (a-z), цифры (0-9) и точки (.)
-                const emailPattern = /^[a-z0-9.]+@[a-z0-9.]+$/;
+                // Валидация email: стандартный формат email
+                const emailPattern = /^[a-z0-9._+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
                 if (!emailPattern.test(email)) {
                     emailError.style.display = 'block';
+                    emailError.textContent = 'Пожалуйста, введите корректный email адрес';
                     document.getElementById('email').focus();
                     return;
                 }
