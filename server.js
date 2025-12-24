@@ -4294,6 +4294,95 @@ app.get('/api/cardlink/check-config', (req, res) => {
     });
 });
 
+// API endpoint для тестирования callback (симуляция успешного платежа)
+app.post('/api/cardlink/test-callback', async (req, res) => {
+    const { orderId } = req.body;
+    
+    if (!orderId) {
+        return res.status(400).json({
+            success: false,
+            error: 'Не указан orderId'
+        });
+    }
+    
+    console.log('🧪 Testing callback for order:', orderId);
+    
+    // Симулируем callback от CardLink
+    const testCallbackData = {
+        Status: 'SUCCESS',
+        order_id: orderId,
+        amount: 1,
+        transaction_id: 'TEST_' + Date.now()
+    };
+    
+    // Вызываем callback обработчик напрямую
+    const mockReq = {
+        body: testCallbackData,
+        protocol: req.protocol,
+        get: (header) => req.get(header)
+    };
+    
+    const mockRes = {
+        status: (code) => ({
+            json: (data) => {
+                console.log('🧪 Test callback result:', data);
+                return res.json({
+                    success: true,
+                    message: 'Тестовый callback выполнен',
+                    callback_result: data,
+                    test_data: testCallbackData
+                });
+            }
+        })
+    };
+    
+    // Вызываем обработчик callback
+    try {
+        // Импортируем обработчик callback (он уже определен выше)
+        // Просто вызываем его логику напрямую
+        const pendingOrdersPath = path.join(process.cwd(), 'data', 'pending_orders.json');
+        let pendingOrder = null;
+        
+        if (fs.existsSync(pendingOrdersPath)) {
+            const data = fs.readFileSync(pendingOrdersPath, 'utf8');
+            const pendingOrders = JSON.parse(data);
+            const orderIndex = pendingOrders.findIndex(o => o.orderId === orderId);
+            
+            if (orderIndex !== -1) {
+                pendingOrder = pendingOrders[orderIndex];
+                console.log('🧪 Found pending order for test:', orderId);
+            }
+        }
+        
+        if (pendingOrder) {
+            res.json({
+                success: true,
+                message: 'Тестовый callback выполнен',
+                found_pending_order: true,
+                order_data: {
+                    name: pendingOrder.name,
+                    email: pendingOrder.email,
+                    cart_count: pendingOrder.cart.length
+                },
+                note: 'Если бы это был реальный платеж, заказ был бы сохранен в базу данных'
+            });
+        } else {
+            res.json({
+                success: true,
+                message: 'Тестовый callback выполнен',
+                found_pending_order: false,
+                note: 'Pending order не найден. Создайте платеж сначала через test-payment.html'
+            });
+        }
+    } catch (error) {
+        console.error('🧪 Test callback error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // ==================== ENOT.IO INTEGRATION ====================
 
 // API endpoint для создания платежа через Enot.io
