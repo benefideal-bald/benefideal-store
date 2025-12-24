@@ -351,7 +351,89 @@ body {
     margin-left: calc(-50vw + 50%); /* Центрируем относительно контейнера */
 }
 
-/* Гирлянда полностью удалена - начинаем заново */
+/* Волнистая гирлянда с лампочками - верхняя */
+.promo-banner::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: calc((100vw - 100%) / -2);
+    width: 100vw;
+    height: 24px;
+    background-image: 
+        /* Волнистая линия через SVG */
+        url("data:image/svg+xml,%3Csvg width='200' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,10 Q50,5 100,10 T200,10' stroke='%231a1a1a' stroke-width='2.5' fill='none'/%3E%3C/svg%3E"),
+        /* Оранжевые лампочки */
+        radial-gradient(circle at 8% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
+        radial-gradient(circle at 18% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
+        radial-gradient(circle at 28% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
+        /* Зеленые лампочки */
+        radial-gradient(circle at 13% 50%, #22c55e 0%, #22c55e 40%, transparent 45%),
+        radial-gradient(circle at 23% 50%, #22c55e 0%, #22c55e 40%, transparent 45%),
+        radial-gradient(circle at 33% 50%, #22c55e 0%, #22c55e 40%, transparent 45%),
+        /* Синие лампочки */
+        radial-gradient(circle at 10% 50%, #3b82f6 0%, #3b82f6 40%, transparent 45%),
+        radial-gradient(circle at 20% 50%, #3b82f6 0%, #3b82f6 40%, transparent 45%),
+        radial-gradient(circle at 30% 50%, #3b82f6 0%, #3b82f6 40%, transparent 45%),
+        /* Красные лампочки */
+        radial-gradient(circle at 15% 50%, #ef4444 0%, #ef4444 40%, transparent 45%),
+        radial-gradient(circle at 25% 50%, #ef4444 0%, #ef4444 40%, transparent 45%),
+        radial-gradient(circle at 35% 50%, #ef4444 0%, #ef4444 40%, transparent 45%);
+    background-size: 200px 20px, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%;
+    background-repeat: repeat-x;
+    background-position: 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%;
+    animation: garlandBlink 2s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+    filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
+}
+
+/* Волнистая гирлянда с лампочками - нижняя */
+.promo-banner::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: calc((100vw - 100%) / -2);
+    width: 100vw;
+    height: 24px;
+    background-image: 
+        /* Волнистая линия через SVG */
+        url("data:image/svg+xml,%3Csvg width='200' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,10 Q50,15 100,10 T200,10' stroke='%231a1a1a' stroke-width='2.5' fill='none'/%3E%3C/svg%3E"),
+        /* Оранжевые лампочки */
+        radial-gradient(circle at 8% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
+        radial-gradient(circle at 18% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
+        radial-gradient(circle at 28% 50%, #ff6b00 0%, #ff6b00 40%, transparent 45%),
+        /* Зеленые лампочки */
+        radial-gradient(circle at 13% 50%, #22c55e 0%, #22c55e 40%, transparent 45%),
+        radial-gradient(circle at 23% 50%, #22c55e 0%, #22c55e 40%, transparent 45%),
+        radial-gradient(circle at 33% 50%, #22c55e 0%, #22c55e 40%, transparent 45%),
+        /* Синие лампочки */
+        radial-gradient(circle at 10% 50%, #3b82f6 0%, #3b82f6 40%, transparent 45%),
+        radial-gradient(circle at 20% 50%, #3b82f6 0%, #3b82f6 40%, transparent 45%),
+        radial-gradient(circle at 30% 50%, #3b82f6 0%, #3b82f6 40%, transparent 45%),
+        /* Красные лампочки */
+        radial-gradient(circle at 15% 50%, #ef4444 0%, #ef4444 40%, transparent 45%),
+        radial-gradient(circle at 25% 50%, #ef4444 0%, #ef4444 40%, transparent 45%),
+        radial-gradient(circle at 35% 50%, #ef4444 0%, #ef4444 40%, transparent 45%);
+    background-size: 200px 20px, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%, 8% 100%;
+    background-repeat: repeat-x;
+    background-position: 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%, 0 50%;
+    animation: garlandBlink 2s ease-in-out infinite 1s;
+    pointer-events: none;
+    z-index: 1;
+    filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
+}
+
+/* Анимация мигания лампочек */
+@keyframes garlandBlink {
+    0%, 100% {
+        opacity: 1;
+        filter: brightness(1) drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
+    }
+    50% {
+        opacity: 0.7;
+        filter: brightness(1.4) drop-shadow(0 0 8px rgba(255, 215, 0, 0.9));
+    }
+}
 
 .promo-banner-inner {
     display: flex;
