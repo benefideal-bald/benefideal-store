@@ -343,10 +343,10 @@ body {
     position: relative;
     margin-top: 64px; /* компенсируем фиксированный хедер */
     z-index: 900;
-    background: linear-gradient(110deg, #991b1b 0%, #b91c1c 20%, #92400e 40%, #065f46 60%, #047857 80%, #991b1b 100%);
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.45);
-    overflow: hidden; /* Скрываем гирлянду, которая выходит за границы */
-    padding: 6px; /* Отступ для гирлянды */
+    background: transparent; /* Убираем фон, чтобы не было двойного слоя */
+    box-shadow: none; /* Убираем тень */
+    overflow: visible;
+    padding: 0; /* Убираем отступ */
 }
 
 /* 3D Гирлянда вокруг баннера - обводит по периметру */
