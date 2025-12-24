@@ -4137,6 +4137,35 @@ app.get('/api/cardlink/payment-link', (req, res) => {
     });
 });
 
+// API endpoint для проверки конфигурации CardLink
+app.get('/api/cardlink/check-config', (req, res) => {
+    const CARDLINK_SHOP_ID = process.env.CARDLINK_SHOP_ID || 'YOUR_SHOP_ID';
+    const CARDLINK_API_TOKEN = process.env.CARDLINK_API_TOKEN || 'YOUR_API_TOKEN';
+    const CARDLINK_API_URL = process.env.CARDLINK_API_URL || 'https://cardlink.link/api/v1/bill/create';
+    const CARDLINK_PAYMENT_LINK = process.env.CARDLINK_PAYMENT_LINK;
+    
+    const config = {
+        shop_id_configured: CARDLINK_SHOP_ID !== 'YOUR_SHOP_ID',
+        api_token_configured: CARDLINK_API_TOKEN !== 'YOUR_API_TOKEN',
+        api_url: CARDLINK_API_URL,
+        payment_link_configured: !!CARDLINK_PAYMENT_LINK && CARDLINK_PAYMENT_LINK !== 'YOUR_PAYMENT_LINK_HERE',
+        callback_url: `${req.protocol}://${req.get('host')}/api/cardlink/callback`,
+        success_url: `${req.protocol}://${req.get('host')}/payment-success.html`,
+        fail_url: `${req.protocol}://${req.get('host')}/payment-fail.html`
+    };
+    
+    const allConfigured = config.shop_id_configured && config.api_token_configured;
+    
+    res.json({
+        success: allConfigured,
+        configured: allConfigured,
+        config: config,
+        message: allConfigured 
+            ? 'CardLink настроен правильно' 
+            : 'CardLink не настроен. Установите CARDLINK_SHOP_ID и CARDLINK_API_TOKEN на Railway.'
+    });
+});
+
 // ==================== ENOT.IO INTEGRATION ====================
 
 // API endpoint для создания платежа через Enot.io

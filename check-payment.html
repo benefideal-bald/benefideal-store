@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проверка оплаты CardLink – Benefideal</title>
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <style>
+        .check-item {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            border-left: 4px solid #ccc;
+        }
+        .check-item.success {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        .check-item.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+        .check-item.warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        .check-item.loading {
+            background: #e7f3ff;
+            border-color: #007bff;
+        }
+        .check-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .check-details {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        .check-code {
+            background: #f5f5f5;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="nav">
+                <a href="index.html" class="logo">Benefideal</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="product-page" style="padding: var(--space-24) 0;">
+        <div class="container" style="max-width: 800px;">
+            <h1 style="margin-bottom: var(--space-6);">🔍 Проверка оплаты CardLink</h1>
+            
+            <div id="checks">
+                <div class="check-item loading">
+                    <div class="check-title">⏳ Проверка конфигурации...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+        const apiBase = isLocalhost ? 'http://localhost:3000' : window.location.origin;
+
+        async function checkPayment() {
+            const checks = [];
+            
+            // 1. Проверка endpoint для создания платежа
+            checks.push(checkCreatePaymentEndpoint());
+            
+            // 2. Проверка callback endpoint
+            checks.push(checkCallbackEndpoint());
+            
+            // 3. Проверка конфигурации CardLink
+            checks.push(checkCardLinkConfig());
+            
+            // 4. Проверка страниц успеха/ошибки
+            checks.push(checkPaymentPages());
+            
+            // 5. Тест создания платежа (без реальной оплаты)
+            checks.push(testPaymentCreation());
+            
+            const results = await Promise.all(checks);
+            displayResults(results);
+        }
+
+        async function checkCreatePaymentEndpoint() {
+            try {
+                const response = await fetch(`${apiBase}/api/cardlink/create-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Test',
+                        email: 'test@test.com',
+                        cart: [{ id: 1, title: 'Test', price: 100, quantity: 1 }],
+                        orderId: 'TEST_' + Date.now()
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error && data.error.includes('не настроен')) {
+                    return {
+                        title: '❌ CardLink не настроен',
+                        status: 'error',
+                        details: 'Переменные окружения CARDLINK_SHOP_ID и CARDLINK_API_TOKEN не установлены на Railway',
+                        code: data.error
+                    };
+                }
+                
+                if (data.success && data.payment_url) {
+                    return {
+                        title: '✅ Endpoint создания платежа работает',
+                        status: 'success',
+                        details: 'Платеж успешно создан',
+                        code: `Payment URL: ${data.payment_url.substring(0, 50)}...`
+                    };
+                }
+                
+                if (data.error) {
+                    return {
+                        title: '⚠️ Проблема с созданием платежа',
+                        status: 'warning',
+                        details: 'Endpoint отвечает, но есть ошибка',
+                        code: JSON.stringify(data, null, 2)
+                    };
+                }
+                
+                return {
+                    title: '❓ Неожиданный ответ',
+                    status: 'warning',
+                    details: 'Endpoint отвечает, но формат ответа неожиданный',
+                    code: JSON.stringify(data, null, 2)
+                };
+            } catch (error) {
+                return {
+                    title: '❌ Endpoint создания платежа недоступен',
+                    status: 'error',
+                    details: 'Не удалось подключиться к серверу',
+                    code: error.message
+                };
+            }
+        }
+
+        async function checkCallbackEndpoint() {
+            try {
+                const response = await fetch(`${apiBase}/api/cardlink/callback`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'SUCCESS',
+                        order_id: 'TEST',
+                        amount: 100
+                    })
+                });
+                
+                const data = await response.json();
+                
+                return {
+                    title: '✅ Callback endpoint доступен',
+                    status: 'success',
+                    details: 'Endpoint отвечает на запросы',
+                    code: `Response: ${JSON.stringify(data)}`
+                };
+            } catch (error) {
+                return {
+                    title: '❌ Callback endpoint недоступен',
+                    status: 'error',
+                    details: 'Не удалось подключиться к серверу',
+                    code: error.message
+                };
+            }
+        }
+
+        async function checkCardLinkConfig() {
+            try {
+                const response = await fetch(`${apiBase}/api/cardlink/payment-link`);
+                const data = await response.json();
+                
+                if (data.error && data.error.includes('не настроена')) {
+                    return {
+                        title: '⚠️ Платежная ссылка не настроена (нормально, если используется API)',
+                        status: 'warning',
+                        details: 'Это нормально, если вы используете API для создания платежей',
+                        code: data.error
+                    };
+                }
+                
+                if (data.success) {
+                    return {
+                        title: '✅ Платежная ссылка настроена',
+                        status: 'success',
+                        details: 'Альтернативный способ оплаты доступен',
+                        code: `Link: ${data.payment_link_template?.substring(0, 50)}...`
+                    };
+                }
+                
+                return {
+                    title: '❓ Неожиданный ответ',
+                    status: 'warning',
+                    details: 'Endpoint отвечает, но формат неожиданный',
+                    code: JSON.stringify(data, null, 2)
+                };
+            } catch (error) {
+                return {
+                    title: '⚠️ Не удалось проверить платежную ссылку',
+                    status: 'warning',
+                    details: 'Это не критично, если используется API',
+                    code: error.message
+                };
+            }
+        }
+
+        async function checkPaymentPages() {
+            const pages = [
+                { name: 'payment-success.html', url: 'payment-success.html' },
+                { name: 'payment-fail.html', url: 'payment-fail.html' }
+            ];
+            
+            const results = [];
+            for (const page of pages) {
+                try {
+                    const response = await fetch(page.url, { method: 'HEAD' });
+                    if (response.ok) {
+                        results.push(`✅ ${page.name} доступна`);
+                    } else {
+                        results.push(`❌ ${page.name} недоступна (${response.status})`);
+                    }
+                } catch (error) {
+                    results.push(`❌ ${page.name} недоступна`);
+                }
+            }
+            
+            const allOk = results.every(r => r.startsWith('✅'));
+            
+            return {
+                title: allOk ? '✅ Страницы оплаты доступны' : '⚠️ Некоторые страницы недоступны',
+                status: allOk ? 'success' : 'warning',
+                details: results.join(', '),
+                code: ''
+            };
+        }
+
+        async function testPaymentCreation() {
+            try {
+                const testData = {
+                    name: 'Тестовый пользователь',
+                    email: 'test@example.com',
+                    cart: [
+                        { id: 1, title: 'ChatGPT Plus', price: 1990, quantity: 1, months: 1 }
+                    ],
+                    orderId: 'TEST_CHECK_' + Date.now()
+                };
+                
+                const response = await fetch(`${apiBase}/api/cardlink/create-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.payment_url) {
+                    return {
+                        title: '✅ Тест создания платежа успешен',
+                        status: 'success',
+                        details: 'Платеж создан, но НЕ оплачен (это только тест)',
+                        code: `Order ID: ${testData.orderId}\nPayment URL: ${data.payment_url.substring(0, 80)}...`
+                    };
+                }
+                
+                if (data.error) {
+                    return {
+                        title: '❌ Ошибка при создании тестового платежа',
+                        status: 'error',
+                        details: data.error,
+                        code: JSON.stringify(data, null, 2)
+                    };
+                }
+                
+                return {
+                    title: '⚠️ Неожиданный ответ при тесте',
+                    status: 'warning',
+                    details: 'Платеж не создан, но причина неясна',
+                    code: JSON.stringify(data, null, 2)
+                };
+            } catch (error) {
+                return {
+                    title: '❌ Ошибка при тесте создания платежа',
+                    status: 'error',
+                    details: 'Не удалось выполнить тест',
+                    code: error.message
+                };
+            }
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('checks');
+            container.innerHTML = '';
+            
+            results.forEach(result => {
+                const div = document.createElement('div');
+                div.className = `check-item ${result.status}`;
+                div.innerHTML = `
+                    <div class="check-title">${result.title}</div>
+                    <div class="check-details">${result.details}</div>
+                    ${result.code ? `<div class="check-code">${result.code}</div>` : ''}
+                `;
+                container.appendChild(div);
+            });
+            
+            // Добавляем итоговую информацию
+            const successCount = results.filter(r => r.status === 'success').length;
+            const errorCount = results.filter(r => r.status === 'error').length;
+            const warningCount = results.filter(r => r.status === 'warning').length;
+            
+            const summary = document.createElement('div');
+            summary.className = 'check-item';
+            summary.style.marginTop = '2rem';
+            summary.innerHTML = `
+                <div class="check-title">📊 Итоги проверки</div>
+                <div class="check-details">
+                    ✅ Успешно: ${successCount}<br>
+                    ⚠️ Предупреждения: ${warningCount}<br>
+                    ❌ Ошибки: ${errorCount}
+                </div>
+                ${errorCount > 0 ? `
+                    <div class="check-details" style="margin-top: 1rem; color: #dc3545;">
+                        <strong>⚠️ ВНИМАНИЕ:</strong> Обнаружены ошибки! Проверьте настройки CardLink на Railway:
+                        <ul style="margin-top: 0.5rem;">
+                            <li>CARDLINK_SHOP_ID - должен быть установлен</li>
+                            <li>CARDLINK_API_TOKEN - должен быть установлен</li>
+                            <li>CARDLINK_API_URL - опционально (по умолчанию: https://cardlink.link/api/v1/bill/create)</li>
+                        </ul>
+                        <p style="margin-top: 0.5rem;">Также проверьте, что в личном кабинете CardLink указан правильный Callback URL: <code>https://benefideal.ru/api/cardlink/callback</code></p>
+                    </div>
+                ` : ''}
+            `;
+            container.appendChild(summary);
+        }
+
+        // Запускаем проверку при загрузке страницы
+        checkPayment();
+    </script>
+</body>
+</html>
+
