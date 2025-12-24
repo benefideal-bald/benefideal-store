@@ -186,10 +186,21 @@
                         details: paymentResult.error
                     });
                 } else {
+                    // Показываем детальную информацию об ошибке
+                    let errorDetails = paymentResult.error || 'Неизвестная ошибка';
+                    if (paymentResult.details) {
+                        if (typeof paymentResult.details === 'object') {
+                            errorDetails += '\n' + JSON.stringify(paymentResult.details, null, 2);
+                        } else {
+                            errorDetails += '\n' + paymentResult.details;
+                        }
+                    }
+                    
                     checks.push({
                         title: '❌ Ошибка создания платежа',
                         status: 'error',
-                        details: paymentResult.error || JSON.stringify(paymentResult)
+                        details: errorDetails,
+                        fullError: paymentResult
                     });
                 }
             } catch (error) {
@@ -226,10 +237,14 @@
             // Отображаем результаты
             let html = '';
             checks.forEach(check => {
+                let detailsHtml = check.details;
+                if (check.fullError && check.status === 'error') {
+                    detailsHtml += `<div class="code-block" style="margin-top: 0.5rem;">${JSON.stringify(check.fullError, null, 2)}</div>`;
+                }
                 html += `
                     <div class="status ${check.status}">
                         <strong>${check.title}</strong><br>
-                        ${check.details}
+                        ${detailsHtml}
                     </div>
                 `;
             });
