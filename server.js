@@ -4010,6 +4010,30 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
         const successUrl = `${req.protocol}://${req.get('host')}/payment-success.html?order_id=${orderId}`;
         const failUrl = `${req.protocol}://${req.get('host')}/payment-fail.html?order_id=${orderId}`;
         
+        // Сохраняем данные заказа во временное хранилище для callback
+        const pendingOrdersPath = path.join(process.cwd(), 'data', 'pending_orders.json');
+        const pendingOrder = {
+            orderId,
+            name,
+            email: email.toLowerCase().trim(),
+            cart,
+            total,
+            createdAt: new Date().toISOString()
+        };
+        
+        try {
+            let pendingOrders = [];
+            if (fs.existsSync(pendingOrdersPath)) {
+                const data = fs.readFileSync(pendingOrdersPath, 'utf8');
+                pendingOrders = JSON.parse(data);
+            }
+            pendingOrders.push(pendingOrder);
+            fs.writeFileSync(pendingOrdersPath, JSON.stringify(pendingOrders, null, 2), 'utf8');
+            console.log('💾 Pending order saved:', orderId);
+        } catch (saveError) {
+            console.error('⚠️ Failed to save pending order (will try to process from payment-success.html):', saveError);
+        }
+        
         // Формируем данные для оплаты
         // ВАЖНО: CardLink ожидает сумму в рублях (не в копейках) для валюты RUB
         // Также важно: после 50,000 рублей доступна только криптовалюта
@@ -4089,7 +4113,7 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
 });
 
 // API endpoint для обработки callback от Cardlink
-app.post('/api/cardlink/callback', (req, res) => {
+app.post('/api/cardlink/callback', async (req, res) => {
     console.log('📞 Cardlink callback received:', req.body);
     
     // Cardlink отправляет данные о статусе платежа
@@ -4109,8 +4133,112 @@ app.post('/api/cardlink/callback', (req, res) => {
         // Платеж успешен - обрабатываем заказ
         console.log('✅ Payment successful:', { orderId, amount, transactionId });
         
-        // Здесь можно обновить статус заказа в базе данных
-        // Или отправить данные в Telegram
+        // Получаем данные заказа из pending_orders
+        const pendingOrdersPath = path.join(process.cwd(), 'data', 'pending_orders.json');
+        let pendingOrder = null;
+        
+        try {
+            if (fs.existsSync(pendingOrdersPath)) {
+                const data = fs.readFileSync(pendingOrdersPath, 'utf8');
+                const pendingOrders = JSON.parse(data);
+                const orderIndex = pendingOrders.findIndex(o => o.orderId === orderId);
+                
+                if (orderIndex !== -1) {
+                    pendingOrder = pendingOrders[orderIndex];
+                    // Удаляем из pending_orders
+                    pendingOrders.splice(orderIndex, 1);
+                    fs.writeFileSync(pendingOrdersPath, JSON.stringify(pendingOrders, null, 2), 'utf8');
+                    console.log('📦 Found pending order:', orderId);
+                }
+            }
+        } catch (error) {
+            console.error('⚠️ Error reading pending orders:', error);
+        }
+        
+        // Если нашли данные заказа, сохраняем их
+        if (pendingOrder && pendingOrder.cart && pendingOrder.cart.length > 0) {
+            console.log('💾 Processing order from callback:', orderId);
+            const { name, email, cart } = pendingOrder;
+            
+            // Сохраняем каждый товар как отдельную подписку
+            for (const item of cart) {
+                try {
+                    // Используем внутренний вызов логики сохранения заказа
+                    const normalizedEmail = email.toLowerCase().trim();
+                    const purchaseDate = new Date();
+                    const itemAmount = item.price * (item.quantity || 1);
+                    
+                    // Сохраняем в JSON
+                    const existingOrders = readOrdersFromJSON();
+                    const maxId = existingOrders.length > 0 ? Math.max(...existingOrders.map(o => o.id || 0)) : 0;
+                    const subscriptionId = maxId + 1;
+                    
+                    const orderData = {
+                        id: subscriptionId,
+                        customer_name: name,
+                        customer_email: normalizedEmail,
+                        product_name: item.title,
+                        product_id: item.id,
+                        subscription_months: item.months || 1,
+                        purchase_date: purchaseDate.toISOString(),
+                        order_id: orderId,
+                        amount: itemAmount,
+                        is_active: 1
+                    };
+                    
+                    const savedToJson = addOrderToJSON(orderData);
+                    if (savedToJson) {
+                        console.log(`✅ Order saved from callback: ${orderId} (product ${item.id})`);
+                        
+                        // Сохраняем в БД
+                        if (db) {
+                            db.get(`SELECT id FROM subscriptions WHERE json_order_id = ?`, [orderData.id], (err, existing) => {
+                                if (!err && !existing) {
+                                    const stmt = db.prepare(`
+                                        INSERT INTO subscriptions (
+                                            customer_name, customer_email, product_name, product_id,
+                                            subscription_months, purchase_date, order_id, amount, is_active, json_order_id
+                                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+                                    `);
+                                    stmt.run([
+                                        orderData.customer_name,
+                                        orderData.customer_email,
+                                        orderData.product_name,
+                                        orderData.product_id,
+                                        orderData.subscription_months,
+                                        orderData.purchase_date,
+                                        orderData.order_id,
+                                        orderData.amount,
+                                        orderData.id
+                                    ], function(insertErr) {
+                                        if (!insertErr) {
+                                            console.log(`✅ Subscription saved to DB: ${this.lastID}`);
+                                            // Генерируем напоминания
+                                            if (item.id === 1 || item.id === 3 || item.id === 7) {
+                                                generateReminders(this.lastID, item.id, item.months || 1, purchaseDate);
+                                            }
+                                        }
+                                        stmt.finalize();
+                                    });
+                                }
+                            });
+                        }
+                    }
+                } catch (itemError) {
+                    console.error(`❌ Error processing item ${item.id} from callback:`, itemError);
+                }
+            }
+            
+            // Отправляем уведомление в Telegram
+            try {
+                const message = `💰 Новый заказ через CardLink!\n\n👤 Клиент: ${name}\n📧 Email: ${email}\n🆔 Заказ: ${orderId}\n💵 Сумма: ${amount} ₽\n\nТовары:\n${cart.map(i => `• ${i.title} - ${i.price} ₽`).join('\n')}`;
+                sendTelegramMessage(message);
+            } catch (telegramError) {
+                console.error('⚠️ Error sending Telegram notification:', telegramError);
+            }
+        } else {
+            console.log('⚠️ Pending order not found, order will be processed from payment-success.html');
+        }
         
         res.status(200).json({ success: true, message: 'Callback processed' });
     } else {
