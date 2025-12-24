@@ -621,8 +621,8 @@ body {
     align-items: center;
     justify-content: center;
     gap: var(--space-4);
-    padding: var(--space-3) var(--space-6);
-    min-height: 44px; /* Уменьшена высота */
+    padding: var(--space-4) var(--space-6); /* Увеличено вертикальное выравнивание */
+    min-height: 50px; /* Увеличена высота для лучшего центрирования */
     color: #ffffff;
     text-align: center;
     font-size: 0.95rem;
@@ -631,7 +631,7 @@ body {
     background: linear-gradient(110deg, #991b1b 0%, #b91c1c 20%, #92400e 40%, #065f46 60%, #047857 80%, #991b1b 100%);
     border-radius: 0; /* Убираем скругление для единого слоя */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    line-height: 1.5; /* Улучшенное вертикальное выравнивание */
+    line-height: 1.6; /* Улучшенное вертикальное выравнивание */
 }
 
 /* Растягиваем баннер на всю ширину экрана */
