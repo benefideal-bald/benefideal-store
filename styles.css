@@ -347,6 +347,8 @@ body {
     box-shadow: none; /* Убираем тень */
     overflow: visible;
     padding: 0; /* Убираем отступ */
+    width: 100vw; /* Растягиваем на всю ширину экрана */
+    margin-left: calc(-50vw + 50%); /* Центрируем относительно контейнера */
 }
 
 /* 3D Гирлянда вокруг баннера - обводит по периметру */
@@ -356,8 +358,9 @@ body {
     top: 0;
     left: 0;
     right: 0;
+    width: 100vw; /* Растягиваем на всю ширину экрана */
+    margin-left: calc(-50vw + 50%); /* Центрируем относительно контейнера */
     height: 3px;
-    border-radius: 10px;
     background: 
         /* Верхняя гирлянда */
         repeating-linear-gradient(
@@ -376,7 +379,6 @@ body {
     pointer-events: none;
     z-index: 0;
     filter: drop-shadow(0 0 6px rgba(217, 119, 6, 0.8));
-    clip-path: polygon(0 0, 100% 0, 100% 3px, 0 3px);
 }
 
 /* Нижняя гирлянда удалена - используется только один вариант ниже */
@@ -580,6 +582,8 @@ body {
     bottom: -6px;
     left: 0;
     right: 0;
+    width: 100vw; /* Растягиваем на всю ширину экрана */
+    margin-left: calc(-50vw + 50%); /* Центрируем относительно контейнера */
     height: 12px;
     background: 
         radial-gradient(circle at 0%, #ff6b6b 4px, transparent 4px),
