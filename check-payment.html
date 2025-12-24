@@ -185,38 +185,29 @@
 
         async function checkCardLinkConfig() {
             try {
-                const response = await fetch(`${apiBase}/api/cardlink/payment-link`);
+                const response = await fetch(`${apiBase}/api/cardlink/check-config`);
                 const data = await response.json();
                 
-                if (data.error && data.error.includes('не настроена')) {
+                if (data.configured) {
                     return {
-                        title: '⚠️ Платежная ссылка не настроена (нормально, если используется API)',
-                        status: 'warning',
-                        details: 'Это нормально, если вы используете API для создания платежей',
-                        code: data.error
-                    };
-                }
-                
-                if (data.success) {
-                    return {
-                        title: '✅ Платежная ссылка настроена',
+                        title: '✅ CardLink настроен правильно',
                         status: 'success',
-                        details: 'Альтернативный способ оплаты доступен',
-                        code: `Link: ${data.payment_link_template?.substring(0, 50)}...`
+                        details: 'Все необходимые переменные окружения установлены',
+                        code: `Shop ID: ${data.config.shop_id_configured ? '✅' : '❌'}\nAPI Token: ${data.config.api_token_configured ? '✅' : '❌'}\nCallback URL: ${data.config.callback_url}`
+                    };
+                } else {
+                    return {
+                        title: '❌ CardLink не настроен',
+                        status: 'error',
+                        details: 'Не установлены переменные окружения на Railway',
+                        code: `Shop ID: ${data.config.shop_id_configured ? '✅' : '❌ НЕ УСТАНОВЛЕН'}\nAPI Token: ${data.config.api_token_configured ? '✅' : '❌ НЕ УСТАНОВЛЕН'}\n\nУстановите CARDLINK_SHOP_ID и CARDLINK_API_TOKEN на Railway`
                     };
                 }
-                
-                return {
-                    title: '❓ Неожиданный ответ',
-                    status: 'warning',
-                    details: 'Endpoint отвечает, но формат неожиданный',
-                    code: JSON.stringify(data, null, 2)
-                };
             } catch (error) {
                 return {
-                    title: '⚠️ Не удалось проверить платежную ссылку',
-                    status: 'warning',
-                    details: 'Это не критично, если используется API',
+                    title: '❌ Не удалось проверить конфигурацию',
+                    status: 'error',
+                    details: 'Не удалось подключиться к серверу',
                     code: error.message
                 };
             }
