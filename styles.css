@@ -351,32 +351,56 @@ body {
     margin-left: calc(-50vw + 50%); /* Центрируем относительно контейнера */
 }
 
-/* 3D Гирлянда вокруг баннера - обводит по периметру */
+/* Новогодняя гирлянда с лампочками - верхняя */
 .promo-banner::before {
     content: '';
     position: absolute;
-    top: 0;
+    top: -8px;
     left: calc((100vw - 100%) / -2); /* Выравниваем по левому краю экрана */
     width: 100vw; /* Растягиваем на всю ширину экрана */
-    height: 3px;
-    background: 
-        /* Верхняя гирлянда */
-        repeating-linear-gradient(
-            90deg,
-            #d97706 0px,
-            #d97706 8px,
-            #dc2626 8px,
-            #dc2626 16px,
-            #059669 16px,
-            #059669 24px
+    height: 16px;
+    background-image: 
+        /* Новогодние лампочки - повторяющийся паттерн */
+        radial-gradient(circle at 0% 50%, #ff6b00 6px, transparent 6px),
+        radial-gradient(circle at 4% 50%, #22c55e 6px, transparent 6px),
+        radial-gradient(circle at 8% 50%, #3b82f6 6px, transparent 6px),
+        radial-gradient(circle at 12% 50%, #ef4444 6px, transparent 6px),
+        radial-gradient(circle at 16% 50%, #ef4444 6px, transparent 6px),
+        radial-gradient(circle at 20% 50%, #ef4444 6px, transparent 6px),
+        /* Провод между лампочками */
+        linear-gradient(to right, 
+            transparent 0%, 
+            #1a1a1a 1%, 
+            #1a1a1a 3%, 
+            transparent 3.5%,
+            transparent 4%,
+            #1a1a1a 4.5%,
+            #1a1a1a 6.5%,
+            transparent 7%,
+            transparent 8%,
+            #1a1a1a 8.5%,
+            #1a1a1a 10.5%,
+            transparent 11%,
+            transparent 12%,
+            #1a1a1a 12.5%,
+            #1a1a1a 14.5%,
+            transparent 15%,
+            transparent 16%,
+            #1a1a1a 16.5%,
+            #1a1a1a 18.5%,
+            transparent 19%,
+            transparent 20%,
+            #1a1a1a 20.5%,
+            #1a1a1a 22.5%,
+            transparent 23%
         );
-    background-size: 24px 3px;
-    background-position: 0 -2px;
+    background-size: 24% 100%;
     background-repeat: repeat-x;
+    background-position: 0 50%;
     animation: garlandBlink 2s ease-in-out infinite;
     pointer-events: none;
     z-index: 0;
-    filter: drop-shadow(0 0 6px rgba(217, 119, 6, 0.8));
+    filter: drop-shadow(0 2px 8px rgba(255, 107, 0, 0.6));
 }
 
 /* Нижняя гирлянда удалена - используется только один вариант ниже */
@@ -387,15 +411,15 @@ body {
     display: none;
 }
 
-/* Анимация мигания гирлянды */
+/* Анимация мигания новогодних лампочек */
 @keyframes garlandBlink {
     0%, 100% {
         opacity: 1;
-        filter: brightness(1) drop-shadow(0 0 6px rgba(217, 119, 6, 0.8));
+        filter: brightness(1) drop-shadow(0 2px 8px rgba(255, 107, 0, 0.8));
     }
     50% {
-        opacity: 0.4;
-        filter: brightness(0.5) drop-shadow(0 0 3px rgba(220, 38, 38, 0.5));
+        opacity: 0.6;
+        filter: brightness(1.2) drop-shadow(0 2px 12px rgba(255, 107, 0, 1));
     }
 }
         2% -3px 0 0 #dc2626,
@@ -573,47 +597,56 @@ body {
     }
 }
 
-/* 3D Гирлянда вокруг баннера - нижняя линия */
+/* Новогодняя гирлянда с лампочками - нижняя */
 .promo-banner::after {
     content: '';
     position: absolute;
-    bottom: -6px;
+    bottom: -8px;
     left: calc((100vw - 100%) / -2); /* Выравниваем по левому краю экрана */
     width: 100vw; /* Растягиваем на всю ширину экрана */
-    height: 12px;
-    background: 
-        radial-gradient(circle at 0%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 4%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 8%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 12%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 16%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 20%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 24%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 28%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 32%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 36%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 40%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 44%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 48%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 52%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 56%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 60%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 64%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 68%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 72%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 76%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 80%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 84%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 88%, #4ecdc4 4px, transparent 4px),
-        radial-gradient(circle at 92%, #ffd700 4px, transparent 4px),
-        radial-gradient(circle at 96%, #ff6b6b 4px, transparent 4px),
-        radial-gradient(circle at 100%, #4ecdc4 4px, transparent 4px);
-    background-size: 4% 100%;
+    height: 16px;
+    background-image: 
+        /* Новогодние лампочки - повторяющийся паттерн */
+        radial-gradient(circle at 0% 50%, #ff6b00 6px, transparent 6px),
+        radial-gradient(circle at 4% 50%, #22c55e 6px, transparent 6px),
+        radial-gradient(circle at 8% 50%, #3b82f6 6px, transparent 6px),
+        radial-gradient(circle at 12% 50%, #ef4444 6px, transparent 6px),
+        radial-gradient(circle at 16% 50%, #ef4444 6px, transparent 6px),
+        radial-gradient(circle at 20% 50%, #ef4444 6px, transparent 6px),
+        /* Провод между лампочками */
+        linear-gradient(to right, 
+            transparent 0%, 
+            #1a1a1a 1%, 
+            #1a1a1a 3%, 
+            transparent 3.5%,
+            transparent 4%,
+            #1a1a1a 4.5%,
+            #1a1a1a 6.5%,
+            transparent 7%,
+            transparent 8%,
+            #1a1a1a 8.5%,
+            #1a1a1a 10.5%,
+            transparent 11%,
+            transparent 12%,
+            #1a1a1a 12.5%,
+            #1a1a1a 14.5%,
+            transparent 15%,
+            transparent 16%,
+            #1a1a1a 16.5%,
+            #1a1a1a 18.5%,
+            transparent 19%,
+            transparent 20%,
+            #1a1a1a 20.5%,
+            #1a1a1a 22.5%,
+            transparent 23%
+        );
+    background-size: 24% 100%;
     background-repeat: repeat-x;
-    animation: garlandBlink 1.5s ease-in-out infinite 0.75s;
+    background-position: 0 50%;
+    animation: garlandBlink 2s ease-in-out infinite 1s;
     pointer-events: none;
     z-index: 1;
-    filter: drop-shadow(0 -2px 4px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 -2px 8px rgba(255, 107, 0, 0.6));
 }
 
 .promo-banner-inner {
