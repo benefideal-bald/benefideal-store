@@ -4040,12 +4040,12 @@ app.post('/api/cardlink/create-payment', async (req, res) => {
         // Минимальная сумма для CardLink обычно 10-100 рублей
         const amountInRubles = Math.round(total * 100) / 100; // Округляем до 2 знаков после запятой
         
-        // Проверяем минимальную сумму
-        if (amountInRubles < 10) {
+        // Проверяем минимальную сумму (CardLink обычно требует минимум 100 рублей)
+        if (amountInRubles < 100) {
             return res.status(400).json({
                 success: false,
-                error: 'Минимальная сумма для оплаты через CardLink: 10 рублей',
-                details: { amount: amountInRubles, minimum: 10 }
+                error: 'Минимальная сумма для оплаты через CardLink: 100 рублей',
+                details: { amount: amountInRubles, minimum: 100 }
             });
         }
         
