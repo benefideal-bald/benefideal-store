@@ -333,14 +333,34 @@ body {
     left: 0;
     right: 0;
     z-index: 1000;
-    background: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
+    /* Многослойный градиент для 3D эффекта */
+    background: 
+        /* Текстура шума */
+        url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.2'/%3E%3C/svg%3E"),
+        /* Текстура ткани */
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.03) 2px,
+            rgba(0, 0, 0, 0.03) 4px
+        ),
+        /* Основной фон с градиентом */
+        linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%),
+        /* Верхний свет для объема */
+        linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 50%);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
     transition: all var(--transition-base);
-    /* Легкий 3D эффект */
+    /* Многослойные тени для 3D эффекта */
     box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.12),
         0 4px 12px rgba(0, 0, 0, 0.08),
         0 2px 6px rgba(0, 0, 0, 0.05),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        inset 0 2px 4px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+    /* Эффект объема через transform */
+    transform: perspective(1000px) rotateX(0.5deg);
+    transform-style: preserve-3d;
 }
 
 /* Promo banner under header */
@@ -1901,7 +1921,23 @@ body.cart-open {
     padding: var(--space-4) 0 var(--space-12) 0;
     min-height: 80vh;
     margin-top: 80px;
-    background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%);
+    /* Многослойный градиент для 3D эффекта */
+    background: 
+        /* Текстура шума */
+        url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E"),
+        /* Текстура ткани */
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.02) 2px,
+            rgba(0, 0, 0, 0.02) 4px
+        ),
+        /* Основной градиент */
+        linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%),
+        /* Верхний свет для объема */
+        linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, transparent 40%);
+    position: relative;
 }
 
 /* Уменьшаем расстояние между хедером и контентом на мобильных */
@@ -1998,11 +2034,39 @@ body.cart-open {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--gray-900);
+    /* Многослойный градиент для 3D эффекта */
+    background: 
+        /* Текстура шума */
+        url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.2'/%3E%3C/svg%3E"),
+        /* Текстура ткани */
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.05) 2px,
+            rgba(0, 0, 0, 0.05) 4px
+        ),
+        /* Основной фон */
+        linear-gradient(135deg, var(--gray-900) 0%, #0a0a0a 100%),
+        /* Верхний свет для объема */
+        linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
     border-radius: var(--radius-2xl);
     padding: 0;
-    box-shadow: var(--shadow-xl);
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-top-color: rgba(255, 255, 255, 0.1);
+    border-bottom-color: rgba(0, 0, 0, 0.3);
+    /* Многослойные тени для 3D эффекта */
+    box-shadow: 
+        0 20px 50px rgba(0, 0, 0, 0.3),
+        0 10px 25px rgba(0, 0, 0, 0.2),
+        0 5px 12px rgba(0, 0, 0, 0.15),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
     overflow: hidden;
+    /* Эффект объема через transform */
+    transform: perspective(1000px) translateZ(10px);
+    transform-style: preserve-3d;
+    transition: all var(--transition-base);
 }
 
 .product-image img {
@@ -2033,12 +2097,34 @@ body.cart-open {
 
 /* Дополнительные оптимизации для слабых устройств */
 @media (max-width: 768px), (prefers-reduced-motion: reduce) {
-    /* Упрощаем тени на мобильных */
+    /* Упрощаем 3D эффекты на мобильных */
+    .header {
+        transform: none !important;
+        background: #ffffff !important;
+        box-shadow: 
+            0 4px 12px rgba(0, 0, 0, 0.08),
+            0 2px 6px rgba(0, 0, 0, 0.05) !important;
+    }
+    
+    .product-page {
+        background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%) !important;
+    }
+    
     .product-image {
+        transform: none !important;
+        background: var(--gray-900) !important;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
     }
     
     .product-purchase {
+        transform: none !important;
+        background: var(--white) !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .product-title-card {
+        transform: none !important;
+        background: var(--white) !important;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     }
     
@@ -2062,6 +2148,16 @@ body.cart-open {
     }
 }
 
+.product-image:hover {
+    transform: perspective(1000px) translateZ(20px) scale(1.02);
+    box-shadow: 
+        0 25px 60px rgba(0, 0, 0, 0.4),
+        0 12px 30px rgba(0, 0, 0, 0.3),
+        0 6px 15px rgba(0, 0, 0, 0.2),
+        inset 0 2px 4px rgba(255, 255, 255, 0.15),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.4);
+}
+
 .product-image:hover img {
     transform: scale(1.05);
 }
@@ -2082,16 +2178,43 @@ body.cart-open {
 }
 
 .product-purchase {
-    background: var(--white);
+    /* Многослойный градиент для 3D эффекта */
+    background: 
+        /* Текстура шума */
+        url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E"),
+        /* Текстура ткани */
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.03) 2px,
+            rgba(0, 0, 0, 0.03) 4px
+        ),
+        /* Основной фон */
+        linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%),
+        /* Верхний свет для объема */
+        linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 50%);
     padding: var(--space-8);
     border-radius: var(--radius-2xl);
-    border: 2px solid var(--gray-200);
-    box-shadow: var(--shadow-lg);
+    border: 2px solid rgba(226, 232, 240, 0.8);
+    border-top-color: rgba(255, 255, 255, 0.9);
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+    /* Многослойные тени для 3D эффекта */
+    box-shadow: 
+        0 15px 40px rgba(0, 0, 0, 0.15),
+        0 8px 20px rgba(0, 0, 0, 0.1),
+        0 4px 10px rgba(0, 0, 0, 0.08),
+        inset 0 2px 4px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     width: 100%;
     height: auto;
+    /* Эффект объема через transform */
+    transform: perspective(1000px) translateZ(5px);
+    transform-style: preserve-3d;
+    position: relative;
 }
 
 @media (max-width: 968px) {
@@ -2216,18 +2339,44 @@ body.cart-open {
     .product-title-card {
         order: 2 !important;
         display: block !important;
-        background: var(--white) !important;
-        border: 1px solid var(--gray-200) !important;
+        /* Многослойный градиент для 3D эффекта */
+        background: 
+            /* Текстура шума */
+            url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E"),
+            /* Текстура ткани */
+            repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.03) 2px,
+                rgba(0, 0, 0, 0.03) 4px
+            ),
+            /* Основной фон */
+            linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%),
+            /* Верхний свет для объема */
+            linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 50%) !important;
+        border: 2px solid rgba(226, 232, 240, 0.8) !important;
+        border-top-color: rgba(255, 255, 255, 0.9) !important;
+        border-bottom-color: rgba(0, 0, 0, 0.1) !important;
         border-radius: var(--radius-lg) !important;
         padding: var(--space-5) var(--space-4) !important;
         margin-bottom: var(--space-4) !important;
         margin-top: var(--space-4) !important;
-        box-shadow: var(--shadow-sm) !important;
+        /* Многослойные тени для 3D эффекта */
+        box-shadow: 
+            0 10px 30px rgba(0, 0, 0, 0.12),
+            0 5px 15px rgba(0, 0, 0, 0.08),
+            0 2px 8px rgba(0, 0, 0, 0.06),
+            inset 0 2px 4px rgba(255, 255, 255, 0.9),
+            inset 0 -2px 4px rgba(0, 0, 0, 0.05) !important;
         width: 100% !important;
         visibility: visible !important;
         opacity: 1 !important;
         position: relative !important;
         z-index: 1 !important;
+        /* Эффект объема через transform */
+        transform: perspective(1000px) translateZ(3px) !important;
+        transform-style: preserve-3d !important;
     }
     
     .product-image {
