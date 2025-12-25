@@ -1472,9 +1472,7 @@ body {
     /* Эффект объема через transform */
     transform: perspective(1000px) translateZ(5px);
     transform-style: preserve-3d;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-top-color: rgba(255, 255, 255, 0.3);
-    border-bottom-color: rgba(0, 0, 0, 0.15);
+    border: none;
     transition: all var(--transition-base);
 }
 
