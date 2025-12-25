@@ -2292,6 +2292,51 @@ body.cart-open {
             0 2px 6px rgba(0, 0, 0, 0.2) !important;
     }
     
+    /* Упрощаем 3D эффекты на мобильных для checkout */
+    .checkout-card {
+        transform: none !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .form-group input {
+        transform: none !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .form-group input:focus {
+        transform: none !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+    }
+    
+    .checkout-total {
+        transform: none !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+    }
+    
+    .payment-method-label {
+        transform: none !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    }
+    
+    .payment-method-label:hover {
+        transform: none !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    #payButton {
+        transform: none !important;
+        box-shadow: 
+            0 4px 12px rgba(139, 92, 246, 0.3),
+            0 2px 6px rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    #payButton:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 
+            0 6px 18px rgba(139, 92, 246, 0.4),
+            0 3px 9px rgba(0, 0, 0, 0.2) !important;
+    }
+    
     /* Отключаем сложные анимации */
     .subscription-card:hover {
         transform: none !important;
@@ -2953,12 +2998,22 @@ label.subscription-btn:focus-visible {
 .checkout-card {
     background: var(--white);
     border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-xl);
     border: 2px solid var(--gray-200);
     max-width: 480px;
     width: 100%;
     margin: var(--space-8) auto;
     padding: var(--space-10) var(--space-8);
+    /* Многослойные тени для 3D эффекта */
+    box-shadow: 
+        0 15px 40px rgba(0, 0, 0, 0.15),
+        0 8px 20px rgba(0, 0, 0, 0.1),
+        0 4px 10px rgba(0, 0, 0, 0.08),
+        inset 0 2px 4px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.05);
+    /* Эффект объема через transform */
+    transform: perspective(1000px) translateZ(5px);
+    transform-style: preserve-3d;
+    position: relative;
 }
 
 .form-group {
@@ -2972,6 +3027,10 @@ label.subscription-btn:focus-visible {
     font-weight: 600;
     color: var(--gray-900);
     font-size: 0.95rem;
+    /* Легкий 3D текстовый эффект */
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .form-group input {
@@ -2984,12 +3043,28 @@ label.subscription-btn:focus-visible {
     background: var(--white);
     transition: all var(--transition-fast);
     color: var(--gray-900);
+    /* Многослойные тени для 3D эффекта */
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.06),
+        0 1px 4px rgba(0, 0, 0, 0.04),
+        inset 0 1px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.03);
+    /* Эффект объема через transform */
+    transform: perspective(1000px) translateZ(2px);
+    transform-style: preserve-3d;
 }
 
 .form-group input:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    /* Усиленный 3D эффект при focus */
+    box-shadow: 
+        0 0 0 3px rgba(99, 102, 241, 0.1),
+        0 4px 12px rgba(0, 0, 0, 0.08),
+        0 2px 6px rgba(0, 0, 0, 0.06),
+        inset 0 1px 2px rgba(255, 255, 255, 0.95),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+    transform: perspective(1000px) translateZ(4px);
 }
 
 .checkout-total {
@@ -3002,12 +3077,25 @@ label.subscription-btn:focus-visible {
     background: var(--gray-50);
     border-radius: var(--radius-lg);
     margin-bottom: var(--space-4);
+    /* Многослойные тени для 3D эффекта */
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.08),
+        0 2px 6px rgba(0, 0, 0, 0.06),
+        inset 0 1px 2px rgba(255, 255, 255, 0.8),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.04);
+    /* Эффект объема через transform */
+    transform: perspective(1000px) translateZ(3px);
+    transform-style: preserve-3d;
 }
 
 .checkout-total .label {
     color: var(--gray-700);
     font-weight: 700;
     font-size: 0.95rem;
+    /* Легкий 3D текстовый эффект */
+    text-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .checkout-total-amount {
@@ -3024,6 +3112,10 @@ label.subscription-btn:focus-visible {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     letter-spacing: -0.02em;
+    /* Легкий 3D текстовый эффект */
+    text-shadow: 
+        0 2px 8px rgba(139, 92, 246, 0.3),
+        0 1px 4px rgba(139, 92, 246, 0.25);
 }
 
 .checkout-currency {
@@ -3033,6 +3125,10 @@ label.subscription-btn:focus-visible {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    /* Легкий 3D текстовый эффект */
+    text-shadow: 
+        0 2px 8px rgba(139, 92, 246, 0.3),
+        0 1px 4px rgba(139, 92, 246, 0.25);
 }
 
 /* Базовые стили для галочки выбора оплаты */
@@ -3042,6 +3138,39 @@ input[type="radio"][name="paymentMethod"] {
     height: 18px;
     cursor: pointer;
     accent-color: var(--primary);
+}
+
+/* Стили для блока выбора способа оплаты */
+.payment-method-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    padding: var(--space-3) var(--space-4);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    transition: all 0.3s ease;
+    margin-bottom: var(--space-3);
+    /* Многослойные тени для 3D эффекта */
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.06),
+        0 1px 4px rgba(0, 0, 0, 0.04),
+        inset 0 1px 2px rgba(255, 255, 255, 0.8),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.03);
+    /* Эффект объема через transform */
+    transform: perspective(1000px) translateZ(2px);
+    transform-style: preserve-3d;
+}
+
+.payment-method-label:hover {
+    background: var(--gray-100);
+    /* Усиленный 3D эффект при hover */
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.1),
+        0 2px 6px rgba(0, 0, 0, 0.08),
+        inset 0 1px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+    transform: perspective(1000px) translateZ(4px);
 }
 
 /* Десктопные стили для checkout - сохраняем оригинальные размеры */
@@ -3127,14 +3256,31 @@ input[type="radio"][name="paymentMethod"] {
     background: var(--gradient-primary);
     color: var(--white);
     border: none;
-    box-shadow: var(--shadow-colored);
+    /* Многослойные тени для 3D эффекта */
+    box-shadow: 
+        0 6px 20px rgba(139, 92, 246, 0.4),
+        0 3px 12px rgba(139, 92, 246, 0.35),
+        0 1px 6px rgba(0, 0, 0, 0.2),
+        inset 0 1px 2px rgba(255, 255, 255, 0.3),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.15);
     cursor: pointer;
     transition: all var(--transition-base);
+    /* Эффект объема через transform */
+    transform: perspective(1000px) translateZ(3px);
+    transform-style: preserve-3d;
+    text-shadow: 
+        0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 #payButton:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-colored-lg);
+    transform: perspective(1000px) translateZ(8px) translateY(-2px);
+    /* Усиленный 3D эффект при hover */
+    box-shadow: 
+        0 8px 25px rgba(139, 92, 246, 0.5),
+        0 4px 15px rgba(139, 92, 246, 0.4),
+        0 2px 8px rgba(0, 0, 0, 0.25),
+        inset 0 1px 2px rgba(255, 255, 255, 0.4),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.2);
 }
 
 #payButton:active {
