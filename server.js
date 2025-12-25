@@ -5691,6 +5691,61 @@ app.post('/api/track-visit', async (req, res) => {
     }
 });
 
+// Track checkout and send Telegram notification
+app.post('/api/track-checkout', async (req, res) => {
+    try {
+        // Get IP address
+        const ip = req.headers['x-forwarded-for']?.split(',')[0] || 
+                   req.headers['x-real-ip'] || 
+                   req.connection.remoteAddress || 
+                   req.socket.remoteAddress ||
+                   'unknown';
+        
+        // Get cart data from request
+        const cart = req.body.cart || [];
+        const total = req.body.total || 0;
+        
+        // Get country
+        const country = await getCountryFromIP(ip);
+        
+        // Format cart items
+        let itemsText = '';
+        if (cart.length > 0) {
+            itemsText = cart.map((item, index) => {
+                const productName = item.name || 'Неизвестный товар';
+                const quantity = item.quantity || 1;
+                const price = item.price || 0;
+                return `${index + 1}. ${productName} (${quantity} шт.) - ${price.toLocaleString()} ₽`;
+            }).join('\n');
+        } else {
+            itemsText = 'Корзина пуста';
+        }
+        
+        // Format Telegram message
+        const message = `🛒 Переход к оплате\n\n📦 Товары в корзине:\n${itemsText}\n\n💰 Общая сумма: ${total.toLocaleString()} ₽\n🌍 Страна: ${country}\n🕐 Время: ${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`;
+        
+        // Send to Telegram (async, don't wait)
+        sendTelegramMessage(message)
+            .then(() => {
+                console.log('Checkout notification sent successfully');
+            })
+            .catch(err => {
+                console.error('Error sending checkout notification:', err);
+            });
+        
+        res.json({ 
+            success: true, 
+            message: 'Checkout tracked'
+        });
+    } catch (error) {
+        console.error('Error tracking checkout:', error);
+        res.json({ 
+            success: false, 
+            message: 'Error tracking checkout'
+        });
+    }
+});
+
 // Test endpoint to verify server is running
 app.get('/api/test', (req, res) => {
     res.json({ 

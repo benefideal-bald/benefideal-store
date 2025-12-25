@@ -775,6 +775,24 @@ function checkout() {
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     showNotification(`Переход к оплате на сумму ${total.toLocaleString()} ₽`, 'success');
     
+    // Send checkout notification to Telegram
+    const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000/api/track-checkout'
+        : `${window.location.origin}/api/track-checkout`;
+    
+    fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            cart: cart,
+            total: total
+        })
+    }).catch(err => {
+        console.error('Checkout tracking error:', err);
+    });
+    
     // Redirect to checkout page with form
     setTimeout(() => {
         window.location.href = 'checkout.html';
