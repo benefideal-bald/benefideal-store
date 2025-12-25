@@ -2802,20 +2802,18 @@ body.cart-open {
         padding-right: calc(var(--space-3) + 20px + var(--space-2)) !important; /* Симметричный отступ справа для центрирования */
         background: linear-gradient(135deg, var(--gray-50) 0%, #f8f9fa 100%),
                     linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 50%) !important;
-        border: 2px solid rgba(226, 232, 240, 0.8) !important;
-        border-top-color: rgba(255, 255, 255, 0.9) !important;
-        border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+        border: none !important; /* Убираем обводку */
         border-radius: var(--radius-lg) !important;
         font-size: 0.9rem !important;
         position: relative !important;
-        /* Усиленные 3D эффекты */
+        /* Усиленные 3D эффекты для большего объема */
         box-shadow: 
-            0 8px 20px rgba(0, 0, 0, 0.12),
-            0 4px 10px rgba(0, 0, 0, 0.08),
-            0 2px 5px rgba(0, 0, 0, 0.06),
-            inset 0 2px 4px rgba(255, 255, 255, 0.9),
-            inset 0 -2px 4px rgba(0, 0, 0, 0.05) !important;
-        transform: perspective(1000px) translateZ(5px) !important;
+            0 12px 35px rgba(0, 0, 0, 0.15),
+            0 6px 18px rgba(0, 0, 0, 0.1),
+            0 3px 10px rgba(0, 0, 0, 0.08),
+            inset 0 3px 6px rgba(255, 255, 255, 0.9),
+            inset 0 -3px 6px rgba(0, 0, 0, 0.06) !important;
+        transform: perspective(1000px) translateZ(8px) !important;
         transform-style: preserve-3d !important;
         transition: all 0.3s ease !important;
     }
@@ -2824,14 +2822,14 @@ body.cart-open {
     .subscription-btn:active {
         background: linear-gradient(135deg, var(--gray-100) 0%, #f1f5f9 100%),
                     linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, transparent 50%) !important;
-        /* Усиленные 3D эффекты при hover */
+        /* Еще более усиленные 3D эффекты при hover */
         box-shadow: 
-            0 12px 30px rgba(0, 0, 0, 0.15),
-            0 6px 15px rgba(0, 0, 0, 0.12),
-            0 3px 8px rgba(0, 0, 0, 0.1),
-            inset 0 2px 4px rgba(255, 255, 255, 0.95),
-            inset 0 -2px 4px rgba(0, 0, 0, 0.08) !important;
-        transform: perspective(1000px) translateZ(10px) translateY(-2px) !important;
+            0 18px 45px rgba(0, 0, 0, 0.2),
+            0 9px 22px rgba(0, 0, 0, 0.15),
+            0 4px 12px rgba(0, 0, 0, 0.12),
+            inset 0 3px 6px rgba(255, 255, 255, 0.95),
+            inset 0 -3px 6px rgba(0, 0, 0, 0.1) !important;
+        transform: perspective(1000px) translateZ(15px) translateY(-3px) !important;
     }
     
     .subscription-duration {
@@ -2845,7 +2843,15 @@ body.cart-open {
     /* Выбранный вариант - сохраняем оригинальные цвета */
     .subscription-option input[type="radio"]:checked + .subscription-btn {
         background: var(--gradient-primary) !important; /* Оригинальный градиент */
-        border-color: var(--primary) !important; /* Оригинальный цвет границы */
+        border: none !important; /* Убираем обводку */
+        /* Усиленные 3D эффекты для выбранного варианта */
+        box-shadow: 
+            0 15px 40px rgba(139, 92, 246, 0.3),
+            0 8px 20px rgba(139, 92, 246, 0.25),
+            0 4px 10px rgba(0, 0, 0, 0.15),
+            inset 0 3px 6px rgba(255, 255, 255, 0.3),
+            inset 0 -3px 6px rgba(0, 0, 0, 0.2) !important;
+        transform: perspective(1000px) translateZ(12px) !important;
     }
     
     .subscription-option input[type="radio"]:checked + .subscription-btn .subscription-duration {
