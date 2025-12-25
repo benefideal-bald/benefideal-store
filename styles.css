@@ -2772,8 +2772,8 @@ body.cart-open {
     }
     
     .subscription-options {
-        grid-template-columns: repeat(4, 1fr);
-        gap: var(--space-2) !important;
+        grid-template-columns: 1fr !important; /* Вертикальное расположение на мобильных */
+        gap: var(--space-3) !important;
     }
     
     .subscription-btn {
