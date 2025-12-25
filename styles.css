@@ -1442,32 +1442,39 @@ body {
 }
 
 .review-card {
-    background: var(--white);
+    background: linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 50%);
     padding: var(--space-6);
     border-radius: var(--radius-xl);
-    border: 2px solid var(--gray-200);
+    border: 2px solid rgba(226, 232, 240, 0.8);
+    border-top-color: rgba(255, 255, 255, 0.9);
+    border-bottom-color: rgba(0, 0, 0, 0.1);
     transition: all var(--transition-base);
     display: block;
     width: 380px;
     flex-shrink: 0;
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    /* Легкий 3D эффект */
+    /* Многослойные тени для выраженного 3D эффекта */
     box-shadow: 
-        0 4px 15px rgba(0, 0, 0, 0.08),
+        0 10px 30px rgba(0, 0, 0, 0.12),
+        0 5px 15px rgba(0, 0, 0, 0.08),
         0 2px 8px rgba(0, 0, 0, 0.06),
-        inset 0 1px 2px rgba(255, 255, 255, 0.8),
-        inset 0 -1px 2px rgba(0, 0, 0, 0.03);
+        inset 0 2px 4px rgba(255, 255, 255, 0.9),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.05);
+    /* Эффект объема через transform */
+    transform: perspective(1000px) translateZ(3px);
+    transform-style: preserve-3d;
+    position: relative;
 }
 
 .review-card:hover {
+    transform: perspective(1000px) translateZ(10px) translateY(-4px);
     /* Усиленный 3D эффект при hover */
     box-shadow: 
-        0 8px 25px rgba(0, 0, 0, 0.12),
-        0 4px 12px rgba(0, 0, 0, 0.1),
-        0 2px 6px rgba(0, 0, 0, 0.08),
-        inset 0 1px 2px rgba(255, 255, 255, 0.9),
-        inset 0 -1px 2px rgba(0, 0, 0, 0.03);
+        0 15px 40px rgba(0, 0, 0, 0.18),
+        0 8px 20px rgba(0, 0, 0, 0.12),
+        0 4px 10px rgba(0, 0, 0, 0.08),
+        inset 0 2px 4px rgba(255, 255, 255, 0.95),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.08);
     border-color: var(--primary);
 }
 
