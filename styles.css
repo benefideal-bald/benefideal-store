@@ -1278,6 +1278,10 @@ body {
     margin-bottom: var(--space-4);
     color: var(--gray-900);
     letter-spacing: -0.02em;
+    /* Легкий 3D текстовый эффект */
+    text-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.1),
+        0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .how-we-work-subtitle {
