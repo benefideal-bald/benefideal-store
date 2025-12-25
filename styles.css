@@ -2709,6 +2709,37 @@ body.cart-open {
     font-size: 1.05rem;
 }
 
+/* Блок поддержки с 3D эффектом */
+.support-block {
+    margin-top: var(--space-5);
+    padding: var(--space-4);
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--primary);
+    position: relative;
+    /* 3D эффекты */
+    box-shadow: 
+        0 6px 18px rgba(0, 0, 0, 0.08),
+        0 3px 9px rgba(0, 0, 0, 0.05),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.03);
+    transform: perspective(1000px) translateZ(2px);
+    transform-style: preserve-3d;
+    transition: all 0.3s ease;
+}
+
+.support-block:hover {
+    box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.08),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+    transform: perspective(1000px) translateZ(4px);
+}
+
+.support-block strong {
+    color: var(--gray-900);
+    font-weight: 600;
+}
+
 /* Маркеры параграфов - выравнивание на одном вертикальном уровне */
 .product-description .paragraph-marker {
     display: inline-block;
