@@ -1462,6 +1462,31 @@ body {
     color: var(--white);
     font-size: 1.25rem;
     flex-shrink: 0;
+    /* Многослойные тени для 3D эффекта */
+    box-shadow: 
+        0 6px 18px rgba(139, 92, 246, 0.4),
+        0 3px 9px rgba(139, 92, 246, 0.3),
+        0 1px 4px rgba(0, 0, 0, 0.2),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+    /* Эффект объема через transform */
+    transform: perspective(1000px) translateZ(5px);
+    transform-style: preserve-3d;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top-color: rgba(255, 255, 255, 0.3);
+    border-bottom-color: rgba(0, 0, 0, 0.15);
+    transition: all var(--transition-base);
+}
+
+.review-card:hover .review-avatar {
+    transform: perspective(1000px) translateZ(10px) scale(1.05);
+    /* Усиленный 3D эффект при hover */
+    box-shadow: 
+        0 8px 24px rgba(139, 92, 246, 0.5),
+        0 4px 12px rgba(139, 92, 246, 0.4),
+        0 2px 6px rgba(0, 0, 0, 0.25),
+        inset 0 2px 4px rgba(255, 255, 255, 0.4),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .review-info {
@@ -2290,6 +2315,17 @@ body.cart-open {
         box-shadow: 
             0 4px 12px rgba(139, 92, 246, 0.4),
             0 2px 6px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    .review-avatar {
+        transform: none !important;
+        border: none !important;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3) !important;
+    }
+    
+    .review-card:hover .review-avatar {
+        transform: scale(1.05) !important;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4) !important;
     }
     
     /* Упрощаем 3D эффекты на мобильных для checkout */
