@@ -1352,9 +1352,7 @@ body {
     /* Эффект объема через transform */
     transform: perspective(1000px) translateZ(5px);
     transform-style: preserve-3d;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-top-color: rgba(255, 255, 255, 0.4);
-    border-bottom-color: rgba(0, 0, 0, 0.2);
+    border: none;
 }
 
 .workflow-step:hover .step-number {
