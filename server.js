@@ -23,6 +23,8 @@ app.get('/health', (req, res) => {
 });
 
 // Middleware
+// ВАЖНО: Настраиваем trust proxy для правильного определения HTTPS за прокси (Railway/Render)
+app.set('trust proxy', true);
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // Для обработки form-urlencoded (нужно для enot.io webhook)
