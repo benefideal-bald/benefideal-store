@@ -2817,7 +2817,8 @@ body.cart-open {
         min-height: 60px !important;
         max-height: none !important;
         padding: var(--space-3) var(--space-4) !important;
-        padding-left: calc(var(--space-4) + 18px + var(--space-2)) !important; /* Отступ слева для галочки */
+        padding-left: calc(var(--space-3) + 20px + var(--space-2)) !important; /* Отступ слева для галочки */
+        padding-right: calc(var(--space-3) + 20px + var(--space-2)) !important; /* Симметричный отступ справа для центрирования */
         background: var(--gray-50) !important; /* Оригинальный цвет */
         border: 2px solid var(--gray-200) !important; /* Оригинальный цвет */
         border-radius: var(--radius-lg) !important;
