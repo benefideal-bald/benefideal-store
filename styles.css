@@ -1706,9 +1706,10 @@ body {
     transform-style: preserve-3d;
 }
 
-.contact-icon:hover {
+.contact-icon:hover,
+.contact-icon:active {
     transform: perspective(1000px) translateZ(10px) translateY(-4px) scale(1.1);
-    /* Усиленный 3D эффект при hover */
+    /* Усиленный 3D эффект при hover/active */
     box-shadow: 
         0 12px 30px rgba(139, 92, 246, 0.3),
         0 6px 15px rgba(139, 92, 246, 0.25),
@@ -2277,16 +2278,8 @@ body.cart-open {
     /* Убираем упрощения - используем полные 3D эффекты как на десктопе */
     /* .step-number использует те же стили, что и на десктопе */
     
-    .contact-icon {
-        transform: none !important;
-        background: var(--white) !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-    }
-    
-    .contact-icon:hover {
-        transform: translateY(-4px) scale(1.1) !important;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
-    }
+    /* Убираем упрощения - используем полные 3D эффекты как на десктопе */
+    /* .contact-icon использует те же стили, что и на десктопе */
     
     .cart-promo-input {
         transform: none !important;
