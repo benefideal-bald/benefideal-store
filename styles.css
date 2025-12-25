@@ -1686,17 +1686,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Многослойный градиент для 3D эффекта */
-    background: 
-        /* Текстура шума */
-        url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E"),
-        /* Основной фон */
-        linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%),
-        /* Верхний свет для объема */
-        linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, transparent 50%);
-    border: 2px solid rgba(226, 232, 240, 0.8);
-    border-top-color: rgba(255, 255, 255, 0.9);
-    border-bottom-color: rgba(0, 0, 0, 0.1);
+    /* Простой градиент для 3D эффекта без текстур */
+    background: linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, transparent 50%);
+    border: none;
     color: var(--gray-700);
     font-size: 1.5rem;
     transition: all var(--transition-base);
@@ -1722,7 +1715,7 @@ body {
         0 3px 8px rgba(0, 0, 0, 0.15),
         inset 0 2px 4px rgba(255, 255, 255, 0.95),
         inset 0 -2px 4px rgba(0, 0, 0, 0.1);
-    border-color: var(--primary);
+    border: none;
     background: var(--gradient-primary);
     color: var(--white);
 }
