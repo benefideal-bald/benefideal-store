@@ -2278,47 +2278,8 @@ body.cart-open {
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     }
     
-    .social-link {
-        /* Легкий 3D эффект для мобильных */
-        background: linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%) !important;
-        border: 2px solid rgba(226, 232, 240, 0.8) !important;
-        box-shadow: 
-            0 6px 20px rgba(0, 0, 0, 0.1),
-            0 3px 10px rgba(0, 0, 0, 0.08),
-            inset 0 1px 2px rgba(255, 255, 255, 0.9) !important;
-        transform: translateZ(2px) !important;
-    }
-    
-    .social-link:hover {
-        transform: translateZ(5px) translateY(-3px) !important;
-        box-shadow: 
-            0 10px 30px rgba(0, 0, 0, 0.15),
-            0 5px 15px rgba(0, 0, 0, 0.12),
-            inset 0 1px 2px rgba(255, 255, 255, 0.95) !important;
-    }
-    
-    .social-link i {
-        /* Легкий эффект для иконок на мобильных */
-        filter: drop-shadow(0 1px 4px rgba(139, 92, 246, 0.25)) !important;
-    }
-    
-    .social-link:hover i {
-        filter: drop-shadow(0 2px 8px rgba(139, 92, 246, 0.35)) 
-                drop-shadow(0 1px 4px rgba(0, 0, 0, 0.1)) !important;
-        transform: scale(1.05) !important;
-    }
-    
-    .social-link span {
-        /* Легкий текстовый эффект для мобильных */
-        text-shadow: 
-            0 1px 2px rgba(0, 0, 0, 0.08) !important;
-    }
-    
-    .social-link:hover span {
-        text-shadow: 
-            0 1px 4px rgba(139, 92, 246, 0.25),
-            0 1px 2px rgba(0, 0, 0, 0.1) !important;
-    }
+    /* Убираем упрощения - используем полные 3D эффекты как на десктопе */
+    /* .social-link использует те же стили, что и на десктопе */
     
     .step-number {
         transform: none !important;
@@ -2376,48 +2337,8 @@ body.cart-open {
         box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4) !important;
     }
     
-    .benefit-card {
-        /* Легкий 3D эффект для мобильных */
-        background: linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%) !important;
-        border: 2px solid rgba(226, 232, 240, 0.8) !important;
-        box-shadow: 
-            0 6px 20px rgba(0, 0, 0, 0.1),
-            0 3px 10px rgba(0, 0, 0, 0.08),
-            inset 0 1px 2px rgba(255, 255, 255, 0.9) !important;
-        transform: translateZ(2px) !important;
-    }
-    
-    .benefit-card:hover {
-        transform: translateZ(4px) translateY(-3px) !important;
-        box-shadow: 
-            0 8px 25px rgba(0, 0, 0, 0.12),
-            0 4px 12px rgba(0, 0, 0, 0.1),
-            inset 0 1px 2px rgba(255, 255, 255, 0.95) !important;
-    }
-    
-    .benefit-icon {
-        /* Легкий 3D эффект для иконок на мобильных */
-        box-shadow: 
-            0 4px 12px rgba(139, 92, 246, 0.35),
-            0 2px 6px rgba(139, 92, 246, 0.25),
-            inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
-        transform: translateZ(3px) !important;
-    }
-    
-    .benefit-card:hover .benefit-icon {
-        transform: translateZ(6px) scale(1.1) rotate(5deg) !important;
-        box-shadow: 
-            0 6px 18px rgba(139, 92, 246, 0.45),
-            0 3px 9px rgba(139, 92, 246, 0.35),
-            inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
-    }
-    
-    .benefit-card h3 {
-        /* Легкий текстовый эффект для мобильных */
-        text-shadow: 
-            0 1px 4px rgba(0, 0, 0, 0.08),
-            0 1px 2px rgba(0, 0, 0, 0.06) !important;
-    }
+    /* Убираем упрощения - используем полные 3D эффекты как на десктопе */
+    /* .benefit-card и .benefit-icon используют те же стили, что и на десктопе */
     
     /* Упрощаем 3D эффекты на мобильных для checkout */
     .checkout-card {
@@ -2464,14 +2385,12 @@ body.cart-open {
             0 3px 9px rgba(0, 0, 0, 0.2) !important;
     }
     
-    /* Отключаем сложные анимации */
+    /* Отключаем сложные анимации только для subscription-card */
     .subscription-card:hover {
         transform: none !important;
     }
     
-    .benefit-card:hover {
-        transform: none !important;
-    }
+    /* benefit-card и social-link используют полные 3D эффекты как на десктопе */
     
     /* Упрощаем transitions */
     * {
