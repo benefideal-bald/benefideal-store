@@ -1991,8 +1991,7 @@ body.cart-open {
         /* Верхний свет для объема */
         linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, transparent 50%);
     border: 2px solid rgba(226, 232, 240, 0.8);
-    border-top-color: rgba(255, 255, 255, 0.9);
-    border-bottom-color: rgba(0, 0, 0, 0.1);
+    outline: none;
     font-size: 0.95rem;
     outline: none;
     transition: all var(--transition-fast);
@@ -2008,11 +2007,10 @@ body.cart-open {
 }
 
 .cart-promo-input:focus {
-    border-color: rgba(168, 85, 247, 0.5);
-    border-top-color: rgba(255, 255, 255, 0.9);
-    /* Усиленный 3D эффект при focus */
+    border-color: var(--primary);
+    outline: none;
+    /* Усиленный 3D эффект при focus без обводки */
     box-shadow: 
-        0 0 0 2px rgba(168, 85, 247, 0.3),
         0 6px 18px rgba(0, 0, 0, 0.12),
         0 3px 9px rgba(0, 0, 0, 0.08),
         inset 0 2px 4px rgba(255, 255, 255, 0.95),
