@@ -1091,10 +1091,10 @@ body {
     display: flex;
     align-items: baseline;
     gap: var(--space-3);
-    /* 3D текстовый эффект */
+    /* Легкий 3D текстовый эффект */
     text-shadow: 
-        0 2px 8px rgba(139, 92, 246, 0.3),
-        0 1px 4px rgba(0, 0, 0, 0.1);
+        0 1px 4px rgba(139, 92, 246, 0.2),
+        0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .subscription-original-price {
@@ -2821,7 +2821,6 @@ body.cart-open {
         box-shadow: 
             0 6px 18px rgba(0, 0, 0, 0.08),
             0 3px 9px rgba(0, 0, 0, 0.05),
-            inset 0 1px 2px rgba(255, 255, 255, 0.8),
             inset 0 -1px 2px rgba(0, 0, 0, 0.03) !important;
         /* Эффект объема через transform */
         transform: perspective(1000px) translateZ(2px) !important;
@@ -2836,7 +2835,6 @@ body.cart-open {
         box-shadow: 
             0 8px 24px rgba(0, 0, 0, 0.12),
             0 4px 12px rgba(0, 0, 0, 0.08),
-            inset 0 1px 2px rgba(255, 255, 255, 0.9),
             inset 0 -1px 2px rgba(0, 0, 0, 0.05) !important;
         transform: perspective(1000px) translateZ(4px) !important;
     }
@@ -2857,7 +2855,6 @@ body.cart-open {
         box-shadow: 
             0 6px 18px rgba(0, 0, 0, 0.08),
             0 3px 9px rgba(0, 0, 0, 0.05),
-            inset 0 1px 2px rgba(255, 255, 255, 0.8),
             inset 0 -1px 2px rgba(0, 0, 0, 0.03) !important;
         transform: perspective(1000px) translateZ(2px) !important;
     }
@@ -2902,7 +2899,6 @@ body.cart-open {
     box-shadow: 
         0 6px 18px rgba(0, 0, 0, 0.08),
         0 3px 9px rgba(0, 0, 0, 0.05),
-        inset 0 1px 2px rgba(255, 255, 255, 0.8),
         inset 0 -1px 2px rgba(0, 0, 0, 0.03);
     transform: perspective(1000px) translateZ(2px);
     transform-style: preserve-3d;
@@ -2916,7 +2912,6 @@ body.cart-open {
     box-shadow: 
         0 8px 24px rgba(0, 0, 0, 0.12),
         0 4px 12px rgba(0, 0, 0, 0.08),
-        inset 0 1px 2px rgba(255, 255, 255, 0.9),
         inset 0 -1px 2px rgba(0, 0, 0, 0.05);
     transform: perspective(1000px) translateZ(4px) translateY(-2px);
 }
@@ -2995,7 +2990,6 @@ label.subscription-btn:focus-visible {
     box-shadow: 
         0 6px 18px rgba(0, 0, 0, 0.08),
         0 3px 9px rgba(0, 0, 0, 0.05),
-        inset 0 1px 2px rgba(255, 255, 255, 0.8),
         inset 0 -1px 2px rgba(0, 0, 0, 0.03);
     transform: perspective(1000px) translateZ(2px);
 }
@@ -3034,11 +3028,11 @@ label.subscription-btn:focus-visible {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    /* 3D текстовый эффект */
+    /* Легкий 3D текстовый эффект */
     text-shadow: 
-        0 3px 10px rgba(139, 92, 246, 0.4),
-        0 1px 5px rgba(0, 0, 0, 0.15);
-    filter: drop-shadow(0 2px 8px rgba(139, 92, 246, 0.3));
+        0 1px 4px rgba(139, 92, 246, 0.25),
+        0 1px 2px rgba(0, 0, 0, 0.08);
+    filter: drop-shadow(0 1px 3px rgba(139, 92, 246, 0.2));
 }
 
 .original-price {
