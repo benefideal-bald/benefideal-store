@@ -1376,6 +1376,10 @@ body {
     font-weight: 700;
     margin-bottom: var(--space-3);
     color: var(--gray-900);
+    /* Легкий 3D текстовый эффект */
+    text-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.1),
+        0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .step-content p {
