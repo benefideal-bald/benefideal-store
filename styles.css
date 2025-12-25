@@ -2772,8 +2772,8 @@ body.cart-open {
     }
     
     .subscription-options {
-        grid-template-columns: 1fr !important; /* Вертикальное расположение на мобильных */
-        gap: var(--space-3) !important;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-2) !important;
     }
     
     .subscription-btn {
@@ -2782,29 +2782,6 @@ body.cart-open {
         max-height: 50px !important;
         padding: var(--space-1) var(--space-1) !important;
         font-size: 0.85rem !important;
-        /* Оригинальный стиль - вертикальный layout */
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    
-    /* Делаем radio button видимым на мобильных - добавляем слева от кнопки */
-    .subscription-option {
-        display: flex !important;
-        align-items: center !important;
-        gap: var(--space-2) !important;
-    }
-    
-    .subscription-option input[type="radio"] {
-        position: relative !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        width: 20px !important;
-        height: 20px !important;
-        cursor: pointer !important;
-        accent-color: var(--primary) !important;
-        flex-shrink: 0 !important;
-        margin: 0 !important;
     }
     
     .subscription-duration {
