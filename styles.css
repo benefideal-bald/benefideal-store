@@ -2281,14 +2281,8 @@ body.cart-open {
     /* Убираем упрощения - используем полные 3D эффекты как на десктопе */
     /* .social-link использует те же стили, что и на десктопе */
     
-    .step-number {
-        transform: none !important;
-        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3) !important;
-    }
-    
-    .workflow-step:hover .step-number {
-        transform: scale(1.1) !important;
-    }
+    /* Убираем упрощения - используем полные 3D эффекты как на десктопе */
+    /* .step-number использует те же стили, что и на десктопе */
     
     .contact-icon {
         transform: none !important;
@@ -2326,16 +2320,8 @@ body.cart-open {
             0 2px 6px rgba(0, 0, 0, 0.2) !important;
     }
     
-    .review-avatar {
-        transform: none !important;
-        border: none !important;
-        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3) !important;
-    }
-    
-    .review-card:hover .review-avatar {
-        transform: scale(1.05) !important;
-        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4) !important;
-    }
+    /* Убираем упрощения - используем полные 3D эффекты как на десктопе */
+    /* .review-avatar использует те же стили, что и на десктопе */
     
     /* Убираем упрощения - используем полные 3D эффекты как на десктопе */
     /* .benefit-card и .benefit-icon используют те же стили, что и на десктопе */
