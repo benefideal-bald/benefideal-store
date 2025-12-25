@@ -5712,10 +5712,11 @@ app.post('/api/track-checkout', async (req, res) => {
         let itemsText = '';
         if (cart.length > 0) {
             itemsText = cart.map((item, index) => {
-                const productName = item.name || 'Неизвестный товар';
+                const productName = item.title || item.name || 'Неизвестный товар';
                 const quantity = item.quantity || 1;
                 const price = item.price || 0;
-                return `${index + 1}. ${productName} (${quantity} шт.) - ${price.toLocaleString()} ₽`;
+                const months = item.months ? ` (${item.months} ${item.months === 1 ? 'месяц' : item.months < 5 ? 'месяца' : 'месяцев'})` : '';
+                return `${index + 1}. ${productName}${months} (${quantity} шт.) - ${price.toLocaleString()} ₽`;
             }).join('\n');
         } else {
             itemsText = 'Корзина пуста';
