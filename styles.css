@@ -2800,29 +2800,38 @@ body.cart-open {
         padding: var(--space-3) var(--space-4) !important;
         padding-left: calc(var(--space-3) + 20px + var(--space-2)) !important; /* Отступ слева для галочки */
         padding-right: calc(var(--space-3) + 20px + var(--space-2)) !important; /* Симметричный отступ справа для центрирования */
-        background: var(--gray-50) !important; /* Оригинальный цвет */
-        border: 2px solid var(--gray-200) !important; /* Оригинальный цвет */
+        background: linear-gradient(135deg, var(--gray-50) 0%, #f8f9fa 100%),
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 50%) !important;
+        border: 2px solid rgba(226, 232, 240, 0.8) !important;
+        border-top-color: rgba(255, 255, 255, 0.9) !important;
+        border-bottom-color: rgba(0, 0, 0, 0.1) !important;
         border-radius: var(--radius-lg) !important;
         font-size: 0.9rem !important;
         position: relative !important;
-        /* 3D эффект как у payment-method-label */
+        /* Усиленные 3D эффекты */
         box-shadow: 
-            0 2px 8px rgba(0, 0, 0, 0.06),
-            0 1px 4px rgba(0, 0, 0, 0.04),
-            inset 0 1px 2px rgba(255, 255, 255, 0.8),
-            inset 0 -1px 2px rgba(0, 0, 0, 0.03) !important;
-        transform: perspective(1000px) translateZ(2px) !important;
+            0 8px 20px rgba(0, 0, 0, 0.12),
+            0 4px 10px rgba(0, 0, 0, 0.08),
+            0 2px 5px rgba(0, 0, 0, 0.06),
+            inset 0 2px 4px rgba(255, 255, 255, 0.9),
+            inset 0 -2px 4px rgba(0, 0, 0, 0.05) !important;
+        transform: perspective(1000px) translateZ(5px) !important;
+        transform-style: preserve-3d !important;
         transition: all 0.3s ease !important;
     }
     
-    .subscription-btn:hover {
-        background: var(--gray-100) !important; /* Оригинальный hover цвет */
+    .subscription-btn:hover,
+    .subscription-btn:active {
+        background: linear-gradient(135deg, var(--gray-100) 0%, #f1f5f9 100%),
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, transparent 50%) !important;
+        /* Усиленные 3D эффекты при hover */
         box-shadow: 
-            0 4px 12px rgba(0, 0, 0, 0.1),
-            0 2px 6px rgba(0, 0, 0, 0.08),
-            inset 0 1px 2px rgba(255, 255, 255, 0.9),
-            inset 0 -1px 2px rgba(0, 0, 0, 0.05) !important;
-        transform: perspective(1000px) translateZ(4px) !important;
+            0 12px 30px rgba(0, 0, 0, 0.15),
+            0 6px 15px rgba(0, 0, 0, 0.12),
+            0 3px 8px rgba(0, 0, 0, 0.1),
+            inset 0 2px 4px rgba(255, 255, 255, 0.95),
+            inset 0 -2px 4px rgba(0, 0, 0, 0.08) !important;
+        transform: perspective(1000px) translateZ(10px) translateY(-2px) !important;
     }
     
     .subscription-duration {
