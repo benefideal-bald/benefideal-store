@@ -2776,24 +2776,24 @@ body.cart-open {
         gap: var(--space-3) !important;
     }
     
-    /* Стиль как у payment-method-label */
+    /* Убираем flex из .subscription-option, чтобы кнопки были по центру */
     .subscription-option {
-        display: flex !important;
-        align-items: center !important;
-        gap: var(--space-2) !important;
+        display: block !important;
     }
     
-    /* Делаем radio button видимым */
+    /* Radio button внутри кнопки слева */
     .subscription-option input[type="radio"] {
-        position: relative !important;
+        position: absolute !important;
         opacity: 1 !important;
         pointer-events: auto !important;
         width: 18px !important;
         height: 18px !important;
         cursor: pointer !important;
         accent-color: var(--primary) !important;
-        flex-shrink: 0 !important;
-        margin: 0 !important;
+        left: var(--space-3) !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        z-index: 1 !important;
     }
     
     .subscription-btn {
@@ -2801,16 +2801,18 @@ body.cart-open {
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
-        justify-content: flex-start !important;
+        justify-content: center !important; /* Текст по центру */
         gap: var(--space-2) !important;
         height: auto !important;
         min-height: 60px !important;
         max-height: none !important;
         padding: var(--space-3) var(--space-4) !important;
+        padding-left: calc(var(--space-4) + 18px + var(--space-2)) !important; /* Отступ слева для галочки */
         background: var(--gray-50) !important; /* Оригинальный цвет */
         border: 2px solid var(--gray-200) !important; /* Оригинальный цвет */
         border-radius: var(--radius-lg) !important;
         font-size: 0.9rem !important;
+        position: relative !important;
         /* 3D эффект как у payment-method-label */
         box-shadow: 
             0 2px 8px rgba(0, 0, 0, 0.06),
@@ -2836,8 +2838,7 @@ body.cart-open {
         line-height: 1.3 !important;
         font-weight: 600 !important;
         color: var(--gray-900) !important;
-        flex: 1 !important;
-        text-align: left !important;
+        text-align: center !important; /* Текст по центру */
     }
     
     /* Выбранный вариант - сохраняем оригинальные цвета */
