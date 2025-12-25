@@ -2812,12 +2812,14 @@ body.cart-open {
         border-radius: var(--radius-lg) !important;
         font-size: 0.9rem !important;
         position: relative !important;
-        /* Точно такие же 3D эффекты как у payment-method-label */
+        cursor: pointer !important;
+        /* Усиленные 3D эффекты для объема - точно как у payment-method-label */
         box-shadow: 
-            0 2px 8px rgba(0, 0, 0, 0.06),
-            0 1px 4px rgba(0, 0, 0, 0.04),
+            0 6px 18px rgba(0, 0, 0, 0.08),
+            0 3px 9px rgba(0, 0, 0, 0.05),
             inset 0 1px 2px rgba(255, 255, 255, 0.8),
             inset 0 -1px 2px rgba(0, 0, 0, 0.03) !important;
+        /* Эффект объема через transform */
         transform: perspective(1000px) translateZ(2px) !important;
         transform-style: preserve-3d !important;
         transition: all 0.3s ease !important;
@@ -2826,10 +2828,10 @@ body.cart-open {
     .subscription-btn:hover,
     .subscription-btn:active {
         background: var(--gray-100) !important; /* Точно как у payment-method-label */
-        /* Точно такие же 3D эффекты при hover как у payment-method-label */
+        /* Усиленные 3D эффекты при hover */
         box-shadow: 
-            0 4px 12px rgba(0, 0, 0, 0.1),
-            0 2px 6px rgba(0, 0, 0, 0.08),
+            0 8px 24px rgba(0, 0, 0, 0.12),
+            0 4px 12px rgba(0, 0, 0, 0.08),
             inset 0 1px 2px rgba(255, 255, 255, 0.9),
             inset 0 -1px 2px rgba(0, 0, 0, 0.05) !important;
         transform: perspective(1000px) translateZ(4px) !important;
@@ -2847,7 +2849,7 @@ body.cart-open {
     .subscription-option input[type="radio"]:checked + .subscription-btn {
         background: var(--gradient-primary) !important; /* Оригинальный градиент */
         border: 2px solid var(--primary) !important; /* Контур как у выбранного payment-method-label */
-        /* 3D эффекты для выбранного варианта */
+        /* Усиленные 3D эффекты для выбранного варианта */
         box-shadow: 
             0 6px 18px rgba(0, 0, 0, 0.08),
             0 3px 9px rgba(0, 0, 0, 0.05),
@@ -2892,7 +2894,7 @@ body.cart-open {
     outline-color: transparent !important;
     -webkit-tap-highlight-color: transparent;
     -webkit-focus-ring-color: transparent;
-    box-shadow: none !important;
+    /* box-shadow удален - используем 3D эффекты из мобильных стилей */
 }
 
 .subscription-btn:hover {
@@ -2900,11 +2902,10 @@ body.cart-open {
     background: var(--white);
     transform: translateY(-2px);
     outline: none !important;
-    box-shadow: none !important;
+    /* box-shadow удален - используем 3D эффекты из мобильных стилей */
 }
 
 .subscription-btn:focus,
-.subscription-btn:active,
 .subscription-btn:focus-visible,
 .subscription-btn:focus-within {
     outline: none !important;
@@ -2912,7 +2913,7 @@ body.cart-open {
     outline-style: none !important;
     outline-color: transparent !important;
     border: 2px solid var(--primary);
-    box-shadow: none !important;
+    /* box-shadow удален - используем 3D эффекты из мобильных стилей */
 }
 
 .subscription-option input[type="radio"] {
