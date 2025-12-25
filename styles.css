@@ -1091,6 +1091,10 @@ body {
     display: flex;
     align-items: baseline;
     gap: var(--space-3);
+    /* 3D текстовый эффект */
+    text-shadow: 
+        0 2px 8px rgba(139, 92, 246, 0.3),
+        0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .subscription-original-price {
@@ -2894,15 +2898,27 @@ body.cart-open {
     outline-color: transparent !important;
     -webkit-tap-highlight-color: transparent;
     -webkit-focus-ring-color: transparent;
-    /* box-shadow удален - используем 3D эффекты из мобильных стилей */
+    /* 3D эффекты для десктопа */
+    box-shadow: 
+        0 6px 18px rgba(0, 0, 0, 0.08),
+        0 3px 9px rgba(0, 0, 0, 0.05),
+        inset 0 1px 2px rgba(255, 255, 255, 0.8),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.03);
+    transform: perspective(1000px) translateZ(2px);
+    transform-style: preserve-3d;
 }
 
 .subscription-btn:hover {
     border-color: var(--primary);
     background: var(--white);
-    transform: translateY(-2px);
     outline: none !important;
-    /* box-shadow удален - используем 3D эффекты из мобильных стилей */
+    /* Усиленные 3D эффекты при hover */
+    box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.08),
+        inset 0 1px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+    transform: perspective(1000px) translateZ(4px) translateY(-2px);
 }
 
 .subscription-btn:focus,
@@ -2971,11 +2987,17 @@ label.subscription-btn:focus-visible {
     background: var(--gradient-primary);
     color: var(--white);
     border: 2px solid var(--primary) !important;
-    box-shadow: none !important;
     outline: none !important;
     outline-width: 0 !important;
     outline-style: none !important;
     outline-color: transparent !important;
+    /* 3D эффекты для выбранного варианта */
+    box-shadow: 
+        0 6px 18px rgba(0, 0, 0, 0.08),
+        0 3px 9px rgba(0, 0, 0, 0.05),
+        inset 0 1px 2px rgba(255, 255, 255, 0.8),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.03);
+    transform: perspective(1000px) translateZ(2px);
 }
 
 .subscription-duration {
@@ -3012,6 +3034,11 @@ label.subscription-btn:focus-visible {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    /* 3D текстовый эффект */
+    text-shadow: 
+        0 3px 10px rgba(139, 92, 246, 0.4),
+        0 1px 5px rgba(0, 0, 0, 0.15);
+    filter: drop-shadow(0 2px 8px rgba(139, 92, 246, 0.3));
 }
 
 .original-price {
