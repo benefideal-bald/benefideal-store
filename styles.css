@@ -2772,21 +2772,24 @@ body.cart-open {
     }
     
     .subscription-options {
-        grid-template-columns: repeat(4, 1fr);
-        gap: var(--space-2) !important;
+        grid-template-columns: 1fr !important; /* Вертикальное расположение на мобильных */
+        gap: var(--space-3) !important;
     }
     
     .subscription-btn {
-        height: 50px !important;
-        min-height: 50px !important;
-        max-height: 50px !important;
-        padding: var(--space-1) var(--space-1) !important;
-        font-size: 0.85rem !important;
+        height: auto !important;
+        min-height: 60px !important;
+        max-height: none !important;
+        padding: var(--space-3) var(--space-4) !important;
+        font-size: 0.9rem !important;
+        flex-direction: row !important; /* Горизонтальное расположение внутри кнопки */
+        align-items: center !important;
+        justify-content: space-between !important;
     }
     
     .subscription-duration {
-        font-size: 0.8rem !important;
-        line-height: 1.1 !important;
+        font-size: 0.95rem !important;
+        line-height: 1.3 !important;
     }
 }
 
