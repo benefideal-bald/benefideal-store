@@ -2250,27 +2250,8 @@ body.cart-open {
             0 2px 6px rgba(0, 0, 0, 0.05) !important;
     }
     
-    .product-page {
-        background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%) !important;
-    }
-    
-    .product-image {
-        transform: none !important;
-        background: var(--gray-900) !important;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
-    }
-    
-    .product-purchase {
-        transform: none !important;
-        background: var(--white) !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-    }
-    
-    .product-title-card {
-        transform: none !important;
-        background: var(--white) !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-    }
+    /* Убираем упрощения - используем полные 3D эффекты как на десктопе */
+    /* .product-page, .product-image, .product-purchase, .product-title-card используют те же стили, что и на десктопе */
     
     /* Убираем упрощения - используем полные 3D эффекты как на десктопе */
     /* .social-link использует те же стили, что и на десктопе */
