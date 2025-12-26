@@ -1163,7 +1163,7 @@ body {
 }
 
 .benefit-card {
-    background: linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%),
+    background: linear-gradient(135deg, var(--white) 0%, #fcfdfe 100%),
                 linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 50%);
     padding: var(--space-6);
     border-radius: var(--radius-xl);
@@ -1447,7 +1447,7 @@ body {
 }
 
 .review-card {
-    background: linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%),
+    background: linear-gradient(135deg, var(--white) 0%, #fcfdfe 100%),
                 linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 50%);
     padding: var(--space-6);
     border-radius: var(--radius-xl);
@@ -1575,7 +1575,7 @@ body {
     justify-content: center;
     padding: var(--space-8);
     /* Простой градиент для 3D эффекта без текстур */
-    background: linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%),
+    background: linear-gradient(135deg, var(--white) 0%, #fcfdfe 100%),
                 linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 50%);
     border: 2px solid rgba(226, 232, 240, 0.8);
     border-top-color: rgba(255, 255, 255, 0.9);
@@ -1609,7 +1609,7 @@ body {
         inset 0 -2px 4px rgba(0, 0, 0, 0.1);
     border-color: var(--primary);
     /* Простой градиент без текстур */
-    background: linear-gradient(135deg, #f8f9fa 0%, #f1f5f9 100%),
+    background: linear-gradient(135deg, #fcfdfe 0%, #fafbfc 100%),
                 linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, transparent 50%);
 }
 
@@ -1699,7 +1699,7 @@ body {
     align-items: center;
     justify-content: center;
     /* Простой градиент для 3D эффекта без текстур */
-    background: linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%),
+    background: linear-gradient(135deg, var(--white) 0%, #fcfdfe 100%),
                 linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, transparent 50%);
     border: none;
     color: var(--gray-700);
