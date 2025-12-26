@@ -33,7 +33,7 @@ const subscriptions = [
         description: "Профессиональная генерация изображений с помощью искусственного интеллекта",
         price: 1800,
         originalPrice: 2999,
-        icon: "fas fa-image",
+        icon: "fas fa-ship",
         category: "ai"
     }
 ];
