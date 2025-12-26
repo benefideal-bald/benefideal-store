@@ -26,6 +26,15 @@ const subscriptions = [
         originalPrice: 1999,
         icon: "fas fa-video",
         category: "video"
+    },
+    {
+        id: 8,
+        title: "Midjourney Standard Plan",
+        description: "Профессиональная генерация изображений с помощью искусственного интеллекта",
+        price: 1800,
+        originalPrice: 2999,
+        icon: "fas fa-image",
+        category: "ai"
     }
 ];
 
@@ -491,7 +500,8 @@ function createSubscriptionCard(subscription) {
     const pageMap = {
         1: 'chatgpt.html',
         3: 'adobe.html',
-        7: 'capcut.html'
+        7: 'capcut.html',
+        8: 'midjourney.html'
     };
     
     return `
@@ -1065,6 +1075,12 @@ function getPriceData() {
             '3': { current: '3,315 ₽', original: '5,400 ₽', discount: '-39%', numericPrice: 3315 },
             '6': { current: '6,060 ₽', original: '10,200 ₽', discount: '-41%', numericPrice: 6060 },
             '12': { current: '9,840 ₽', original: '18,000 ₽', discount: '-45%', numericPrice: 9840 }
+        },
+        'midjourney': {
+            '1': { current: '1,800 ₽', original: '2,999 ₽', discount: '-40%', numericPrice: 1800 },
+            '3': { current: '5,145 ₽', original: '8,997 ₽', discount: '-43%', numericPrice: 5145 },
+            '6': { current: '9,745 ₽', original: '17,994 ₽', discount: '-46%', numericPrice: 9745 },
+            '12': { current: '17,330 ₽', original: '35,988 ₽', discount: '-52%', numericPrice: 17330 }
         }
     };
 }
@@ -1078,7 +1094,8 @@ function calculatePrice(productId, duration) {
     const productKeyMap = {
         1: 'chatgpt',
         3: 'adobe',
-        7: 'capcut'
+        7: 'capcut',
+        8: 'midjourney'
     };
     
     const productKey = productKeyMap[productId];

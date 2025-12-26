@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Midjourney Standard Plan - Benefideal</title>
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="nav">
+                <!-- Стрелка назад (слева, как на странице отзывов) -->
+                <button class="mobile-menu-toggle back-button" id="backButton" onclick="window.location.href='index.html'" aria-label="Назад">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                
+                <a href="index.html" class="logo">Benefideal</a>
+                <nav class="nav-links">
+                    <a href="index.html">Главная</a>
+                    <a href="index.html#subscriptions">Товары</a>
+                    <a href="index.html#about">О нас</a>
+                    <a href="index.html#contact">Контакты</a>
+                </nav>
+                <div class="nav-actions">
+                    <button type="button" class="cart-toggle" onclick="return toggleCart(event);">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-count" id="cartCount">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Product Page -->
+    <main class="product-page">
+        <div class="product-container">
+            <div class="product-layout">
+                <!-- Product Gallery -->
+                <div class="product-gallery">
+                    <div class="product-image">
+                        <img src="images/ChatGPT dfghjk_optimized.jpg" alt="Midjourney Standard Plan" loading="eager" fetchpriority="high" decoding="async" width="600" height="600">
+                    </div>
+                    
+                    <div class="product-purchase">
+                        <!-- Subscription Duration Selector -->
+                        <div class="subscription-selector">
+                            <span class="subscription-label">Выберите срок подписки</span>
+                            <div class="subscription-options">
+                                <div class="subscription-option">
+                                    <input type="radio" name="duration-midjourney" id="midjourney-1m" value="1" checked>
+                                    <label for="midjourney-1m" class="subscription-btn">
+                                        <span class="subscription-duration">1 месяц</span>
+                                    </label>
+                                </div>
+                                <div class="subscription-option">
+                                    <input type="radio" name="duration-midjourney" id="midjourney-3m" value="3">
+                                    <label for="midjourney-3m" class="subscription-btn">
+                                        <span class="subscription-duration">3 месяца</span>
+                                    </label>
+                                </div>
+                                <div class="subscription-option">
+                                    <input type="radio" name="duration-midjourney" id="midjourney-6m" value="6">
+                                    <label for="midjourney-6m" class="subscription-btn">
+                                        <span class="subscription-duration">6&nbsp;месяцев</span>
+                                    </label>
+                                </div>
+                                <div class="subscription-option">
+                                    <input type="radio" name="duration-midjourney" id="midjourney-12m" value="12">
+                                    <label for="midjourney-12m" class="subscription-btn">
+                                        <span class="subscription-duration">1 год</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="price-section">
+                            <div class="current-price">1,800 ₽</div>
+                            <div class="original-price">2,999 ₽</div>
+                            <div class="discount">-40%</div>
+                        </div>
+                        
+                        <button class="btn btn-primary add-to-cart-btn" onclick="addToCart(8)">
+                            <i class="fas fa-plus"></i>
+                            Добавить в корзину
+                        </button>
+                        
+                        <div class="guarantee">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Гарантия качества и быстрая выдача данных</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Info -->
+                <div class="product-info">
+                    <h1 class="product-title">Midjourney Standard Plan</h1>
+                    <p class="product-subtitle">Профессиональная генерация изображений с помощью искусственного интеллекта</p>
+                    
+                    <div class="product-description">
+                        <h2>О продукте</h2>
+                        <p><span class="paragraph-marker">—</span> <strong>Midjourney Standard Plan</strong> это премиум-подписка на один из самых мощных ИИ-генераторов изображений в мире! С Midjourney вы можете создавать потрясающие изображения, просто описывая их словами.</p>
+                        
+                        <p><span class="paragraph-marker">—</span> <strong>Создавайте уникальные изображения</strong><br>От реалистичных фотографий до фантастических иллюстраций. Midjourney понимает ваши описания и превращает их в произведения искусства.</p>
+                        
+                        <p><span class="paragraph-marker">—</span> <strong>Высокое качество и детализация</strong><br>Все изображения генерируются в высоком разрешении с невероятной детализацией и реалистичностью.</p>
+                        
+                        <p><span class="paragraph-marker">—</span> <strong>Безграничный креатив</strong><br>Создавайте изображения для любых целей: дизайн, маркетинг, искусство, концепт-арт и многое другое.</p>
+                        
+                        <p><span class="paragraph-marker">—</span> <strong>Быстрая генерация</strong><br>Получайте готовые изображения за считанные секунды без необходимости в навыках дизайна или рисования.</p>
+                        
+                        <p style="margin-top: 15px;"><span class="paragraph-marker">—</span> <strong>Идеально для дизайнеров, маркетологов и творческих профессионалов!</strong><br>Midjourney Standard Plan открывает безграничные возможности для визуального творчества.</p>
+                        
+                        <p class="support-block">
+                            <strong>💬 Если нужна помощь по любому вопросу, пишите в поддержку.</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Cart Modal -->
+    <div class="cart-modal" id="cartModal">
+        <div class="cart-content">
+            <div class="cart-header">
+                <h3>Корзина</h3>
+                <button class="cart-close" onclick="toggleCart()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items will be added here -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-promo">
+                    <div class="cart-promo-label">Промокод</div>
+                    <div class="cart-promo-row">
+                        <input type="text" id="cartPromoCode" class="cart-promo-input" placeholder="Введите промокод">
+                        <button type="button" class="cart-promo-apply" onclick="applyCartPromoCode()">
+                            Применить
+                        </button>
+                    </div>
+                </div>
+                <div class="cart-total">
+                    <span>Итого: <span id="cartTotal">0</span> ₽</span>
+                </div>
+                <button class="btn btn-primary cart-checkout" onclick="checkout()">
+                    Перейти к оплате
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=3.8"></script>
+</body>
+</html>
+
