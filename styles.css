@@ -22,9 +22,10 @@
     --accent-light: #5eead4;
     --accent-dark: #0d9488;
     
-    --gradient-primary: linear-gradient(135deg, #60a5fa 0%, #14b8a6 100%);
-    --gradient-secondary: linear-gradient(135deg, #93c5fd 0%, #5eead4 100%);
-    --gradient-hero: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #14b8a6 100%);
+    --gradient-primary: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    --gradient-secondary: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%);
+    --gradient-hero: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #60a5fa 100%);
+    --gradient-button: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
     --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
     
     /* Neutral Colors */
@@ -37,8 +38,8 @@
     --gray-400: #9ca3af;
     --gray-300: #d1d5db;
     --gray-200: #e5e7eb;
-    --gray-100: #f3f4f6;
-    --gray-50: #f9fafb;
+    --gray-100: #f8fafc;
+    --gray-50: #fafbfc;
     --white: #ffffff;
     
     /* Semantic Colors */
@@ -749,7 +750,7 @@ body {
 
 .cart-toggle:hover {
     color: var(--primary);
-    background: var(--gray-50);
+    background: #fcfdfe;
     transform: scale(1.1);
 }
 
@@ -876,12 +877,12 @@ body {
 }
 
 .btn-primary {
-    background: var(--gradient-primary);
+    background: var(--gradient-button);
     color: var(--white);
     /* Легкий 3D эффект для кнопок */
     box-shadow: 
-        0 4px 15px rgba(139, 92, 246, 0.3),
-        0 2px 8px rgba(139, 92, 246, 0.25),
+        0 4px 15px rgba(20, 184, 166, 0.3),
+        0 2px 8px rgba(20, 184, 166, 0.25),
         0 1px 4px rgba(0, 0, 0, 0.15),
         inset 0 1px 2px rgba(255, 255, 255, 0.25),
         inset 0 -1px 2px rgba(0, 0, 0, 0.15);
@@ -891,8 +892,8 @@ body {
     transform: translateY(-2px);
     /* Усиленный 3D эффект при hover */
     box-shadow: 
-        0 6px 20px rgba(139, 92, 246, 0.4),
-        0 3px 12px rgba(139, 92, 246, 0.35),
+        0 6px 20px rgba(20, 184, 166, 0.4),
+        0 3px 12px rgba(20, 184, 166, 0.35),
         0 1px 6px rgba(0, 0, 0, 0.2),
         inset 0 1px 2px rgba(255, 255, 255, 0.3),
         inset 0 -1px 2px rgba(0, 0, 0, 0.15);
@@ -955,7 +956,7 @@ body {
     scroll-margin-top: 80px;
     margin-top: 0;
     padding-top: var(--space-16);
-    background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%);
+    background: linear-gradient(to bottom, var(--white) 0%, #fcfdfe 100%);
 }
 
 .subscriptions-grid {
@@ -1297,7 +1298,7 @@ body {
 
 .how-we-work {
     padding: var(--space-24) 0;
-    background: linear-gradient(to bottom, var(--gray-50) 0%, var(--white) 100%);
+    background: linear-gradient(to bottom, #fcfdfe 0%, var(--white) 100%);
     scroll-margin-top: 100px;
 }
 
@@ -1429,7 +1430,7 @@ body {
 
 .reviews-section {
     padding: var(--space-24) 0;
-    background: linear-gradient(to bottom, var(--gray-50) 0%, var(--white) 100%);
+    background: linear-gradient(to bottom, #fcfdfe 0%, var(--white) 100%);
     scroll-margin-top: 100px;
 }
 
@@ -1657,7 +1658,7 @@ body {
 
 .contact-simple {
     padding: var(--space-24) 0;
-    background: linear-gradient(to bottom, var(--gray-50) 0%, var(--white) 100%);
+    background: linear-gradient(to bottom, #fcfdfe 0%, var(--white) 100%);
     text-align: center;
 }
 
@@ -1944,7 +1945,7 @@ body.cart-open {
 .cart-footer {
     padding: var(--space-6);
     border-top: 1px solid var(--gray-200);
-    background: var(--gray-50);
+    background: #fcfdfe;
 }
 
 .cart-total {
@@ -2022,7 +2023,7 @@ body.cart-open {
     padding: 0 1.2rem;
     border-radius: 12px;
     border: none;
-    background: var(--gradient-primary);
+    background: var(--gradient-button);
     color: #fff;
     font-weight: 600;
     font-size: 0.9rem;
@@ -2108,7 +2109,7 @@ body.cart-open {
     padding: var(--space-4) 0 var(--space-12) 0;
     min-height: 80vh;
     margin-top: 80px;
-    background: linear-gradient(to bottom, var(--white) 0%, var(--gray-50) 100%);
+    background: linear-gradient(to bottom, var(--white) 0%, #fcfdfe 100%);
 }
 
 /* Уменьшаем расстояние между хедером и контентом на мобильных */
@@ -2711,7 +2712,7 @@ body.cart-open {
 .support-block {
     margin-top: var(--space-5);
     padding: var(--space-4);
-    background: var(--gray-50);
+    background: #fcfdfe;
     border-radius: var(--radius-md);
     border-left: 4px solid var(--primary);
     position: relative;
@@ -2878,7 +2879,7 @@ body.cart-open {
     
     /* Выбранный вариант - сохраняем оригинальные цвета */
     .subscription-option input[type="radio"]:checked + .subscription-btn {
-        background: var(--gradient-primary) !important; /* Оригинальный градиент */
+        background: var(--gradient-button) !important; /* Зеленый градиент для кнопок */
         border: 2px solid var(--primary) !important; /* Контур как у выбранного payment-method-label */
         /* Усиленные 3D эффекты для выбранного варианта */
         box-shadow: 
@@ -2911,7 +2912,7 @@ body.cart-open {
     padding: var(--space-2) var(--space-3);
     border: 2px solid var(--gray-200);
     border-radius: var(--radius-lg);
-    background: var(--gray-50);
+    background: #fcfdfe;
     cursor: pointer;
     transition: all var(--transition-base);
     height: 55px;
@@ -3008,7 +3009,7 @@ label.subscription-btn:focus-visible {
 }
 
 .subscription-option input[type="radio"]:checked + .subscription-btn {
-    background: var(--gradient-primary);
+    background: var(--gradient-button);
     color: var(--white);
     border: 2px solid var(--primary) !important;
     outline: none !important;
@@ -3214,7 +3215,7 @@ label.subscription-btn:focus-visible {
     justify-content: space-between;
     gap: var(--space-4);
     padding: var(--space-4);
-    background: var(--gray-50);
+    background: #fcfdfe;
     border-radius: var(--radius-lg);
     margin-bottom: var(--space-4);
     /* Легкие тени для 3D эффекта (меньше чем у карточки) */
@@ -3287,7 +3288,7 @@ input[type="radio"][name="paymentMethod"] {
     gap: var(--space-2);
     cursor: pointer;
     padding: var(--space-3) var(--space-4);
-    background: var(--gray-50);
+    background: #fcfdfe;
     border-radius: var(--radius-lg);
     transition: all 0.3s ease;
     margin-bottom: var(--space-3);
@@ -3393,13 +3394,13 @@ input[type="radio"][name="paymentMethod"] {
     font-size: 1.1rem;
     font-weight: 700;
     border-radius: var(--radius-lg);
-    background: var(--gradient-primary);
+    background: var(--gradient-button);
     color: var(--white);
     border: none;
     /* Многослойные тени для 3D эффекта */
     box-shadow: 
-        0 6px 20px rgba(139, 92, 246, 0.4),
-        0 3px 12px rgba(139, 92, 246, 0.35),
+        0 6px 20px rgba(20, 184, 166, 0.4),
+        0 3px 12px rgba(20, 184, 166, 0.35),
         0 1px 6px rgba(0, 0, 0, 0.2),
         inset 0 1px 2px rgba(255, 255, 255, 0.3),
         inset 0 -1px 2px rgba(0, 0, 0, 0.15);
@@ -3416,8 +3417,8 @@ input[type="radio"][name="paymentMethod"] {
     transform: perspective(1000px) translateZ(8px) translateY(-2px);
     /* Усиленный 3D эффект при hover */
     box-shadow: 
-        0 8px 25px rgba(139, 92, 246, 0.5),
-        0 4px 15px rgba(139, 92, 246, 0.4),
+        0 8px 25px rgba(20, 184, 166, 0.5),
+        0 4px 15px rgba(20, 184, 166, 0.4),
         0 2px 8px rgba(0, 0, 0, 0.25),
         inset 0 1px 2px rgba(255, 255, 255, 0.4),
         inset 0 -1px 2px rgba(0, 0, 0, 0.2);
