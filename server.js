@@ -713,13 +713,19 @@ app.post('/api/admin/support-reply', async (req, res) => {
     
     try {
         // Store reply for client
-        const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
+        // КРИТИЧЕСКИ ВАЖНО: Сохраняем в корневой файл (Git версия) - НЕ ПОТЕРЯЕТСЯ при деплое!
+        // Читаем существующие ответы ПЕРЕД сохранением нового
         const fs = require('fs');
         let replies = {};
-        if (fs.existsSync(repliesPath)) {
+        if (fs.existsSync(supportRepliesJsonPath)) {
             try {
-                replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
+                const existingContent = fs.readFileSync(supportRepliesJsonPath, 'utf8');
+                if (existingContent.trim()) {
+                    replies = JSON.parse(existingContent);
+                    console.log(`📥 Loaded existing replies from support_replies.json`);
+                }
             } catch (e) {
+                console.error('Error reading support_replies.json:', e);
                 replies = {};
             }
         }
@@ -733,14 +739,14 @@ app.post('/api/admin/support-reply', async (req, res) => {
             timestamp: Date.now()
         });
         
-        const dataDir = path.dirname(repliesPath);
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-        }
+        // Сохраняем в корневой файл (Git версия)
+        // КРИТИЧЕСКИ ВАЖНО: Файл должен быть в Git (как orders.json и reviews.json)
+        // Файл сохраняется на сервере и будет доступен при следующем деплое
+        fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(replies, null, 2), 'utf8');
+        console.log(`✅ Saved reply to support_replies.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
+        console.log(`📝 Total replies saved: ${Object.keys(replies).length}`);
         
-        fs.writeFileSync(repliesPath, JSON.stringify(replies, null, 2));
-        
-        res.json({ success: true, message: 'Ответ отправлен' });
+        res.json({ success: true, message: 'Ответ отправлен клиенту' });
     } catch (error) {
         console.error('Error sending reply:', error);
         res.status(500).json({ success: false, error: 'Ошибка отправки ответа' });
