@@ -460,32 +460,15 @@
     
     // Store clientId for deletion on page unload
     let currentClientId = null;
-    let isPageReloading = false;
-    
-    // Отслеживаем обновление страницы (F5, Ctrl+R и т.д.)
-    // beforeunload срабатывает и при обновлении, и при закрытии
-    window.addEventListener('beforeunload', function(e) {
-        // Проверяем, что это обновление страницы, а не закрытие
-        // Если пользователь нажал F5 или Ctrl+R, это обновление
-        isPageReloading = true;
-    });
+    let chatDeleted = false; // Флаг, чтобы не удалять дважды
     
     // Function to delete chat when page is closed (NOT on reload)
-    function deleteChatOnUnload(event) {
-        // КРИТИЧЕСКИ ВАЖНО: удаляем только при закрытии вкладки, НЕ при обновлении!
-        // pagehide с persisted=false означает закрытие вкладки
-        // pagehide с persisted=true означает обновление/навигацию
-        if (event && event.persisted === true) {
-            // Это обновление страницы - НЕ удаляем чат!
-            console.log('🔄 Page reload detected - keeping chat');
+    function deleteChatOnUnload() {
+        // Проверяем, не удалили ли уже чат
+        if (chatDeleted) {
             return;
         }
-        
-        // Если это обновление страницы - не удаляем
-        if (isPageReloading && (!event || event.persisted !== false)) {
-            console.log('🔄 Page reload detected - keeping chat');
-            return;
-        }
+        chatDeleted = true;
         
         console.log('🗑️ Closing tab - deleting chat...');
         
@@ -516,10 +499,13 @@
             
             // Use sendBeacon for reliable deletion even if page is closing
             if (navigator.sendBeacon) {
-                // sendBeacon не поддерживает DELETE напрямую, используем POST с методом в теле
-                const formData = new FormData();
-                formData.append('_method', 'DELETE');
-                navigator.sendBeacon(apiUrl, formData);
+                // sendBeacon не поддерживает DELETE напрямую, используем fetch с keepalive
+                fetch(apiUrl, {
+                    method: 'DELETE',
+                    keepalive: true
+                }).catch(() => {
+                    // Ignore errors - page is closing
+                });
             } else {
                 // Fallback to fetch with keepalive
                 fetch(apiUrl, {
@@ -532,25 +518,18 @@
         }
     }
     
-    // Listen for pagehide event (более точно определяет закрытие вкладки)
-    // pagehide с persisted=false = закрытие вкладки
-    // pagehide с persisted=true = обновление страницы
+    // КРИТИЧЕСКИ ВАЖНО: Используем ТОЛЬКО pagehide для определения закрытия вкладки
+    // pagehide с persisted=false = закрытие вкладки (удаляем чат)
+    // pagehide с persisted=true = обновление страницы/навигация (НЕ удаляем чат)
     window.addEventListener('pagehide', function(event) {
+        // event.persisted === false означает, что страница НЕ сохраняется в кэше = закрытие вкладки
+        // event.persisted === true означает, что страница сохраняется в кэше = обновление/навигация
         if (event.persisted === false) {
             // Это закрытие вкладки - удаляем чат
-            deleteChatOnUnload(event);
+            deleteChatOnUnload();
         } else {
-            // Это обновление страницы - НЕ удаляем
-            console.log('🔄 Page reload detected (pagehide persisted=true) - keeping chat');
-        }
-    });
-    
-    // beforeunload как резервный вариант (но проверяем isPageReloading)
-    window.addEventListener('beforeunload', function(event) {
-        // Если это не обновление, удаляем
-        if (!isPageReloading) {
-            // Но лучше полагаться на pagehide, так как beforeunload менее надежен
-            // Не вызываем deleteChatOnUnload здесь, чтобы избежать двойного удаления
+            // Это обновление страницы (F5, Ctrl+R) или навигация - НЕ удаляем чат
+            console.log('🔄 Page reload/navigation detected (pagehide persisted=true) - keeping chat');
         }
     });
     
