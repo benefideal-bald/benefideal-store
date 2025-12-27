@@ -5979,6 +5979,8 @@ app.post('/api/telegram/webhook', async (req, res) => {
             const replyText = body.message.text;
             const isReply = body.message.reply_to_message;
             
+            console.log('📨 Admin message received:', { chatId, replyText, isReply: !!isReply });
+            
             const pendingRepliesPath = path.join(process.cwd(), 'data', 'pending_replies.json');
             const fs = require('fs');
             
@@ -5990,6 +5992,8 @@ app.post('/api/telegram/webhook', async (req, res) => {
                     if (isReply && pendingReplies[chatId]) {
                         const pending = pendingReplies[chatId];
                         const messageId = pending.messageId;
+                        
+                        console.log('✅ Processing admin reply:', { messageId, replyText });
                         
                         // Store reply for client
                         const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
@@ -6023,14 +6027,21 @@ app.post('/api/telegram/webhook', async (req, res) => {
                         fs.writeFileSync(pendingRepliesPath, JSON.stringify(pendingReplies, null, 2));
                         
                         // Confirm to admin
-                        await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                            chat_id: chatId,
-                            text: `✅ Ответ отправлен клиенту!`,
-                            reply_to_message_id: body.message.message_id
-                        });
+                        try {
+                            await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `✅ Ответ отправлен клиенту!`,
+                                reply_to_message_id: body.message.message_id
+                            });
+                            console.log('✅ Confirmation sent to admin');
+                        } catch (error) {
+                            console.error('❌ Error sending confirmation:', error.response?.data || error.message);
+                        }
+                    } else {
+                        console.log('⚠️ Message is not a reply to support message or no pending reply found');
                     }
                 } catch (e) {
-                    console.error('Error processing admin reply:', e);
+                    console.error('❌ Error processing admin reply:', e);
                 }
             }
         }
