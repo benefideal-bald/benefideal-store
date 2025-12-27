@@ -519,10 +519,15 @@ app.get('/api/admin/support-messages', (req, res) => {
         
         if (fs.existsSync(supportMessagesPath)) {
             try {
-                messages = JSON.parse(fs.readFileSync(supportMessagesPath, 'utf8'));
+                const fileContent = fs.readFileSync(supportMessagesPath, 'utf8');
+                messages = JSON.parse(fileContent);
+                console.log(`📥 Loaded ${Object.keys(messages).length} messages from support_messages.json`);
             } catch (e) {
+                console.error('Error reading support_messages.json:', e);
                 messages = {};
             }
+        } else {
+            console.log('⚠️ support_messages.json not found');
         }
         
         if (fs.existsSync(repliesPath)) {
@@ -617,6 +622,8 @@ app.get('/api/admin/support-messages', (req, res) => {
         sortedChats.forEach(chat => {
             chat.messages.sort((a, b) => b.timestamp - a.timestamp);
         });
+        
+        console.log(`📤 Returning ${sortedChats.length} chats with ${messagesArray.length} total messages`);
         
         res.json({
             success: true,
