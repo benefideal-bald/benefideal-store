@@ -203,6 +203,36 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
             }
         });
         
+        // Проверяем количество сообщений поддержки при старте
+        db.get(`SELECT COUNT(*) as count FROM support_messages`, [], (err, countRow) => {
+            if (!err && countRow) {
+                console.log(`📊 Support messages count on startup: ${countRow.count}`);
+                if (countRow.count > 0) {
+                    console.log(`✅ Support messages database is NOT empty - all messages are safe!`);
+                } else {
+                    console.log(`📋 Support messages database is empty - will be populated on first message`);
+                }
+            }
+        });
+        
+        // Мигрируем данные из JSON в базу данных при старте (если есть)
+        migrateSupportMessagesFromJSON();
+        
+        // Проверяем количество сообщений поддержки при старте
+        db.get(`SELECT COUNT(*) as count FROM support_messages`, [], (err, countRow) => {
+            if (!err && countRow) {
+                console.log(`📊 Support messages count on startup: ${countRow.count}`);
+                if (countRow.count > 0) {
+                    console.log(`✅ Support messages database is NOT empty - all messages are safe!`);
+                } else {
+                    console.log(`📋 Support messages database is empty - will be populated on first message`);
+                }
+            }
+        });
+        
+        // Мигрируем данные из JSON в базу данных при старте (если есть)
+        migrateSupportMessagesFromJSON();
+        
         // Проверяем количество отзывов при старте
         console.log(`🔍 Проверка отзывов при старте сервера...`);
         
@@ -576,6 +606,7 @@ app.get('/force-add-nikita', (req, res) => {
 });
 
 // Admin API - Get support messages
+// КРИТИЧЕСКИ ВАЖНО: Читаем из SQLite базы данных - данные НЕ ПОТЕРЯЮТСЯ при деплое!
 app.get('/api/admin/support-messages', (req, res) => {
     const password = req.query.password;
     const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '2728276';
@@ -585,138 +616,116 @@ app.get('/api/admin/support-messages', (req, res) => {
     }
     
     try {
-        // КРИТИЧЕСКИ ВАЖНО: Читаем из корневого файла (Git версия) - как orders.json и reviews.json
-        const fs = require('fs');
-        
-        let messages = {};
-        let replies = {};
-        
-        // МИГРАЦИЯ: Проверяем старый путь (data/) и переносим данные в корень, если нужно
-        const oldMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
-        const oldRepliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
-        
-        // Если корневой файл не существует, но есть старый - мигрируем данные
-        if (!fs.existsSync(supportMessagesJsonPath) && fs.existsSync(oldMessagesPath)) {
-            try {
-                console.log('🔄 Migrating support_messages.json from data/ to root...');
-                const oldMessages = JSON.parse(fs.readFileSync(oldMessagesPath, 'utf8'));
-                fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(oldMessages, null, 2), 'utf8');
-                messages = oldMessages;
-                console.log(`✅ Migrated ${Object.keys(messages).length} messages from data/ to root`);
-            } catch (e) {
-                console.error('Error migrating messages:', e);
+        // Читаем сообщения из базы данных
+        db.all(`
+            SELECT 
+                message_id,
+                message_text as message,
+                client_id as clientId,
+                client_ip as clientIP,
+                has_image as hasImage,
+                image_filenames,
+                telegram_message_id,
+                timestamp
+            FROM support_messages
+            ORDER BY timestamp DESC
+        `, [], (err, messagesRows) => {
+            if (err) {
+                console.error('Error reading messages from database:', err);
+                return res.status(500).json({ success: false, error: 'Ошибка загрузки сообщений' });
             }
-        }
-        
-        // Если корневой файл не существует, но есть старый - мигрируем ответы
-        if (!fs.existsSync(supportRepliesJsonPath) && fs.existsSync(oldRepliesPath)) {
-            try {
-                console.log('🔄 Migrating support_replies.json from data/ to root...');
-                const oldReplies = JSON.parse(fs.readFileSync(oldRepliesPath, 'utf8'));
-                fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(oldReplies, null, 2), 'utf8');
-                replies = oldReplies;
-                console.log(`✅ Migrated replies from data/ to root`);
-            } catch (e) {
-                console.error('Error migrating replies:', e);
-            }
-        }
-        
-        // Читаем сообщения из корневого файла (Git версия)
-        if (fs.existsSync(supportMessagesJsonPath)) {
-            try {
-                const fileContent = fs.readFileSync(supportMessagesJsonPath, 'utf8');
-                // Если файл пустой или содержит только {}, проверяем старый путь
-                if (fileContent.trim() && fileContent.trim() !== '{}') {
-                    messages = JSON.parse(fileContent);
-                    console.log(`📥 Loaded ${Object.keys(messages).length} messages from support_messages.json (Git version)`);
-                } else {
-                    // Файл пустой - проверяем старый путь
-                    if (fs.existsSync(oldMessagesPath)) {
-                        try {
-                            messages = JSON.parse(fs.readFileSync(oldMessagesPath, 'utf8'));
-                            console.log(`📥 Loaded ${Object.keys(messages).length} messages from data/support_messages.json (migration)`);
-                            // Мигрируем в корень
-                            fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(messages, null, 2), 'utf8');
-                            console.log(`✅ Migrated messages to root`);
-                        } catch (e) {
-                            console.warn('⚠️ Ошибка при миграции сообщений:', e.message);
-                            messages = {};
-                        }
-                    } else {
-                        console.log('⚠️ support_messages.json пустой - будет создан при первом сообщении');
-                        messages = {};
-                    }
-                }
-            } catch (e) {
-                console.error('Error reading support_messages.json:', e);
-                messages = {};
-            }
-        } else {
-            console.log('⚠️ support_messages.json not found - will be created on first message');
-        }
-        
-        // Читаем ответы из корневого файла (Git версия)
-        if (fs.existsSync(supportRepliesJsonPath)) {
-            try {
-                const fileContent = fs.readFileSync(supportRepliesJsonPath, 'utf8');
-                // Если файл пустой или содержит только {}, проверяем старый путь
-                if (fileContent.trim() && fileContent.trim() !== '{}') {
-                    replies = JSON.parse(fileContent);
-                    console.log(`📥 Loaded replies from support_replies.json (Git version)`);
-                } else {
-                    // Файл пустой - проверяем старый путь
-                    if (fs.existsSync(oldRepliesPath)) {
-                        try {
-                            replies = JSON.parse(fs.readFileSync(oldRepliesPath, 'utf8'));
-                            console.log(`📥 Loaded replies from data/support_replies.json (migration)`);
-                            // Мигрируем в корень
-                            fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(replies, null, 2), 'utf8');
-                            console.log(`✅ Migrated replies to root`);
-                        } catch (e) {
-                            console.warn('⚠️ Ошибка при миграции ответов:', e.message);
-                            replies = {};
-                        }
-                    } else {
-                        replies = {};
-                    }
-                }
-            } catch (e) {
-                console.error('Error reading support_replies.json:', e);
-                replies = {};
-            }
-        }
-        
-        // Convert to array and add client info
-        // Для старых сообщений без clientId создаем уникальный ID на основе messageId
-        const messagesArray = Object.entries(messages).map(([messageId, data]) => {
-            let clientId = data.clientId;
-            let clientIP = data.clientIP;
             
-            // Миграция для старых сообщений без clientId
-            if (!clientId) {
-                // Создаем clientId из первых символов messageId для старых сообщений
-                const crypto = require('crypto');
-                clientId = crypto.createHash('md5').update(messageId).digest('hex').substring(0, 12);
-                clientIP = data.clientIP || 'unknown';
+            // Читаем ответы из базы данных
+            db.all(`
+                SELECT 
+                    message_id,
+                    reply_text as text,
+                    timestamp
+                FROM support_replies
+                ORDER BY timestamp ASC
+            `, [], (errReplies, repliesRows) => {
+                if (errReplies) {
+                    console.error('Error reading replies from database:', errReplies);
+                    return res.status(500).json({ success: false, error: 'Ошибка загрузки ответов' });
+                }
                 
-                // Обновляем данные в файле (опционально, можно оставить как есть)
-                data.clientId = clientId;
-                if (!data.clientIP) {
-                    data.clientIP = 'unknown';
-                }
-            }
-            
-            // Ensure imageFilenames is an array
-            let imageFilenames = [];
-            if (data.imageFilenames && Array.isArray(data.imageFilenames)) {
-                imageFilenames = data.imageFilenames;
-            } else if (data.imageFilename) {
-                // Legacy support - convert single filename to array
-                imageFilenames = [data.imageFilename];
-            }
-            
-            return {
-                messageId,
+                // Преобразуем ответы в формат { messageId: [replies] }
+                const replies = {};
+                repliesRows.forEach(reply => {
+                    if (!replies[reply.message_id]) {
+                        replies[reply.message_id] = [];
+                    }
+                    replies[reply.message_id].push({
+                        text: reply.text,
+                        timestamp: reply.timestamp
+                    });
+                });
+                
+                // Преобразуем сообщения в нужный формат
+                const messagesArray = messagesRows.map(row => {
+                    // Парсим image_filenames из JSON
+                    let imageFilenames = [];
+                    if (row.image_filenames) {
+                        try {
+                            imageFilenames = JSON.parse(row.image_filenames);
+                        } catch (e) {
+                            console.warn('Error parsing image_filenames:', e);
+                        }
+                    }
+                    
+                    return {
+                        messageId: row.message_id,
+                        message: row.message,
+                        timestamp: row.timestamp,
+                        hasImage: row.hasImage === 1,
+                        imageFilenames: imageFilenames,
+                        imageFilename: imageFilenames.length > 0 ? imageFilenames[0] : null, // Legacy support
+                        telegramMessageId: row.telegram_message_id,
+                        clientId: row.clientId,
+                        clientIP: row.clientIP
+                    };
+                });
+                
+                // Group messages by clientId (chats)
+                const chats = {};
+                messagesArray.forEach(msg => {
+                    const chatId = msg.clientId;
+                    if (!chats[chatId]) {
+                        chats[chatId] = {
+                            clientId: chatId,
+                            clientIP: msg.clientIP,
+                            messages: [],
+                            lastMessageTime: 0
+                        };
+                    }
+                    chats[chatId].messages.push(msg);
+                    if (msg.timestamp > chats[chatId].lastMessageTime) {
+                        chats[chatId].lastMessageTime = msg.timestamp;
+                    }
+                });
+                
+                // Sort chats by last message time (newest first)
+                const sortedChats = Object.values(chats).sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+                
+                // Sort messages within each chat by timestamp (newest first)
+                sortedChats.forEach(chat => {
+                    chat.messages.sort((a, b) => b.timestamp - a.timestamp);
+                });
+                
+                console.log(`📤 Returning ${sortedChats.length} chats with ${messagesArray.length} total messages from database`);
+                
+                res.json({
+                    success: true,
+                    chats: sortedChats,
+                    replies: replies
+                });
+            });
+        });
+    } catch (error) {
+        console.error('Error loading support messages:', error);
+        res.status(500).json({ success: false, error: 'Ошибка загрузки сообщений' });
+    }
+});
                 message: data.message || '',
                 timestamp: data.timestamp || 0,
                 hasImage: data.hasImage || false,
@@ -824,51 +833,19 @@ app.post('/api/admin/support-reply', async (req, res) => {
     }
     
     try {
-        // Store reply for client
-        // КРИТИЧЕСКИ ВАЖНО: Сохраняем в корневой файл (Git версия) - НЕ ПОТЕРЯЕТСЯ при деплое!
-        // Читаем существующие ответы ПЕРЕД сохранением нового
-        const fs = require('fs');
-        let replies = {};
-        if (fs.existsSync(supportRepliesJsonPath)) {
-            try {
-                const existingContent = fs.readFileSync(supportRepliesJsonPath, 'utf8');
-                if (existingContent.trim()) {
-                    replies = JSON.parse(existingContent);
-                    console.log(`📥 Loaded existing replies from support_replies.json`);
-                }
-            } catch (e) {
-                console.error('Error reading support_replies.json:', e);
-                replies = {};
+        // КРИТИЧЕСКИ ВАЖНО: Сохраняем в SQLite базу данных - данные НЕ ПОТЕРЯЮТСЯ при деплое!
+        db.run(`
+            INSERT INTO support_replies (message_id, reply_text, timestamp)
+            VALUES (?, ?, ?)
+        `, [messageId, replyText, Date.now()], function(err) {
+            if (err) {
+                console.error('❌ Error saving reply to database:', err);
+                return res.status(500).json({ success: false, error: 'Ошибка сохранения ответа' });
             }
-        }
-        
-        if (!replies[messageId]) {
-            replies[messageId] = [];
-        }
-        
-        replies[messageId].push({
-            text: replyText,
-            timestamp: Date.now()
+            
+            console.log(`✅ Reply saved to database with ID: ${this.lastID}`);
+            res.json({ success: true, message: 'Ответ отправлен клиенту' });
         });
-        
-        // Сохраняем в корневой файл (Git версия)
-        // КРИТИЧЕСКИ ВАЖНО: Файл должен быть в Git (как orders.json и reviews.json)
-        // Файл сохраняется на сервере и будет доступен при следующем деплое
-        fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(replies, null, 2), 'utf8');
-        console.log(`✅ Saved reply to support_replies.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
-        console.log(`📝 Total replies saved: ${Object.keys(replies).length}`);
-        
-        // Автоматически коммитим в Git через GitHub API (как для отзывов)
-        // Это гарантирует, что ответы не потеряются при деплое
-        if (typeof commitSupportRepliesToGitViaAPI === 'function') {
-            (async () => {
-                try {
-                    await commitSupportRepliesToGitViaAPI();
-                } catch (e) {
-                    console.warn('⚠️ Failed to commit support replies to Git (не критично):', e.message);
-                }
-            })();
-        }
         
         res.json({ success: true, message: 'Ответ отправлен клиенту' });
     } catch (error) {
@@ -6328,80 +6305,37 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
             console.log('✅ Message sent, response:', JSON.stringify(textResponse.data, null, 2));
         }
         
-        // Store message mapping (messageId -> client info for future replies)
-        // КРИТИЧЕСКИ ВАЖНО: Сохраняем в корневой файл (Git версия) - как orders.json и reviews.json
-        // Это гарантирует, что сообщения не потеряются при деплое
-        const fs = require('fs');
-        let supportMessages = {};
-        
-        // КРИТИЧЕСКИ ВАЖНО: Читаем существующие сообщения ПЕРЕД сохранением нового
-        // Это гарантирует, что мы не потеряем старые сообщения
-        if (fs.existsSync(supportMessagesJsonPath)) {
-            try {
-                const existingContent = fs.readFileSync(supportMessagesJsonPath, 'utf8');
-                if (existingContent.trim() && existingContent.trim() !== '{}') {
-                    supportMessages = JSON.parse(existingContent);
-                    console.log(`📥 Loaded ${Object.keys(supportMessages).length} existing messages from support_messages.json`);
-                } else {
-                    // Файл пустой - проверяем старый путь
-                    const oldMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
-                    if (fs.existsSync(oldMessagesPath)) {
-                        try {
-                            const oldMessages = JSON.parse(fs.readFileSync(oldMessagesPath, 'utf8'));
-                            if (Object.keys(oldMessages).length > 0) {
-                                supportMessages = oldMessages;
-                                console.log(`📥 Loaded ${Object.keys(supportMessages).length} messages from data/support_messages.json (migration)`);
-                            }
-                        } catch (e) {
-                            console.warn('⚠️ Ошибка при чтении старых сообщений:', e.message);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('Error reading support_messages.json:', e);
-                supportMessages = {};
-            }
-        }
-        
-        // Save all image filenames - ensure we get all files
+        // КРИТИЧЕСКИ ВАЖНО: Сохраняем в SQLite базу данных - данные НЕ ПОТЕРЯЮТСЯ при деплое!
+        // База данных сохраняется на сервере и не перезаписывается при деплое
         const imageFilenames = imageFiles.map(f => {
             const filename = f.filename || f.originalname || null;
             console.log(`  - File: ${filename}, size: ${f.size}, path: ${f.path}`);
             return filename;
         }).filter(f => f !== null);
         
-        console.log(`💾 Saving message ${messageId} with ${imageFiles.length} images, ${imageFilenames.length} filenames:`, imageFilenames);
+        console.log(`💾 Saving message ${messageId} to database with ${imageFiles.length} images`);
         
-        // Добавляем новое сообщение к существующим (не перезаписываем!)
-        supportMessages[messageId] = {
-            message: message,
-            timestamp: Date.now(),
-            hasImage: imageFiles.length > 0,
-            imageFilenames: imageFilenames, // Array of all filenames
-            imageFilename: imageFilenames.length > 0 ? imageFilenames[0] : null, // Legacy support
-            telegramMessageId: telegramMessageId, // Сохраняем ID сообщения в Telegram для поиска при ответе
-            clientId: clientId, // Уникальный ID клиента
-            clientIP: ip // IP адрес клиента (для идентификации)
-        };
-        
-        // Сохраняем в корневой файл (Git версия) - НЕ ПОТЕРЯЕТСЯ при деплое!
-        // КРИТИЧЕСКИ ВАЖНО: Файл должен быть в Git (как orders.json и reviews.json)
-        // Файл сохраняется на сервере и будет доступен при следующем деплое
-        fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(supportMessages, null, 2), 'utf8');
-        console.log(`✅ Saved support message to support_messages.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
-        console.log(`📝 Total messages saved: ${Object.keys(supportMessages).length}`);
-        
-        // Автоматически коммитим в Git через GitHub API (как для отзывов)
-        // Это гарантирует, что сообщения не потеряются при деплое
-        if (typeof commitSupportMessagesToGitViaAPI === 'function') {
-            (async () => {
-                try {
-                    await commitSupportMessagesToGitViaAPI();
-                } catch (e) {
-                    console.warn('⚠️ Failed to commit support messages to Git (не критично):', e.message);
-                }
-            })();
-        }
+        // Сохраняем в базу данных
+        db.run(`
+            INSERT INTO support_messages 
+            (message_id, message_text, client_id, client_ip, has_image, image_filenames, telegram_message_id, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            messageId,
+            message || null,
+            clientId,
+            ip,
+            imageFiles.length > 0 ? 1 : 0,
+            imageFilenames.length > 0 ? JSON.stringify(imageFilenames) : null,
+            telegramMessageId || null,
+            Date.now()
+        ], function(err) {
+            if (err) {
+                console.error('❌ Error saving message to database:', err);
+            } else {
+                console.log(`✅ Message saved to database with ID: ${this.lastID}`);
+            }
+        });
         
         // Return messageId to client for polling
         res.json({ 
