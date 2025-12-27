@@ -910,16 +910,8 @@ app.post('/api/admin/support-reply', supportUpload.array('images', 10), async (r
             
             stmt.finalize();
             
-            // 🔄 ДОПОЛНИТЕЛЬНО: после сохранения в базу синхронизируем JSON файлы и коммитим в Git
-            if (typeof snapshotAllSupportRepliesToJsonFiles === 'function') {
-                (async () => {
-                    try {
-                        await snapshotAllSupportRepliesToJsonFiles();
-                    } catch (e) {
-                        console.warn('⚠️ Failed to snapshot support replies to JSON files after new reply:', e.message);
-                    }
-                })();
-            }
+            // НЕ коммитим в Git - чат удаляется при закрытии вкладки клиента, поэтому автоматические деплои не нужны
+            // Данные сохраняются только в БД для админ-панели
             
             // Отправляем ответ ТОЛЬКО ОДИН РАЗ здесь
             res.json({ success: true, message: 'Ответ отправлен клиенту' });
@@ -6499,17 +6491,7 @@ app.delete('/api/support/delete-chat/:clientId', (req, res) => {
                 
                 console.log(`✅ Deleted ${this.changes} messages for clientId: ${clientId}`);
                 
-                // Синхронизируем JSON файлы после удаления
-                if (typeof snapshotAllSupportMessagesToJsonFiles === 'function') {
-                    (async () => {
-                        try {
-                            await snapshotAllSupportMessagesToJsonFiles();
-                            await snapshotAllSupportRepliesToJsonFiles();
-                        } catch (e) {
-                            console.warn('⚠️ Failed to snapshot after deletion:', e.message);
-                        }
-                    })();
-                }
+                // НЕ коммитим в Git - чат удаляется при закрытии вкладки, поэтому автоматические деплои не нужны
                 
                 res.json({ 
                     success: true, 
@@ -6611,17 +6593,7 @@ function cleanupOldSupportChats() {
         function finishCleanup(deletedCount) {
             console.log(`✅ Cleanup completed: deleted ${deletedCount} messages from ${oldChats.length} old chats`);
             
-            // Синхронизируем JSON файлы после очистки
-            if (typeof snapshotAllSupportMessagesToJsonFiles === 'function') {
-                (async () => {
-                    try {
-                        await snapshotAllSupportMessagesToJsonFiles();
-                        await snapshotAllSupportRepliesToJsonFiles();
-                    } catch (e) {
-                        console.warn('⚠️ Failed to snapshot after cleanup:', e.message);
-                    }
-                })();
-            }
+            // НЕ коммитим в Git - чат удаляется при закрытии вкладки, поэтому автоматические деплои не нужны
         }
     });
 }
@@ -6882,17 +6854,8 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
                     
                     stmt.finalize();
                     
-                    // 🔄 ДОПОЛНИТЕЛЬНО: после сохранения в базу синхронизируем JSON файлы и коммитим в Git
-                    // Это гарантирует, что сообщения не потеряются при деплое (как для отзывов и заказов)
-                    if (typeof snapshotAllSupportMessagesToJsonFiles === 'function') {
-                        (async () => {
-                            try {
-                                await snapshotAllSupportMessagesToJsonFiles();
-                            } catch (e) {
-                                console.warn('⚠️ Failed to snapshot support messages to JSON files after new message:', e.message);
-                            }
-                        })();
-                    }
+                    // НЕ коммитим в Git - чат удаляется при закрытии вкладки клиента, поэтому автоматические деплои не нужны
+                    // Данные сохраняются только в БД для админ-панели
                 }
             });
         };
