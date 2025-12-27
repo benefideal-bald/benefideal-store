@@ -5756,6 +5756,31 @@ app.get('/api/test', (req, res) => {
     });
 });
 
+// Endpoint to set Telegram webhook (call this once after deployment)
+app.get('/api/telegram/set-webhook', async (req, res) => {
+    try {
+        const webhookUrl = req.query.url || `${req.protocol}://${req.get('host')}/api/telegram/webhook`;
+        
+        const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
+            url: webhookUrl
+        });
+        
+        res.json({ 
+            success: true, 
+            message: 'Webhook установлен',
+            webhookUrl: webhookUrl,
+            telegramResponse: response.data
+        });
+    } catch (error) {
+        console.error('Error setting webhook:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Ошибка установки webhook',
+            details: error.response?.data || error.message
+        });
+    }
+});
+
 // Support Chat - Send message to Telegram
 // Create uploads/support directory if it doesn't exist
 const supportUploadDir = path.join(process.cwd(), 'uploads', 'support');
