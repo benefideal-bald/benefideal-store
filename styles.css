@@ -4580,6 +4580,11 @@ input[type="radio"][name="paymentMethod"] {
     font-family: var(--font-primary);
     outline: none;
     transition: all var(--transition-base);
+    resize: none;
+    min-height: 40px;
+    max-height: 150px;
+    overflow-y: auto;
+    line-height: 1.5;
 }
 
 .support-chat-input:focus {

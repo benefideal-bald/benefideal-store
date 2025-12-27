@@ -366,8 +366,14 @@
         }
     });
     
-    // Enter key to send
-    chatInput.addEventListener('keypress', function(e) {
+    // Auto-resize textarea
+    chatInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+    });
+    
+    // Enter key to send (Shift+Enter for new line)
+    chatInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             const text = chatInput.value.trim();
@@ -380,6 +386,10 @@
                 
                 // Send message with all selected files
                 sendMessage(text, selectedFiles.length > 0 ? selectedFiles : null, selectedFilePreviews.length > 0 ? selectedFilePreviews : null);
+                
+                // Clear input and reset height
+                chatInput.value = '';
+                chatInput.style.height = 'auto';
                 
                 // Clear file selection
                 selectedFiles = [];
