@@ -534,15 +534,63 @@ app.get('/api/admin/support-messages', (req, res) => {
         }
         
         // Convert to array and add client info
-        const messagesArray = Object.entries(messages).map(([messageId, data]) => ({
-            messageId,
-            message: data.message || '',
-            timestamp: data.timestamp || 0,
-            hasImage: data.hasImage || false,
-            imageFilename: data.imageFilename || null,
-            clientId: data.clientId || 'unknown',
-            clientIP: data.clientIP || 'unknown'
-        }));
+        // Для старых сообщений без clientId создаем уникальный ID на основе messageId
+        const messagesArray = Object.entries(messages).map(([messageId, data]) => {
+            let clientId = data.clientId;
+            let clientIP = data.clientIP;
+            
+            // Миграция для старых сообщений без clientId
+            if (!clientId) {
+                // Создаем clientId из первых символов messageId для старых сообщений
+                const crypto = require('crypto');
+                clientId = crypto.createHash('md5').update(messageId).digest('hex').substring(0, 12);
+                clientIP = data.clientIP || 'unknown';
+                
+                // Обновляем данные в файле (опционально, можно оставить как есть)
+                data.clientId = clientId;
+                if (!data.clientIP) {
+                    data.clientIP = 'unknown';
+                }
+            }
+            
+            return {
+                messageId,
+                message: data.message || '',
+                timestamp: data.timestamp || 0,
+                hasImage: data.hasImage || false,
+                imageFilename: data.imageFilename || null,
+                clientId: clientId,
+                clientIP: clientIP
+            };
+        });
+        
+        // Сохраняем обновленные данные обратно (с clientId для старых сообщений)
+        if (messagesArray.length > 0) {
+            const updatedMessages = {};
+            Object.entries(messages).forEach(([messageId, data]) => {
+                const msg = messagesArray.find(m => m.messageId === messageId);
+                if (msg) {
+                    updatedMessages[messageId] = {
+                        message: data.message || '',
+                        timestamp: data.timestamp || 0,
+                        hasImage: data.hasImage || false,
+                        imageFilename: data.imageFilename || null,
+                        clientId: msg.clientId,
+                        clientIP: msg.clientIP,
+                        telegramMessageId: data.telegramMessageId || null
+                    };
+                } else {
+                    updatedMessages[messageId] = data;
+                }
+            });
+            
+            // Сохраняем обновленные данные
+            const dataDir = path.dirname(supportMessagesPath);
+            if (!fs.existsSync(dataDir)) {
+                fs.mkdirSync(dataDir, { recursive: true });
+            }
+            fs.writeFileSync(supportMessagesPath, JSON.stringify(updatedMessages, null, 2));
+        }
         
         // Group messages by clientId (chats)
         const chats = {};
