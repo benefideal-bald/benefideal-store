@@ -5928,91 +5928,81 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
 
 // Telegram webhook for callback queries (button clicks) and messages
 app.post('/api/telegram/webhook', async (req, res) => {
-    // Отвечаем сразу, чтобы Telegram не повторял запрос
-    res.status(200).json({ ok: true });
-    
-    // Обрабатываем асинхронно, чтобы не блокировать ответ
-    setImmediate(async () => {
-        try {
-            const body = req.body;
-            console.log('📥 Telegram webhook received:', JSON.stringify(body, null, 2));
+    try {
+        const body = req.body;
+        console.log('📥 Telegram webhook received:', JSON.stringify(body, null, 2));
+        
+        // Handle callback query (button click) - ОБРАБАТЫВАЕМ СРАЗУ, чтобы ответить на callback query
+        if (body.callback_query) {
+            const callbackQuery = body.callback_query;
+            console.log('🔘 Callback query received:', callbackQuery.data);
             
-            // Handle callback query (button click)
-            if (body.callback_query) {
-                const callbackQuery = body.callback_query;
-                console.log('🔘 Callback query received:', callbackQuery.data);
-                console.log('🔘 Full callback query:', JSON.stringify(callbackQuery, null, 2));
+            if (callbackQuery.data && callbackQuery.data.startsWith('reply_')) {
+                const messageId = callbackQuery.data.replace('reply_', '');
+                const chatId = callbackQuery.message.chat.id;
+                const messageText = callbackQuery.message.text || callbackQuery.message.caption || '';
                 
-                if (callbackQuery.data && callbackQuery.data.startsWith('reply_')) {
-                    const messageId = callbackQuery.data.replace('reply_', '');
-                    const chatId = callbackQuery.message.chat.id;
-                    const messageText = callbackQuery.message.text || callbackQuery.message.caption || '';
-                    
-                    console.log('💬 Processing reply button click:', { messageId, chatId, messageText: messageText.substring(0, 50) });
-                    
-                    // Answer callback query first to remove loading state
-                    try {
-                        const answerResponse = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
-                            callback_query_id: callbackQuery.id,
-                            text: 'Введите ваш ответ следующим сообщением',
-                            show_alert: false
-                        });
-                        console.log('✅ Callback query answered:', answerResponse.data);
-                    } catch (error) {
-                        console.error('❌ Error answering callback query:', error.response?.data || error.message);
-                        console.error('❌ Full error:', error);
-                    }
-                    
-                    // Store pending reply FIRST (waiting for admin's text message)
-                    const pendingRepliesPath = path.join(process.cwd(), 'data', 'pending_replies.json');
-                    const fs = require('fs');
-                    let pendingReplies = {};
-                    if (fs.existsSync(pendingRepliesPath)) {
-                        try {
-                            pendingReplies = JSON.parse(fs.readFileSync(pendingRepliesPath, 'utf8'));
-                        } catch (e) {
-                            console.error('Error reading pending replies:', e);
-                            pendingReplies = {};
-                        }
-                    }
-                    
-                    pendingReplies[chatId.toString()] = {
-                        messageId: messageId,
-                        originalMessage: messageText,
-                        timestamp: Date.now(),
-                        telegramMessageId: callbackQuery.message.message_id
-                    };
-                    
-                    const dataDir = path.dirname(pendingRepliesPath);
-                    if (!fs.existsSync(dataDir)) {
-                        fs.mkdirSync(dataDir, { recursive: true });
-                    }
-                    
-                    fs.writeFileSync(pendingRepliesPath, JSON.stringify(pendingReplies, null, 2));
-                    console.log('✅ Pending reply stored for chatId:', chatId);
-                    
-                    // Send simple message asking for reply text
-                    try {
-                        const replyMessage = `💬 Введите ваше сообщение:`;
-                        
-                        const sendResponse = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                            chat_id: chatId,
-                            text: replyMessage
-                        });
-                        console.log('✅ Reply prompt sent:', sendResponse.data.result?.message_id);
-                    } catch (error) {
-                        console.error('❌ Error sending reply prompt:', error.response?.data || error.message);
-                        console.error('❌ Full error:', error);
-                    }
-                } else {
-                    console.log('⚠️ Callback query data does not start with "reply_":', callbackQuery.data);
+                console.log('💬 Processing reply button click:', { messageId, chatId });
+                
+                // Answer callback query FIRST to remove loading state immediately
+                try {
+                    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+                        callback_query_id: callbackQuery.id,
+                        text: '',
+                        show_alert: false
+                    });
+                    console.log('✅ Callback query answered');
+                } catch (error) {
+                    console.error('❌ Error answering callback query:', error.response?.data || error.message);
                 }
+                
+                // Store pending reply
+                const pendingRepliesPath = path.join(process.cwd(), 'data', 'pending_replies.json');
+                const fs = require('fs');
+                let pendingReplies = {};
+                if (fs.existsSync(pendingRepliesPath)) {
+                    try {
+                        pendingReplies = JSON.parse(fs.readFileSync(pendingRepliesPath, 'utf8'));
+                    } catch (e) {
+                        pendingReplies = {};
+                    }
+                }
+                
+                pendingReplies[chatId.toString()] = {
+                    messageId: messageId,
+                    originalMessage: messageText,
+                    timestamp: Date.now(),
+                    telegramMessageId: callbackQuery.message.message_id
+                };
+                
+                const dataDir = path.dirname(pendingRepliesPath);
+                if (!fs.existsSync(dataDir)) {
+                    fs.mkdirSync(dataDir, { recursive: true });
+                }
+                
+                fs.writeFileSync(pendingRepliesPath, JSON.stringify(pendingReplies, null, 2));
+                console.log('✅ Pending reply stored');
+                
+                // Send message asking for reply text
+                try {
+                    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `💬 Введите ваше сообщение:`
+                    });
+                    console.log('✅ Reply prompt sent');
+                } catch (error) {
+                    console.error('❌ Error sending reply prompt:', error.response?.data || error.message);
+                }
+                
+                // Отвечаем на webhook запрос
+                return res.status(200).json({ ok: true });
             } else {
-                console.log('ℹ️ No callback_query in webhook body');
+                console.log('⚠️ Callback query data does not start with "reply_":', callbackQuery.data);
             }
-            
-            // Handle text message from admin (reply to support message)
-            if (body.message && body.message.text && body.message.chat.id == CHAT_ID) {
+        }
+        
+        // Handle text message from admin (reply to support message)
+        if (body.message && body.message.text && body.message.chat.id == CHAT_ID) {
             const chatId = body.message.chat.id.toString();
             const replyText = body.message.text;
             const isReply = body.message.reply_to_message;
@@ -6115,10 +6105,13 @@ app.post('/api/telegram/webhook', async (req, res) => {
                 console.log('⚠️ Could not find messageId for this reply');
             }
         }
-        } catch (error) {
-            console.error('❌ Error handling Telegram webhook:', error);
-        }
-    });
+        
+        // Отвечаем на webhook запрос
+        res.status(200).json({ ok: true });
+    } catch (error) {
+        console.error('❌ Error handling Telegram webhook:', error);
+        res.status(200).json({ ok: true }); // Всегда отвечаем 200, чтобы Telegram не повторял запрос
+    }
 });
 
 // Endpoint to send reply to client (called when admin sends text message after clicking reply)
