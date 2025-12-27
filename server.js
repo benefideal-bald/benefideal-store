@@ -5963,23 +5963,7 @@ app.post('/api/telegram/webhook', async (req, res) => {
                         console.error('❌ Full error:', error);
                     }
                     
-                    // Send message asking for reply text
-                    try {
-                        const replyMessage = `💬 <b>Введите ответ для этого сообщения:</b>\n\n${messageText.substring(0, 200)}${messageText.length > 200 ? '...' : ''}\n\n<i>Отправьте текст ответа следующим сообщением (ответом на это сообщение).</i>`;
-                        
-                        const sendResponse = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                            chat_id: chatId,
-                            text: replyMessage,
-                            reply_to_message_id: callbackQuery.message.message_id,
-                            parse_mode: 'HTML'
-                        });
-                        console.log('✅ Reply prompt sent:', sendResponse.data.result?.message_id);
-                    } catch (error) {
-                        console.error('❌ Error sending reply prompt:', error.response?.data || error.message);
-                        console.error('❌ Full error:', error);
-                    }
-                    
-                    // Store pending reply (waiting for admin's text message)
+                    // Store pending reply FIRST (waiting for admin's text message)
                     const pendingRepliesPath = path.join(process.cwd(), 'data', 'pending_replies.json');
                     const fs = require('fs');
                     let pendingReplies = {};
@@ -6006,6 +5990,20 @@ app.post('/api/telegram/webhook', async (req, res) => {
                     
                     fs.writeFileSync(pendingRepliesPath, JSON.stringify(pendingReplies, null, 2));
                     console.log('✅ Pending reply stored for chatId:', chatId);
+                    
+                    // Send simple message asking for reply text
+                    try {
+                        const replyMessage = `💬 Введите ваше сообщение:`;
+                        
+                        const sendResponse = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                            chat_id: chatId,
+                            text: replyMessage
+                        });
+                        console.log('✅ Reply prompt sent:', sendResponse.data.result?.message_id);
+                    } catch (error) {
+                        console.error('❌ Error sending reply prompt:', error.response?.data || error.message);
+                        console.error('❌ Full error:', error);
+                    }
                 } else {
                     console.log('⚠️ Callback query data does not start with "reply_":', callbackQuery.data);
                 }
@@ -6022,18 +6020,18 @@ app.post('/api/telegram/webhook', async (req, res) => {
             
             console.log('📨 Admin message received:', { chatId, replyText, isReply: !!isReply, repliedToMessageId });
             
-            // Try to find messageId from pending replies OR from support_messages.json
+            // Check pending replies FIRST (from button click) - это приоритет
             const pendingRepliesPath = path.join(process.cwd(), 'data', 'pending_replies.json');
             const supportMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
             const fs = require('fs');
             
             let messageId = null;
             
-            // First check pending replies (from button click)
+            // First check pending replies (from button click) - если есть pending, используем его
             if (fs.existsSync(pendingRepliesPath)) {
                 try {
                     const pendingReplies = JSON.parse(fs.readFileSync(pendingRepliesPath, 'utf8'));
-                    if (isReply && pendingReplies[chatId]) {
+                    if (pendingReplies[chatId]) {
                         messageId = pendingReplies[chatId].messageId;
                         console.log('✅ Found messageId from pending replies:', messageId);
                     }
@@ -6042,7 +6040,7 @@ app.post('/api/telegram/webhook', async (req, res) => {
                 }
             }
             
-            // If not found, try to find by Telegram message ID in support_messages.json
+            // If not found in pending, try to find by Telegram message ID in support_messages.json (if it's a reply)
             if (!messageId && isReply && fs.existsSync(supportMessagesPath)) {
                 try {
                     const supportMessages = JSON.parse(fs.readFileSync(supportMessagesPath, 'utf8'));
