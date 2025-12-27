@@ -90,6 +90,77 @@ if (!fs.existsSync(dbDir)) {
     }
 }
 
+// КРИТИЧЕСКИ ВАЖНО: Инициализация файлов поддержки при старте сервера
+// Это гарантирует, что данные не потеряются при деплое
+function initializeSupportFiles() {
+    try {
+        // Проверяем support_messages.json
+        if (fs.existsSync(supportMessagesJsonPath)) {
+            const content = fs.readFileSync(supportMessagesJsonPath, 'utf8').trim();
+            // Если файл пустой или содержит только {}, проверяем старый путь
+            if (!content || content === '{}') {
+                const oldMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
+                if (fs.existsSync(oldMessagesPath)) {
+                    try {
+                        const oldMessages = JSON.parse(fs.readFileSync(oldMessagesPath, 'utf8'));
+                        if (Object.keys(oldMessages).length > 0) {
+                            fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(oldMessages, null, 2), 'utf8');
+                            console.log(`✅ Восстановлено ${Object.keys(oldMessages).length} сообщений из data/support_messages.json`);
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Ошибка при восстановлении сообщений из data/:', e.message);
+                    }
+                } else {
+                    console.log('📋 support_messages.json пустой - будет создан при первом сообщении');
+                }
+            } else {
+                try {
+                    const messages = JSON.parse(content);
+                    console.log(`📥 Загружено ${Object.keys(messages).length} сообщений из support_messages.json`);
+                } catch (e) {
+                    console.warn('⚠️ Ошибка при чтении support_messages.json:', e.message);
+                }
+            }
+        } else {
+            console.log('📋 support_messages.json не найден - будет создан при первом сообщении');
+        }
+        
+        // Проверяем support_replies.json
+        if (fs.existsSync(supportRepliesJsonPath)) {
+            const content = fs.readFileSync(supportRepliesJsonPath, 'utf8').trim();
+            // Если файл пустой или содержит только {}, проверяем старый путь
+            if (!content || content === '{}') {
+                const oldRepliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
+                if (fs.existsSync(oldRepliesPath)) {
+                    try {
+                        const oldReplies = JSON.parse(fs.readFileSync(oldRepliesPath, 'utf8'));
+                        if (Object.keys(oldReplies).length > 0) {
+                            fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(oldReplies, null, 2), 'utf8');
+                            console.log(`✅ Восстановлены ответы из data/support_replies.json`);
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Ошибка при восстановлении ответов из data/:', e.message);
+                    }
+                } else {
+                    console.log('📋 support_replies.json пустой - будет создан при первом ответе');
+                }
+            } else {
+                try {
+                    const replies = JSON.parse(content);
+                    const totalReplies = Object.values(replies).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+                    console.log(`📥 Загружено ${totalReplies} ответов из support_replies.json`);
+                } catch (e) {
+                    console.warn('⚠️ Ошибка при чтении support_replies.json:', e.message);
+                }
+            }
+        } else {
+            console.log('📋 support_replies.json не найден - будет создан при первом ответе');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка при инициализации файлов поддержки:', error);
+    }
+}
+
 const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
         console.error('❌ Error opening database:', err);
@@ -554,8 +625,28 @@ app.get('/api/admin/support-messages', (req, res) => {
         if (fs.existsSync(supportMessagesJsonPath)) {
             try {
                 const fileContent = fs.readFileSync(supportMessagesJsonPath, 'utf8');
-                messages = JSON.parse(fileContent);
-                console.log(`📥 Loaded ${Object.keys(messages).length} messages from support_messages.json (Git version)`);
+                // Если файл пустой или содержит только {}, проверяем старый путь
+                if (fileContent.trim() && fileContent.trim() !== '{}') {
+                    messages = JSON.parse(fileContent);
+                    console.log(`📥 Loaded ${Object.keys(messages).length} messages from support_messages.json (Git version)`);
+                } else {
+                    // Файл пустой - проверяем старый путь
+                    if (fs.existsSync(oldMessagesPath)) {
+                        try {
+                            messages = JSON.parse(fs.readFileSync(oldMessagesPath, 'utf8'));
+                            console.log(`📥 Loaded ${Object.keys(messages).length} messages from data/support_messages.json (migration)`);
+                            // Мигрируем в корень
+                            fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(messages, null, 2), 'utf8');
+                            console.log(`✅ Migrated messages to root`);
+                        } catch (e) {
+                            console.warn('⚠️ Ошибка при миграции сообщений:', e.message);
+                            messages = {};
+                        }
+                    } else {
+                        console.log('⚠️ support_messages.json пустой - будет создан при первом сообщении');
+                        messages = {};
+                    }
+                }
             } catch (e) {
                 console.error('Error reading support_messages.json:', e);
                 messages = {};
@@ -567,7 +658,28 @@ app.get('/api/admin/support-messages', (req, res) => {
         // Читаем ответы из корневого файла (Git версия)
         if (fs.existsSync(supportRepliesJsonPath)) {
             try {
-                replies = JSON.parse(fs.readFileSync(supportRepliesJsonPath, 'utf8'));
+                const fileContent = fs.readFileSync(supportRepliesJsonPath, 'utf8');
+                // Если файл пустой или содержит только {}, проверяем старый путь
+                if (fileContent.trim() && fileContent.trim() !== '{}') {
+                    replies = JSON.parse(fileContent);
+                    console.log(`📥 Loaded replies from support_replies.json (Git version)`);
+                } else {
+                    // Файл пустой - проверяем старый путь
+                    if (fs.existsSync(oldRepliesPath)) {
+                        try {
+                            replies = JSON.parse(fs.readFileSync(oldRepliesPath, 'utf8'));
+                            console.log(`📥 Loaded replies from data/support_replies.json (migration)`);
+                            // Мигрируем в корень
+                            fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(replies, null, 2), 'utf8');
+                            console.log(`✅ Migrated replies to root`);
+                        } catch (e) {
+                            console.warn('⚠️ Ошибка при миграции ответов:', e.message);
+                            replies = {};
+                        }
+                    } else {
+                        replies = {};
+                    }
+                }
             } catch (e) {
                 console.error('Error reading support_replies.json:', e);
                 replies = {};
@@ -6227,9 +6339,23 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
         if (fs.existsSync(supportMessagesJsonPath)) {
             try {
                 const existingContent = fs.readFileSync(supportMessagesJsonPath, 'utf8');
-                if (existingContent.trim()) {
+                if (existingContent.trim() && existingContent.trim() !== '{}') {
                     supportMessages = JSON.parse(existingContent);
                     console.log(`📥 Loaded ${Object.keys(supportMessages).length} existing messages from support_messages.json`);
+                } else {
+                    // Файл пустой - проверяем старый путь
+                    const oldMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
+                    if (fs.existsSync(oldMessagesPath)) {
+                        try {
+                            const oldMessages = JSON.parse(fs.readFileSync(oldMessagesPath, 'utf8'));
+                            if (Object.keys(oldMessages).length > 0) {
+                                supportMessages = oldMessages;
+                                console.log(`📥 Loaded ${Object.keys(supportMessages).length} messages from data/support_messages.json (migration)`);
+                            }
+                        } catch (e) {
+                            console.warn('⚠️ Ошибка при чтении старых сообщений:', e.message);
+                        }
+                    }
                 }
             } catch (e) {
                 console.error('Error reading support_messages.json:', e);
