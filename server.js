@@ -2910,6 +2910,251 @@ async function commitOrdersToGitViaAPI() {
     }
 }
 
+// Функция для автоматического коммита support_messages.json в Git через GitHub API
+// Чтобы сообщения поддержки не стирались при деплоях (как для отзывов и заказов)
+async function commitSupportMessagesToGitViaAPI() {
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const GITHUB_REPO = process.env.GITHUB_REPO || 'benefideal-bald/benefideal-store';
+    const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
+    
+    if (!GITHUB_TOKEN) {
+        console.error(`🚨 GITHUB_TOKEN не установлен - support_messages.json НЕ будет автоматически сохраняться в GitHub!`);
+        return false;
+    }
+    
+    try {
+        // Читаем текущий файл support_messages.json
+        const fileContent = fs.readFileSync(supportMessagesJsonPath, 'utf8');
+        const contentBase64 = Buffer.from(fileContent).toString('base64');
+        
+        // Получаем SHA текущего файла
+        const getFileSha = await axios.get(
+            `https://api.github.com/repos/${GITHUB_REPO}/contents/support_messages.json?ref=${GITHUB_BRANCH}`,
+            {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            }
+        ).catch(() => null);
+        
+        const sha = getFileSha?.data?.sha || null;
+        
+        // Коммитим изменения через GitHub API
+        const commitMessage = `Auto-commit: новое сообщение поддержки добавлено (${new Date().toISOString()})`;
+        
+        const response = await axios.put(
+            `https://api.github.com/repos/${GITHUB_REPO}/contents/support_messages.json`,
+            {
+                message: commitMessage,
+                content: contentBase64,
+                branch: GITHUB_BRANCH,
+                ...(sha ? { sha: sha } : {})
+            },
+            {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        
+        console.log(`✅ support_messages.json автоматически закоммичен в GitHub!`);
+        console.log(`   Commit SHA: ${response.data.commit.sha}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Ошибка при автокоммите support_messages.json в GitHub:`, error.response?.data || error.message);
+        console.warn(`   ВАЖНО: закоммить support_messages.json вручную, чтобы сообщения не потерялись при следующем деплое.`);
+        return false;
+    }
+}
+
+// Функция для автоматического коммита support_replies.json в Git через GitHub API
+// Чтобы ответы поддержки не стирались при деплоях (как для отзывов и заказов)
+async function commitSupportRepliesToGitViaAPI() {
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const GITHUB_REPO = process.env.GITHUB_REPO || 'benefideal-bald/benefideal-store';
+    const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
+    
+    if (!GITHUB_TOKEN) {
+        console.error(`🚨 GITHUB_TOKEN не установлен - support_replies.json НЕ будет автоматически сохраняться в GitHub!`);
+        return false;
+    }
+    
+    try {
+        // Читаем текущий файл support_replies.json
+        const fileContent = fs.readFileSync(supportRepliesJsonPath, 'utf8');
+        const contentBase64 = Buffer.from(fileContent).toString('base64');
+        
+        // Получаем SHA текущего файла
+        const getFileSha = await axios.get(
+            `https://api.github.com/repos/${GITHUB_REPO}/contents/support_replies.json?ref=${GITHUB_BRANCH}`,
+            {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            }
+        ).catch(() => null);
+        
+        const sha = getFileSha?.data?.sha || null;
+        
+        // Коммитим изменения через GitHub API
+        const commitMessage = `Auto-commit: новый ответ поддержки добавлен (${new Date().toISOString()})`;
+        
+        const response = await axios.put(
+            `https://api.github.com/repos/${GITHUB_REPO}/contents/support_replies.json`,
+            {
+                message: commitMessage,
+                content: contentBase64,
+                branch: GITHUB_BRANCH,
+                ...(sha ? { sha: sha } : {})
+            },
+            {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        
+        console.log(`✅ support_replies.json автоматически закоммичен в GitHub!`);
+        console.log(`   Commit SHA: ${response.data.commit.sha}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Ошибка при автокоммите support_replies.json в GitHub:`, error.response?.data || error.message);
+        console.warn(`   ВАЖНО: закоммить support_replies.json вручную, чтобы ответы не потерялись при следующем деплое.`);
+        return false;
+    }
+}
+
+// Функция для синхронизации всех сообщений поддержки из БД в JSON файлы и коммита в Git
+// Аналогично snapshotAllReviewsToJsonFiles - гарантирует, что данные не потеряются при деплое
+async function snapshotAllSupportMessagesToJsonFiles() {
+    try {
+        // Читаем все сообщения из БД
+        const messages = await new Promise((resolve, reject) => {
+            db.all(`
+                SELECT 
+                    message_id,
+                    message_text,
+                    client_id,
+                    client_ip,
+                    has_image,
+                    image_filenames,
+                    telegram_message_id,
+                    timestamp
+                FROM support_messages
+                ORDER BY timestamp ASC
+            `, [], (err, rows) => {
+                if (err) {
+                    console.error('❌ Error reading messages from database:', err);
+                    return resolve({});
+                }
+                
+                // Преобразуем в формат JSON (объект с message_id как ключ)
+                const messagesObj = {};
+                rows.forEach(row => {
+                    messagesObj[row.message_id] = {
+                        message: row.message_text || '',
+                        clientId: row.client_id,
+                        clientIp: row.client_ip,
+                        timestamp: row.timestamp,
+                        hasImage: row.has_image === 1,
+                        imageFilenames: row.image_filenames ? JSON.parse(row.image_filenames) : []
+                    };
+                });
+                
+                resolve(messagesObj);
+            });
+        });
+        
+        if (!messages || Object.keys(messages).length === 0) {
+            console.warn('⚠️ snapshotAllSupportMessagesToJsonFiles: no messages to snapshot');
+            return;
+        }
+        
+        // Сохраняем в корневой support_messages.json (Git-копия)
+        try {
+            fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(messages, null, 2), 'utf8');
+            console.log(`✅ Snapshot: saved ${Object.keys(messages).length} messages to support_messages.json`);
+        } catch (err) {
+            console.warn('⚠️ Failed to write support_messages.json snapshot:', err.message);
+            return;
+        }
+        
+        // Пытаемся автоматически закоммитить изменения в GitHub
+        try {
+            await commitSupportMessagesToGitViaAPI();
+        } catch (err) {
+            console.warn('⚠️ Failed to auto-commit support_messages.json to GitHub (you can also commit manually):', err.message);
+        }
+    } catch (error) {
+        console.warn('⚠️ snapshotAllSupportMessagesToJsonFiles failed:', error.message);
+    }
+}
+
+// Функция для синхронизации всех ответов поддержки из БД в JSON файлы и коммита в Git
+async function snapshotAllSupportRepliesToJsonFiles() {
+    try {
+        // Читаем все ответы из БД
+        const replies = await new Promise((resolve, reject) => {
+            db.all(`
+                SELECT 
+                    message_id,
+                    reply_text,
+                    timestamp
+                FROM support_replies
+                ORDER BY timestamp ASC
+            `, [], (err, rows) => {
+                if (err) {
+                    console.error('❌ Error reading replies from database:', err);
+                    return resolve({});
+                }
+                
+                // Преобразуем в формат JSON (объект с message_id как ключ, массив ответов)
+                const repliesObj = {};
+                rows.forEach(row => {
+                    if (!repliesObj[row.message_id]) {
+                        repliesObj[row.message_id] = [];
+                    }
+                    repliesObj[row.message_id].push({
+                        text: row.reply_text,
+                        timestamp: row.timestamp
+                    });
+                });
+                
+                resolve(repliesObj);
+            });
+        });
+        
+        if (!replies || Object.keys(replies).length === 0) {
+            console.warn('⚠️ snapshotAllSupportRepliesToJsonFiles: no replies to snapshot');
+            return;
+        }
+        
+        // Сохраняем в корневой support_replies.json (Git-копия)
+        try {
+            fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(replies, null, 2), 'utf8');
+            console.log(`✅ Snapshot: saved replies to support_replies.json`);
+        } catch (err) {
+            console.warn('⚠️ Failed to write support_replies.json snapshot:', err.message);
+            return;
+        }
+        
+        // Пытаемся автоматически закоммитить изменения в GitHub
+        try {
+            await commitSupportRepliesToGitViaAPI();
+        } catch (err) {
+            console.warn('⚠️ Failed to auto-commit support_replies.json to GitHub (you can also commit manually):', err.message);
+        }
+    } catch (error) {
+        console.warn('⚠️ snapshotAllSupportRepliesToJsonFiles failed:', error.message);
+    }
+}
+
 // Helper function to write reviews to JSON file
 // КРИТИЧЕСКИ ВАЖНО: Все отзывы должны быть в ОДНОМ месте - корневой reviews.json (Git версия)!
 function writeReviewsToJSON(reviews) {
@@ -6157,6 +6402,193 @@ app.get('/api/telegram/webhook-status', async (req, res) => {
     }
 });
 
+// Endpoint для удаления чата по clientId (вызывается при закрытии вкладки)
+app.delete('/api/support/delete-chat/:clientId', (req, res) => {
+    try {
+        const { clientId } = req.params;
+        
+        if (!clientId) {
+            return res.status(400).json({ success: false, error: 'Client ID не указан' });
+        }
+        
+        console.log(`🗑️ Deleting chat for clientId: ${clientId}`);
+        
+        // Получаем все message_id для этого clientId
+        db.all(`
+            SELECT message_id FROM support_messages WHERE client_id = ?
+        `, [clientId], (err, messages) => {
+            if (err) {
+                console.error('❌ Error getting messages for deletion:', err);
+                return res.status(500).json({ success: false, error: 'Ошибка получения сообщений' });
+            }
+            
+            const messageIds = messages.map(m => m.message_id);
+            
+            if (messageIds.length === 0) {
+                console.log(`📋 No messages found for clientId: ${clientId}`);
+                return res.json({ success: true, message: 'Чат не найден или уже удален', deleted: 0 });
+            }
+            
+            // Удаляем ответы для этих сообщений
+            const placeholders = messageIds.map(() => '?').join(',');
+            db.run(`
+                DELETE FROM support_replies WHERE message_id IN (${placeholders})
+            `, messageIds, (err) => {
+                if (err) {
+                    console.error('❌ Error deleting replies:', err);
+                } else {
+                    console.log(`✅ Deleted replies for ${messageIds.length} messages`);
+                }
+            });
+            
+            // Удаляем сообщения
+            db.run(`
+                DELETE FROM support_messages WHERE client_id = ?
+            `, [clientId], function(err) {
+                if (err) {
+                    console.error('❌ Error deleting messages:', err);
+                    return res.status(500).json({ success: false, error: 'Ошибка удаления сообщений' });
+                }
+                
+                console.log(`✅ Deleted ${this.changes} messages for clientId: ${clientId}`);
+                
+                // Синхронизируем JSON файлы после удаления
+                if (typeof snapshotAllSupportMessagesToJsonFiles === 'function') {
+                    (async () => {
+                        try {
+                            await snapshotAllSupportMessagesToJsonFiles();
+                            await snapshotAllSupportRepliesToJsonFiles();
+                        } catch (e) {
+                            console.warn('⚠️ Failed to snapshot after deletion:', e.message);
+                        }
+                    })();
+                }
+                
+                res.json({ 
+                    success: true, 
+                    message: 'Чат удален',
+                    deleted: this.changes
+                });
+            });
+        });
+    } catch (error) {
+        console.error('Error deleting chat:', error);
+        res.status(500).json({ success: false, error: 'Ошибка удаления чата' });
+    }
+});
+
+// Функция для автоматической очистки старых чатов (старше 2 часов после последнего сообщения)
+function cleanupOldSupportChats() {
+    const twoHoursAgo = Date.now() - (2 * 60 * 60 * 1000); // 2 часа в миллисекундах
+    
+    console.log(`🧹 Starting cleanup of old support chats (older than 2 hours)...`);
+    
+    // Находим все client_id, у которых последнее сообщение старше 2 часов
+    db.all(`
+        SELECT client_id, MAX(timestamp) as last_message_time
+        FROM support_messages
+        GROUP BY client_id
+        HAVING MAX(timestamp) < ?
+    `, [twoHoursAgo], (err, oldChats) => {
+        if (err) {
+            console.error('❌ Error finding old chats:', err);
+            return;
+        }
+        
+        if (!oldChats || oldChats.length === 0) {
+            console.log(`✅ No old chats to clean up`);
+            return;
+        }
+        
+        console.log(`📋 Found ${oldChats.length} old chats to delete`);
+        
+        let deletedCount = 0;
+        let processed = 0;
+        
+        oldChats.forEach((chat) => {
+            const clientId = chat.client_id;
+            
+            // Получаем все message_id для этого clientId
+            db.all(`
+                SELECT message_id FROM support_messages WHERE client_id = ?
+            `, [clientId], (err, messages) => {
+                if (err) {
+                    console.error(`❌ Error getting messages for clientId ${clientId}:`, err);
+                    processed++;
+                    if (processed === oldChats.length) {
+                        finishCleanup(deletedCount);
+                    }
+                    return;
+                }
+                
+                const messageIds = messages.map(m => m.message_id);
+                
+                if (messageIds.length === 0) {
+                    processed++;
+                    if (processed === oldChats.length) {
+                        finishCleanup(deletedCount);
+                    }
+                    return;
+                }
+                
+                // Удаляем ответы
+                const placeholders = messageIds.map(() => '?').join(',');
+                db.run(`
+                    DELETE FROM support_replies WHERE message_id IN (${placeholders})
+                `, messageIds, (err) => {
+                    if (err) {
+                        console.error(`❌ Error deleting replies for clientId ${clientId}:`, err);
+                    }
+                });
+                
+                // Удаляем сообщения
+                db.run(`
+                    DELETE FROM support_messages WHERE client_id = ?
+                `, [clientId], function(err) {
+                    processed++;
+                    
+                    if (err) {
+                        console.error(`❌ Error deleting messages for clientId ${clientId}:`, err);
+                    } else {
+                        deletedCount += this.changes;
+                        console.log(`✅ Deleted ${this.changes} messages for clientId: ${clientId}`);
+                    }
+                    
+                    if (processed === oldChats.length) {
+                        finishCleanup(deletedCount);
+                    }
+                });
+            });
+        });
+        
+        function finishCleanup(deletedCount) {
+            console.log(`✅ Cleanup completed: deleted ${deletedCount} messages from ${oldChats.length} old chats`);
+            
+            // Синхронизируем JSON файлы после очистки
+            if (typeof snapshotAllSupportMessagesToJsonFiles === 'function') {
+                (async () => {
+                    try {
+                        await snapshotAllSupportMessagesToJsonFiles();
+                        await snapshotAllSupportRepliesToJsonFiles();
+                    } catch (e) {
+                        console.warn('⚠️ Failed to snapshot after cleanup:', e.message);
+                    }
+                })();
+            }
+        }
+    });
+}
+
+// Запускаем очистку старых чатов каждые 30 минут
+setInterval(() => {
+    cleanupOldSupportChats();
+}, 30 * 60 * 1000); // 30 минут
+
+// Запускаем очистку сразу при старте сервера (через 1 минуту после запуска)
+setTimeout(() => {
+    cleanupOldSupportChats();
+}, 60 * 1000); // 1 минута
+
 // Endpoint to set Telegram webhook (call this once after deployment)
 app.get('/api/telegram/set-webhook', async (req, res) => {
     try {
@@ -6402,6 +6834,18 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
                     });
                     
                     stmt.finalize();
+                    
+                    // 🔄 ДОПОЛНИТЕЛЬНО: после сохранения в базу синхронизируем JSON файлы и коммитим в Git
+                    // Это гарантирует, что сообщения не потеряются при деплое (как для отзывов и заказов)
+                    if (typeof snapshotAllSupportMessagesToJsonFiles === 'function') {
+                        (async () => {
+                            try {
+                                await snapshotAllSupportMessagesToJsonFiles();
+                            } catch (e) {
+                                console.warn('⚠️ Failed to snapshot support messages to JSON files after new message:', e.message);
+                            }
+                        })();
+                    }
                 }
             });
         };
@@ -6409,11 +6853,12 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
         // Сохраняем сообщение в БД после получения telegramMessageId
         saveMessageToDatabase(telegramMessageId);
         
-        // Return messageId to client for polling
+        // Return messageId and clientId to client for polling and deletion
         res.json({ 
             success: true, 
             message: 'Сообщение отправлено',
-            messageId: messageId
+            messageId: messageId,
+            clientId: clientId // Возвращаем clientId для удаления чата при закрытии вкладки
         });
         
     } catch (error) {

@@ -174,6 +174,12 @@
                 chatMessages.appendChild(successDiv);
                 scrollToBottom();
                 
+                // Save clientId for deletion on page unload
+                if (data.clientId) {
+                    currentClientId = data.clientId;
+                    localStorage.setItem('support_client_id', data.clientId);
+                }
+                
                 // Start polling for replies if messageId is provided
                 if (data.messageId) {
                     // Save messageId to localStorage
@@ -449,6 +455,52 @@
             }
         }, 3000);
     }
+    
+    // Store clientId for deletion on page unload
+    let currentClientId = null;
+    
+    // Function to delete chat when page is closed
+    function deleteChatOnUnload() {
+        if (currentClientId) {
+            // Use sendBeacon for reliable deletion even if page is closing
+            const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
+                ? `http://localhost:3000/api/support/delete-chat/${currentClientId}`
+                : `${window.location.origin}/api/support/delete-chat/${currentClientId}`;
+            
+            // Try fetch with keepalive first
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(apiUrl, '');
+            } else {
+                // Fallback to fetch with keepalive
+                fetch(apiUrl, {
+                    method: 'DELETE',
+                    keepalive: true
+                }).catch(() => {
+                    // Ignore errors - page is closing
+                });
+            }
+            
+            // Clear localStorage
+            localStorage.removeItem('support_chat_history');
+            localStorage.removeItem('support_message_ids');
+            localStorage.removeItem('support_client_id');
+        }
+    }
+    
+    // Listen for page unload events
+    window.addEventListener('beforeunload', deleteChatOnUnload);
+    window.addEventListener('pagehide', deleteChatOnUnload);
+    
+    // Also listen for visibility change (tab switch/close)
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            // Page is hidden - could be tab switch or close
+            // We'll delete on actual unload, but this is a backup
+        }
+    });
+    
+    // Load clientId from localStorage if exists
+    currentClientId = localStorage.getItem('support_client_id');
     
     // Load history on init
     loadHistory();
