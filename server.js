@@ -6061,12 +6061,17 @@ const supportUpload = multer({
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-app.post('/api/support/send-message', supportUpload.single('image'), async (req, res) => {
+app.post('/api/support/send-message', supportUpload.array('images', 10), async (req, res) => {
     try {
         const message = req.body.message || '';
-        const imageFile = req.file;
+        const imageFiles = req.files || []; // Array of files
         
-        if (!message.trim() && !imageFile) {
+        // Support legacy single image upload
+        if (!imageFiles.length && req.file) {
+            imageFiles.push(req.file);
+        }
+        
+        if (!message.trim() && imageFiles.length === 0) {
             return res.status(400).json({ 
                 success: false, 
                 error: 'Сообщение или изображение обязательно' 
@@ -6160,8 +6165,9 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
         supportMessages[messageId] = {
             message: message,
             timestamp: Date.now(),
-            hasImage: !!imageFile,
-            imageFilename: imageFile ? imageFile.filename : null, // Сохраняем имя файла для отображения
+            hasImage: imageFiles.length > 0,
+            imageFilenames: imageFiles.map(f => f.filename), // Array of filenames
+            imageFilename: imageFiles.length > 0 ? imageFiles[0].filename : null, // Legacy support
             telegramMessageId: telegramMessageId, // Сохраняем ID сообщения в Telegram для поиска при ответе
             clientId: clientId, // Уникальный ID клиента
             clientIP: ip // IP адрес клиента (для идентификации)

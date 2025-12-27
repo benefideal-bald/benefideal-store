@@ -1210,9 +1210,11 @@
                                     <strong>Сообщение #${msg.messageId}</strong>
                                     <span class="message-time">${timestamp}</span>
                                 </div>
-                                ${msg.hasImage && msg.imageFilename ? `
-                                    <div class="message-image" style="margin-bottom: var(--space-3);">
-                                        <img src="/uploads/support/${msg.imageFilename}" alt="Изображение" style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+                                ${msg.hasImage ? `
+                                    <div class="message-image" style="margin-bottom: var(--space-3); display: flex; flex-wrap: wrap; gap: var(--space-2);">
+                                        ${(msg.imageFilenames || (msg.imageFilename ? [msg.imageFilename] : [])).map(filename => `
+                                            <img src="/uploads/support/${filename}" alt="Изображение" style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md); border: 2px solid #10b981; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
+                                        `).join('')}
                                     </div>
                                 ` : ''}
                                 <div class="message-text">

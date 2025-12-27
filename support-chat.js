@@ -15,8 +15,8 @@
     
     let isOpen = false;
     let messageHistory = [];
-    let selectedFile = null;
-    let selectedFilePreview = null;
+    let selectedFiles = []; // Array of files
+    let selectedFilePreviews = []; // Array of previews
     
     // Load message history from localStorage
     function loadHistory() {
@@ -246,13 +246,49 @@
     
     // Make remove function accessible globally for the remove button
     window.removeSelectedFile = function() {
-        selectedFile = null;
-        selectedFilePreview = null;
+        selectedFiles = [];
+        selectedFilePreviews = [];
         fileInput.value = '';
-        // Remove preview if exists
-        const preview = document.querySelector('.support-chat-image-preview');
-        if (preview) {
-            preview.remove();
+        // Remove preview container if exists
+        const previewContainer = document.querySelector('.support-chat-images-preview-container');
+        if (previewContainer) {
+            previewContainer.remove();
+        }
+    };
+    
+    // Remove file by index
+    window.removeSelectedFileByIndex = function(index) {
+        if (index >= 0 && index < selectedFiles.length) {
+            selectedFiles.splice(index, 1);
+            selectedFilePreviews.splice(index, 1);
+            
+            // Remove preview item
+            const previewItem = document.querySelector(`.support-chat-image-preview-item[data-index="${index}"]`);
+            if (previewItem) {
+                previewItem.remove();
+            }
+            
+            // Re-index remaining items
+            const previewContainer = document.querySelector('.support-chat-images-preview-container');
+            if (previewContainer) {
+                const items = previewContainer.querySelectorAll('.support-chat-image-preview-item');
+                items.forEach((item, newIndex) => {
+                    item.dataset.index = newIndex;
+                    const button = item.querySelector('.support-chat-remove-image');
+                    if (button) {
+                        button.dataset.index = newIndex;
+                        button.setAttribute('onclick', `if (window.removeSelectedFileByIndex) { window.removeSelectedFileByIndex(${newIndex}); }`);
+                    }
+                });
+            }
+            
+            // Remove container if empty
+            if (selectedFiles.length === 0) {
+                const previewContainer = document.querySelector('.support-chat-images-preview-container');
+                if (previewContainer) {
+                    previewContainer.remove();
+                }
+            }
         }
     };
     
