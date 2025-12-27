@@ -44,11 +44,13 @@
     function renderMessages() {
         chatMessages.innerHTML = '';
         
-        // Welcome message
-        const welcome = document.createElement('div');
-        welcome.className = 'support-chat-welcome';
-        welcome.innerHTML = '<i class="fas fa-robot"></i><p>Здравствуйте! Чем могу помочь?</p>';
-        chatMessages.appendChild(welcome);
+        // Welcome message (показываем только если нет истории сообщений)
+        if (messageHistory.length === 0) {
+            const welcome = document.createElement('div');
+            welcome.className = 'support-chat-welcome';
+            welcome.innerHTML = '<i class="fas fa-robot"></i><p>Здравствуйте! Чем могу помочь?</p>';
+            chatMessages.appendChild(welcome);
+        }
         
         // Render history
         messageHistory.forEach(msg => {
@@ -461,13 +463,32 @@
     
     // Function to delete chat when page is closed
     function deleteChatOnUnload() {
+        // Очищаем визуально чат сразу
+        messageHistory = [];
+        chatMessages.innerHTML = '';
+        const welcome = document.createElement('div');
+        welcome.className = 'support-chat-welcome';
+        welcome.innerHTML = '<i class="fas fa-robot"></i><p>Здравствуйте! Чем могу помочь?</p>';
+        chatMessages.appendChild(welcome);
+        
+        // Останавливаем все polling
+        Object.keys(pollingIntervals).forEach(messageId => {
+            clearInterval(pollingIntervals[messageId]);
+        });
+        pollingIntervals = {};
+        
+        // Очищаем localStorage
+        localStorage.removeItem('support_chat_history');
+        localStorage.removeItem('support_message_ids');
+        localStorage.removeItem('support_client_id');
+        
+        // Отправляем запрос на удаление на сервере
         if (currentClientId) {
-            // Use sendBeacon for reliable deletion even if page is closing
             const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
                 ? `http://localhost:3000/api/support/delete-chat/${currentClientId}`
                 : `${window.location.origin}/api/support/delete-chat/${currentClientId}`;
             
-            // Try fetch with keepalive first
+            // Use sendBeacon for reliable deletion even if page is closing
             if (navigator.sendBeacon) {
                 navigator.sendBeacon(apiUrl, '');
             } else {
@@ -479,11 +500,6 @@
                     // Ignore errors - page is closing
                 });
             }
-            
-            // Clear localStorage
-            localStorage.removeItem('support_chat_history');
-            localStorage.removeItem('support_message_ids');
-            localStorage.removeItem('support_client_id');
         }
     }
     
@@ -502,13 +518,32 @@
     // Load clientId from localStorage if exists
     currentClientId = localStorage.getItem('support_client_id');
     
-    // Load history on init
-    loadHistory();
-    
-    // Start polling for all messages in history that have messageId
+    // Проверяем, был ли чат удален (если clientId есть, но сообщений нет - значит чат был удален)
+    // В этом случае очищаем все и начинаем заново
+    const savedHistory = localStorage.getItem('support_chat_history');
     const savedMessageIds = JSON.parse(localStorage.getItem('support_message_ids') || '[]');
-    savedMessageIds.forEach(messageId => {
-        startPollingForReplies(messageId);
-    });
+    
+    // Если есть clientId, но нет сохраненных сообщений - значит чат был удален, очищаем все
+    if (currentClientId && (!savedHistory || savedHistory === '[]' || savedMessageIds.length === 0)) {
+        console.log('🧹 Chat was deleted, clearing all data');
+        localStorage.removeItem('support_chat_history');
+        localStorage.removeItem('support_message_ids');
+        localStorage.removeItem('support_client_id');
+        currentClientId = null;
+        messageHistory = [];
+    }
+    
+    // Load history on init (только если есть сохраненные данные)
+    if (savedHistory && savedHistory !== '[]') {
+        loadHistory();
+        
+        // Start polling for all messages in history that have messageId
+        savedMessageIds.forEach(messageId => {
+            startPollingForReplies(messageId);
+        });
+    } else {
+        // Если нет истории, просто показываем приветственное сообщение
+        renderMessages();
+    }
 })();
 
