@@ -14,6 +14,8 @@
     
     let isOpen = false;
     let messageHistory = [];
+    let selectedFile = null;
+    let selectedFilePreview = null;
     
     // Load message history from localStorage
     function loadHistory() {
@@ -197,18 +199,44 @@
             if (file.size > 5 * 1024 * 1024) {
                 alert('Размер файла не должен превышать 5 МБ');
                 fileInput.value = '';
+                selectedFile = null;
+                selectedFilePreview = null;
                 return;
             }
+            
+            // Save file for later sending (when user clicks send button)
+            selectedFile = file;
             
             // Show image preview
             const reader = new FileReader();
             reader.onload = function(e) {
-                const imageData = e.target.result;
-                sendMessage('', file, imageData);
+                selectedFilePreview = e.target.result;
+                
+                // Show preview in chat (but don't send yet)
+                const previewDiv = document.createElement('div');
+                previewDiv.className = 'support-chat-message user preview';
+                previewDiv.innerHTML = `
+                    <div class="support-chat-message-content">
+                        <img src="${selectedFilePreview}" alt="Превью" class="support-chat-image">
+                        <p style="color: var(--gray-500); font-style: italic;">Изображение выбрано. Введите сообщение и нажмите "Отправить"</p>
+                        <button class="support-chat-remove-image" style="margin-top: 8px; padding: 4px 8px; background: var(--error, #dc3545); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;" onclick="this.closest('.preview').remove(); if (window.removeSelectedFile) window.removeSelectedFile();">
+                            <i class="fas fa-times"></i> Убрать
+                        </button>
+                    </div>
+                `;
+                chatMessages.appendChild(previewDiv);
+                scrollToBottom();
             };
             reader.readAsDataURL(file);
         }
     });
+    
+    // Make remove function accessible globally for the remove button
+    window.removeSelectedFile = function() {
+        selectedFile = null;
+        selectedFilePreview = null;
+        fileInput.value = '';
+    };
     
     // Toggle chat
     chatToggle.addEventListener('click', function() {
