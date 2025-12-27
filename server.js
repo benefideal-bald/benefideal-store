@@ -6389,11 +6389,17 @@ app.post('/api/telegram/webhook', async (req, res) => {
                 
                 // Store reply for client
                 // КРИТИЧЕСКИ ВАЖНО: Сохраняем в корневой файл (Git версия) - НЕ ПОТЕРЯЕТСЯ при деплое!
+                // Читаем существующие ответы ПЕРЕД сохранением нового
                 let replies = {};
                 if (fs.existsSync(supportRepliesJsonPath)) {
                     try {
-                        replies = JSON.parse(fs.readFileSync(supportRepliesJsonPath, 'utf8'));
+                        const existingContent = fs.readFileSync(supportRepliesJsonPath, 'utf8');
+                        if (existingContent.trim()) {
+                            replies = JSON.parse(existingContent);
+                            console.log(`📥 Loaded existing replies from support_replies.json`);
+                        }
                     } catch (e) {
+                        console.error('Error reading support_replies.json:', e);
                         replies = {};
                     }
                 }
@@ -6408,8 +6414,11 @@ app.post('/api/telegram/webhook', async (req, res) => {
                 });
                 
                 // Сохраняем в корневой файл (Git версия)
+                // КРИТИЧЕСКИ ВАЖНО: Файл должен быть в Git (как orders.json и reviews.json)
+                // Файл сохраняется на сервере и будет доступен при следующем деплое
                 fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(replies, null, 2), 'utf8');
                 console.log(`✅ Saved reply to support_replies.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
+                console.log(`📝 Total replies saved: ${Object.keys(replies).length}`);
                 
                 // Remove pending reply if exists
                 if (fs.existsSync(pendingRepliesPath)) {
