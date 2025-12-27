@@ -6267,29 +6267,51 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
             return filename;
         }).filter(f => f !== null);
         
-        console.log(`💾 Saving message ${messageId} to database with ${imageFiles.length} images`);
+        // КРИТИЧЕСКИ ВАЖНО: Сохраняем в базу данных ПОСЛЕ получения telegramMessageId
+        // Функция для сохранения сообщения в БД
+        const saveMessageToDatabase = (telegramMsgId) => {
+            console.log(`💾 Saving message ${messageId} to database with ${imageFiles.length} images, telegramMessageId: ${telegramMsgId}`);
+            
+            db.run(`
+                INSERT INTO support_messages 
+                (message_id, message_text, client_id, client_ip, has_image, image_filenames, telegram_message_id, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                messageId,
+                message || null,
+                clientId,
+                ip,
+                imageFiles.length > 0 ? 1 : 0,
+                imageFilenames.length > 0 ? JSON.stringify(imageFilenames) : null,
+                telegramMsgId || null,
+                Date.now()
+            ], function(err) {
+                if (err) {
+                    console.error('❌ Error saving message to database:', err);
+                    console.error('   Error details:', err.message);
+                    // Пробуем обновить, если сообщение уже существует
+                    if (err.message && err.message.includes('UNIQUE constraint')) {
+                        // Сообщение уже существует - обновляем telegramMessageId
+                        db.run(`
+                            UPDATE support_messages 
+                            SET telegram_message_id = ?
+                            WHERE message_id = ?
+                        `, [telegramMsgId, messageId], (updateErr) => {
+                            if (updateErr) {
+                                console.error('❌ Error updating telegram_message_id:', updateErr);
+                            } else {
+                                console.log(`✅ Updated telegram_message_id for message ${messageId}`);
+                            }
+                        });
+                    }
+                } else {
+                    console.log(`✅ Message saved to database with ID: ${this.lastID}`);
+                }
+            });
+        };
         
-        // Сохраняем в базу данных
-        db.run(`
-            INSERT INTO support_messages 
-            (message_id, message_text, client_id, client_ip, has_image, image_filenames, telegram_message_id, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            messageId,
-            message || null,
-            clientId,
-            ip,
-            imageFiles.length > 0 ? 1 : 0,
-            imageFilenames.length > 0 ? JSON.stringify(imageFilenames) : null,
-            telegramMessageId || null,
-            Date.now()
-        ], function(err) {
-            if (err) {
-                console.error('❌ Error saving message to database:', err);
-            } else {
-                console.log(`✅ Message saved to database with ID: ${this.lastID}`);
-            }
-        });
+        // Сохраняем сообщение в БД после получения telegramMessageId
+        saveMessageToDatabase(telegramMessageId);
         
         // Return messageId to client for polling
         res.json({ 
