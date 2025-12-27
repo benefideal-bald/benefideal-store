@@ -1168,52 +1168,67 @@
                     return;
                 }
                 
-                const messages = data.messages || [];
+                const chats = data.chats || [];
                 const replies = data.replies || {};
                 
-                if (messages.length === 0) {
+                if (chats.length === 0) {
                     document.getElementById('messagesList').innerHTML = '<div class="empty">Нет сообщений</div>';
                     return;
                 }
                 
                 let html = '';
-                messages.forEach(msg => {
-                    const messageReplies = replies[msg.messageId] || [];
-                    const timestamp = new Date(msg.timestamp).toLocaleString('ru-RU');
-                    
+                chats.forEach((chat, chatIndex) => {
+                    const clientInfo = `Клиент #${chat.clientId} (IP: ${chat.clientIP})`;
                     html += `
-                        <div class="message-item">
-                            <div class="message-header">
-                                <strong>Сообщение #${msg.messageId.substring(0, 10)}...</strong>
-                                <span class="message-time">${timestamp}</span>
+                        <div class="chat-section" style="margin-bottom: var(--space-6); padding-bottom: var(--space-4); border-bottom: 2px solid var(--gray-300);">
+                            <div style="font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: var(--space-4);">
+                                <i class="fas fa-user"></i> ${clientInfo}
+                                <span style="font-size: 0.85rem; font-weight: 400; color: var(--gray-500); margin-left: var(--space-2);">
+                                    (${chat.messages.length} ${chat.messages.length === 1 ? 'сообщение' : chat.messages.length < 5 ? 'сообщения' : 'сообщений'})
+                                </span>
                             </div>
-                            ${msg.hasImage && msg.imageFilename ? `
-                                <div class="message-image" style="margin-bottom: var(--space-3);">
-                                    <img src="/uploads/support/${msg.imageFilename}" alt="Изображение" style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
-                                </div>
-                            ` : ''}
-                            <div class="message-text">
-                                ${msg.message || (msg.hasImage ? '(только изображение)' : '')}
-                            </div>
-                            ${messageReplies.length > 0 ? `
-                                <div class="message-replies">
-                                    <strong style="display: block; margin-bottom: var(--space-2);">Ответы:</strong>
-                                    ${messageReplies.map(reply => `
-                                        <div class="reply-item">
-                                            <div>${reply.text}</div>
-                                            <div class="message-time" style="margin-top: var(--space-1);">${new Date(reply.timestamp).toLocaleString('ru-RU')}</div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                            <div class="reply-form">
-                                <input type="text" class="reply-input" id="replyInput_${msg.messageId}" placeholder="Введите ответ..." onkeypress="if(event.key==='Enter') sendReply('${msg.messageId}')">
-                                <button class="reply-btn" onclick="sendReply('${msg.messageId}')">
-                                    <i class="fas fa-paper-plane"></i> Отправить
-                                </button>
-                            </div>
-                        </div>
                     `;
+                    
+                    chat.messages.forEach(msg => {
+                        const messageReplies = replies[msg.messageId] || [];
+                        const timestamp = new Date(msg.timestamp).toLocaleString('ru-RU');
+                        
+                        html += `
+                            <div class="message-item" style="margin-bottom: var(--space-4);">
+                                <div class="message-header">
+                                    <strong>Сообщение #${msg.messageId}</strong>
+                                    <span class="message-time">${timestamp}</span>
+                                </div>
+                                ${msg.hasImage && msg.imageFilename ? `
+                                    <div class="message-image" style="margin-bottom: var(--space-3);">
+                                        <img src="/uploads/support/${msg.imageFilename}" alt="Изображение" style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+                                    </div>
+                                ` : ''}
+                                <div class="message-text">
+                                    ${msg.message || (msg.hasImage ? '(только изображение)' : '')}
+                                </div>
+                                ${messageReplies.length > 0 ? `
+                                    <div class="message-replies">
+                                        <strong style="display: block; margin-bottom: var(--space-2);">Ответы:</strong>
+                                        ${messageReplies.map(reply => `
+                                            <div class="reply-item">
+                                                <div>${reply.text}</div>
+                                                <div class="message-time" style="margin-top: var(--space-1);">${new Date(reply.timestamp).toLocaleString('ru-RU')}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                                <div class="reply-form">
+                                    <input type="text" class="reply-input" id="replyInput_${msg.messageId}" placeholder="Введите ответ..." onkeypress="if(event.key==='Enter') sendReply('${msg.messageId}')">
+                                    <button class="reply-btn" onclick="sendReply('${msg.messageId}')">
+                                        <i class="fas fa-paper-plane"></i> Отправить
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `</div>`;
                 });
                 
                 document.getElementById('messagesList').innerHTML = html;

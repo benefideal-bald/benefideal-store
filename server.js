@@ -533,18 +533,46 @@ app.get('/api/admin/support-messages', (req, res) => {
             }
         }
         
-        // Convert to array and sort by timestamp (newest first)
+        // Convert to array and add client info
         const messagesArray = Object.entries(messages).map(([messageId, data]) => ({
             messageId,
             message: data.message || '',
             timestamp: data.timestamp || 0,
             hasImage: data.hasImage || false,
-            imageFilename: data.imageFilename || null
-        })).sort((a, b) => b.timestamp - a.timestamp);
+            imageFilename: data.imageFilename || null,
+            clientId: data.clientId || 'unknown',
+            clientIP: data.clientIP || 'unknown'
+        }));
+        
+        // Group messages by clientId (chats)
+        const chats = {};
+        messagesArray.forEach(msg => {
+            const chatId = msg.clientId;
+            if (!chats[chatId]) {
+                chats[chatId] = {
+                    clientId: chatId,
+                    clientIP: msg.clientIP,
+                    messages: [],
+                    lastMessageTime: 0
+                };
+            }
+            chats[chatId].messages.push(msg);
+            if (msg.timestamp > chats[chatId].lastMessageTime) {
+                chats[chatId].lastMessageTime = msg.timestamp;
+            }
+        });
+        
+        // Sort chats by last message time (newest first)
+        const sortedChats = Object.values(chats).sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+        
+        // Sort messages within each chat by timestamp (newest first)
+        sortedChats.forEach(chat => {
+            chat.messages.sort((a, b) => b.timestamp - a.timestamp);
+        });
         
         res.json({
             success: true,
-            messages: messagesArray,
+            chats: sortedChats,
             replies: replies
         });
     } catch (error) {
@@ -5956,6 +5984,17 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
             });
         }
         
+        // Get client IP and create unique client ID
+        const ip = req.headers['x-forwarded-for']?.split(',')[0] || 
+                   req.headers['x-real-ip'] || 
+                   req.connection.remoteAddress || 
+                   req.socket.remoteAddress ||
+                   'unknown';
+        
+        // Create unique client ID from IP (hash for privacy)
+        const crypto = require('crypto');
+        const clientId = crypto.createHash('md5').update(ip + (req.headers['user-agent'] || '')).digest('hex').substring(0, 12);
+        
         // Generate unique message ID
         const messageId = `support_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const timestamp = new Date().toLocaleString('ru-RU');
@@ -6031,7 +6070,9 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
             timestamp: Date.now(),
             hasImage: !!imageFile,
             imageFilename: imageFile ? imageFile.filename : null, // Сохраняем имя файла для отображения
-            telegramMessageId: telegramMessageId // Сохраняем ID сообщения в Telegram для поиска при ответе
+            telegramMessageId: telegramMessageId, // Сохраняем ID сообщения в Telegram для поиска при ответе
+            clientId: clientId, // Уникальный ID клиента
+            clientIP: ip // IP адрес клиента (для идентификации)
         };
         
         // Ensure data directory exists
