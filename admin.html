@@ -264,14 +264,190 @@
         .messages-modal-content {
             background: var(--white);
             border-radius: var(--radius-lg);
-            padding: var(--space-6);
-            max-width: 900px;
+            padding: 0;
+            max-width: 1200px;
             width: 100%;
             max-height: 90vh;
-            overflow-y: auto;
             box-shadow: var(--shadow-xl);
             display: flex;
+            flex-direction: row;
+            overflow: hidden;
+        }
+        
+        .chats-sidebar {
+            width: 300px;
+            border-right: 1px solid var(--gray-200);
+            display: flex;
             flex-direction: column;
+            background: var(--gray-50);
+        }
+        
+        .chats-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-2);
+        }
+        
+        .chat-item {
+            padding: var(--space-3);
+            margin-bottom: var(--space-2);
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        
+        .chat-item:hover {
+            background: var(--gray-50);
+            border-color: var(--primary);
+        }
+        
+        .chat-item.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .chat-item-header {
+            font-weight: 600;
+            margin-bottom: var(--space-1);
+            font-size: 0.9rem;
+        }
+        
+        .chat-item-preview {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .chat-item.active .chat-item-preview {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .chat-item-time {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            margin-top: var(--space-1);
+        }
+        
+        .chat-item.active .chat-item-time {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--white);
+        }
+        
+        .chat-header {
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--white);
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-4);
+            background: var(--gray-50);
+        }
+        
+        .chat-message {
+            margin-bottom: var(--space-3);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-message.client {
+            align-items: flex-start;
+        }
+        
+        .chat-message.admin {
+            align-items: flex-end;
+        }
+        
+        .chat-message-bubble {
+            max-width: 70%;
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-lg);
+            word-wrap: break-word;
+        }
+        
+        .chat-message.client .chat-message-bubble {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-bottom-left-radius: 4px;
+        }
+        
+        .chat-message.admin .chat-message-bubble {
+            background: var(--gradient-primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .chat-message-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            margin-bottom: var(--space-2);
+        }
+        
+        .chat-message-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: var(--radius-md);
+            border: 2px solid #10b981;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+        }
+        
+        .chat-message-time {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            margin-top: var(--space-1);
+            padding: 0 var(--space-2);
+        }
+        
+        .chat-input-area {
+            padding: var(--space-4);
+            border-top: 1px solid var(--gray-200);
+            background: var(--white);
+            display: flex;
+            gap: var(--space-2);
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: var(--space-3) var(--space-4);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-lg);
+            font-size: 0.9rem;
+        }
+        
+        .chat-send-btn {
+            padding: var(--space-3) var(--space-4);
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .chat-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--gray-500);
+            font-size: 1.1rem;
         }
         
         .messages-list {
@@ -587,15 +763,38 @@
     <!-- Messages Modal -->
     <div id="messagesModal" class="messages-modal">
         <div class="messages-modal-content">
-            <div class="modal-header">
+            <div class="modal-header" style="position: absolute; top: 0; left: 0; right: 0; z-index: 10; background: var(--white); border-bottom: 1px solid var(--gray-200); padding: var(--space-4);">
                 <h2 class="modal-title">Сообщения из чата поддержки</h2>
                 <button class="modal-close" onclick="closeMessagesModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="messages-list" id="messagesList">
-                <div class="loading">
-                    <i class="fas fa-spinner fa-spin"></i> Загрузка сообщений...
+            <div class="chats-sidebar" style="margin-top: 70px;">
+                <div class="chats-list" id="chatsList">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Загрузка чатов...
+                    </div>
+                </div>
+            </div>
+            <div class="chat-area" style="margin-top: 70px;">
+                <div id="chatHeader" class="chat-header" style="display: none;">
+                    <div style="font-weight: 600; font-size: 1.1rem;">
+                        <i class="fas fa-user"></i> <span id="chatClientInfo">Выберите чат</span>
+                    </div>
+                </div>
+                <div id="chatMessages" class="chat-messages">
+                    <div class="chat-empty">
+                        <div style="text-align: center;">
+                            <i class="fas fa-comments" style="font-size: 3rem; color: var(--gray-300); margin-bottom: var(--space-3);"></i>
+                            <p>Выберите чат из списка слева</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="chatInputArea" class="chat-input-area" style="display: none;">
+                    <input type="text" id="chatInput" class="chat-input" placeholder="Введите ответ..." onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendChatReply(); }">
+                    <button class="chat-send-btn" onclick="sendChatReply()">
+                        <i class="fas fa-paper-plane"></i> Отправить
+                    </button>
                 </div>
             </div>
         </div>
