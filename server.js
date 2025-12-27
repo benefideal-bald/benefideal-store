@@ -6642,25 +6642,56 @@ app.post('/api/support/send-reply', async (req, res) => {
 });
 
 // Endpoint for client to check for replies
+// КРИТИЧЕСКИ ВАЖНО: Читаем из SQLite базы данных - данные НЕ ПОТЕРЯЮТСЯ при деплое!
 app.get('/api/support/check-replies/:messageId', (req, res) => {
     try {
         const { messageId } = req.params;
-        const fs = require('fs');
         
-        // КРИТИЧЕСКИ ВАЖНО: Читаем из корневого файла (Git версия)
-        if (!fs.existsSync(supportRepliesJsonPath)) {
-            return res.json({ success: true, replies: [] });
-        }
-        
-        const replies = JSON.parse(fs.readFileSync(supportRepliesJsonPath, 'utf8'));
-        const messageReplies = replies[messageId] || [];
-        
-        res.json({ 
-            success: true, 
-            replies: messageReplies 
+        // Читаем ответы из базы данных
+        db.all(`
+            SELECT reply_text as text, timestamp
+            FROM support_replies
+            WHERE message_id = ?
+            ORDER BY timestamp ASC
+        `, [messageId], (err, rows) => {
+            if (err) {
+                console.error('❌ Error checking replies from database:', err);
+                // Если таблица не существует, пробуем прочитать из JSON (fallback)
+                if (err.message && err.message.includes('no such table')) {
+                    console.log('📋 Table support_replies does not exist yet - trying to read from JSON');
+                    const fs = require('fs');
+                    if (fs.existsSync(supportRepliesJsonPath)) {
+                        try {
+                            const replies = JSON.parse(fs.readFileSync(supportRepliesJsonPath, 'utf8'));
+                            const messageReplies = replies[messageId] || [];
+                            return res.json({ 
+                                success: true, 
+                                replies: messageReplies 
+                            });
+                        } catch (e) {
+                            console.error('Error reading from JSON:', e);
+                        }
+                    }
+                }
+                return res.status(500).json({ 
+                    success: false, 
+                    error: 'Ошибка проверки ответов' 
+                });
+            }
+            
+            // Преобразуем ответы в нужный формат
+            const replies = rows.map(row => ({
+                text: row.text,
+                timestamp: row.timestamp
+            }));
+            
+            res.json({ 
+                success: true, 
+                replies: replies 
+            });
         });
     } catch (error) {
-        console.error('Error checking replies:', error);
+        console.error('❌ Error checking replies:', error);
         res.status(500).json({ 
             success: false, 
             error: 'Ошибка проверки ответов' 
