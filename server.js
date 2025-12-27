@@ -6204,16 +6204,21 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
             }
         }
         
-        // Save all image filenames
-        const imageFilenames = imageFiles.map(f => f.filename);
-        console.log(`💾 Saving message ${messageId} with ${imageFiles.length} images:`, imageFilenames);
+        // Save all image filenames - ensure we get all files
+        const imageFilenames = imageFiles.map(f => {
+            const filename = f.filename || f.originalname || null;
+            console.log(`  - File: ${filename}, size: ${f.size}, path: ${f.path}`);
+            return filename;
+        }).filter(f => f !== null);
+        
+        console.log(`💾 Saving message ${messageId} with ${imageFiles.length} images, ${imageFilenames.length} filenames:`, imageFilenames);
         
         supportMessages[messageId] = {
             message: message,
             timestamp: Date.now(),
             hasImage: imageFiles.length > 0,
             imageFilenames: imageFilenames, // Array of all filenames
-            imageFilename: imageFiles.length > 0 ? imageFiles[0].filename : null, // Legacy support
+            imageFilename: imageFilenames.length > 0 ? imageFilenames[0] : null, // Legacy support
             telegramMessageId: telegramMessageId, // Сохраняем ID сообщения в Telegram для поиска при ответе
             clientId: clientId, // Уникальный ID клиента
             clientIP: ip // IP адрес клиента (для идентификации)
