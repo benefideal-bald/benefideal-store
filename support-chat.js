@@ -208,7 +208,7 @@
             // Save file for later sending (when user clicks send button)
             selectedFile = file;
             
-            // Show small image preview above input area
+            // Show small image preview above input area (DO NOT SEND - just show preview)
             const reader = new FileReader();
             reader.onload = function(e) {
                 selectedFilePreview = e.target.result;
@@ -222,14 +222,14 @@
                 // Find input area container
                 const inputAreaContainer = chatInputArea.parentElement;
                 
-                // Create small preview above input
+                // Create small preview above input with centered X button
                 const previewDiv = document.createElement('div');
                 previewDiv.className = 'support-chat-image-preview';
-                previewDiv.style.cssText = 'position: relative; display: inline-block; padding: 8px; background: var(--gray-50, #f3f4f6); border-bottom: 1px solid var(--gray-200, #e5e7eb);';
+                previewDiv.style.cssText = 'position: relative; padding: 8px; background: var(--gray-50, #f3f4f6); border-bottom: 1px solid var(--gray-200, #e5e7eb); width: 100%; text-align: center;';
                 previewDiv.innerHTML = `
                     <div style="position: relative; display: inline-block;">
                         <img src="${selectedFilePreview}" alt="Превью" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; display: block;">
-                        <button type="button" class="support-chat-remove-image" style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: rgba(220, 53, 69, 0.9); color: white; border: 2px solid white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; padding: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" onclick="if (window.removeSelectedFile) { window.removeSelectedFile(); }">
+                        <button type="button" class="support-chat-remove-image" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 32px; height: 32px; background: rgba(220, 53, 69, 0.95); color: white; border: 2px solid white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 10;" onclick="if (window.removeSelectedFile) { window.removeSelectedFile(); }">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -239,6 +239,8 @@
                 inputAreaContainer.insertBefore(previewDiv, chatInputArea);
             };
             reader.readAsDataURL(file);
+            
+            // IMPORTANT: Do NOT call sendMessage here - file is saved and will be sent only when user clicks Send button
         }
     });
     
