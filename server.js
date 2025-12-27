@@ -397,6 +397,8 @@ db.serialize(() => {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             message_id TEXT NOT NULL,
             reply_text TEXT NOT NULL,
+            has_image INTEGER DEFAULT 0,
+            image_filenames TEXT,
             timestamp INTEGER NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -709,6 +711,8 @@ app.get('/api/admin/support-messages', (req, res) => {
                 SELECT 
                     message_id,
                     reply_text as text,
+                    has_image,
+                    image_filenames,
                     timestamp
                 FROM support_replies
                 ORDER BY timestamp ASC
@@ -757,8 +761,11 @@ app.get('/api/admin/support-messages', (req, res) => {
                         if (!replies[reply.message_id]) {
                             replies[reply.message_id] = [];
                         }
+                        const imageFilenames = reply.image_filenames ? JSON.parse(reply.image_filenames) : [];
                         replies[reply.message_id].push({
                             text: reply.text,
+                            hasImage: reply.has_image === 1,
+                            imageFilenames: imageFilenames,
                             timestamp: reply.timestamp
                         });
                     });
@@ -848,8 +855,8 @@ app.get('/uploads/support/:filename', (req, res) => {
     }
 });
 
-// Admin API - Send reply to support message
-app.post('/api/admin/support-reply', async (req, res) => {
+// Admin API - Send reply to support message (with image support)
+app.post('/api/admin/support-reply', supportUpload.array('images', 10), async (req, res) => {
     const { messageId, replyText, password } = req.body;
     const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '2728276';
     
@@ -857,19 +864,32 @@ app.post('/api/admin/support-reply', async (req, res) => {
         return res.status(401).json({ success: false, error: 'Неверный пароль' });
     }
     
-    if (!messageId || !replyText) {
-        return res.status(400).json({ success: false, error: 'messageId и replyText обязательны' });
+    if (!messageId || (!replyText && (!req.files || req.files.length === 0))) {
+        return res.status(400).json({ success: false, error: 'messageId и replyText (или изображение) обязательны' });
     }
     
     try {
+        let imageFiles = req.files || [];
+        if (!Array.isArray(imageFiles)) {
+            imageFiles = imageFiles ? [imageFiles] : [];
+        }
+        
+        const imageFilenames = imageFiles.map(file => file.filename || file.originalname);
+        
         // КРИТИЧЕСКИ ВАЖНО: Сохраняем в SQLite базу данных - данные НЕ ПОТЕРЯЮТСЯ при деплое!
         // Используем prepare/run/finalize как для отзывов - это гарантирует надежное сохранение
         const stmt = db.prepare(`
-            INSERT INTO support_replies (message_id, reply_text, timestamp)
-            VALUES (?, ?, ?)
+            INSERT INTO support_replies (message_id, reply_text, has_image, image_filenames, timestamp)
+            VALUES (?, ?, ?, ?, ?)
         `);
         
-        stmt.run([messageId, replyText, Date.now()], function(err) {
+        stmt.run([
+            messageId, 
+            replyText || '', 
+            imageFiles.length > 0 ? 1 : 0,
+            imageFilenames.length > 0 ? JSON.stringify(imageFilenames) : null,
+            Date.now()
+        ], function(err) {
             if (err) {
                 console.error('❌ Error saving reply to database:', err);
                 stmt.finalize();
@@ -7172,7 +7192,7 @@ app.get('/api/support/check-replies/:messageId', (req, res) => {
         
         // Читаем ответы из базы данных
         db.all(`
-            SELECT reply_text as text, timestamp
+            SELECT reply_text as text, has_image, image_filenames, timestamp
             FROM support_replies
             WHERE message_id = ?
             ORDER BY timestamp ASC
@@ -7205,12 +7225,14 @@ app.get('/api/support/check-replies/:messageId', (req, res) => {
             // Преобразуем ответы в нужный формат
             const replies = rows.map(row => ({
                 text: row.text,
+                hasImage: row.has_image === 1,
+                imageFilenames: row.image_filenames ? JSON.parse(row.image_filenames) : [],
                 timestamp: row.timestamp
             }));
             
-            res.json({ 
-                success: true, 
-                replies: replies 
+            res.json({
+                success: true,
+                replies: replies
             });
         });
     } catch (error) {

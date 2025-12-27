@@ -75,10 +75,12 @@
                 </div>
             `;
         } else {
+            const images = msg.images || [];
             div.innerHTML = `
                 <div class="support-chat-message-content">
                     <i class="fas fa-headset"></i>
-                    <p>${escapeHtml(msg.text)}</p>
+                    ${images.length > 0 ? images.map(filename => `<img src="/uploads/support/${filename}" alt="Изображение" class="support-chat-image">`).join('') : ''}
+                    ${msg.text ? `<p>${escapeHtml(msg.text)}</p>` : ''}
                     <span class="support-chat-time">${formatTime(msg.timestamp)}</span>
                 </div>
             `;
@@ -438,6 +440,7 @@
                             const replyMessage = {
                                 type: 'support',
                                 text: reply.text,
+                                images: reply.imageFilenames || [],
                                 timestamp: reply.timestamp
                             };
                             

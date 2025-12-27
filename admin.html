@@ -791,6 +791,10 @@
                     </div>
                 </div>
                 <div id="chatInputArea" class="chat-input-area" style="display: none;">
+                    <label for="adminChatFileInput" style="cursor: pointer; padding: var(--space-2); display: flex; align-items: center; justify-content: center; color: var(--gray-600);">
+                        <i class="fas fa-paperclip"></i>
+                        <input type="file" id="adminChatFileInput" accept="image/*" multiple style="display: none;">
+                    </label>
                     <input type="text" id="chatInput" class="chat-input" placeholder="Введите ответ..." onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendChatReply(); }">
                     <button class="chat-send-btn" onclick="sendChatReply()">
                         <i class="fas fa-paper-plane"></i> Отправить
@@ -1484,6 +1488,7 @@
                     allMessages.push({
                         type: 'admin',
                         text: reply.text,
+                        images: reply.imageFilenames || [],
                         timestamp: reply.timestamp
                     });
                 });
@@ -1533,10 +1538,12 @@
             if (!chat || chat.messages.length === 0) return;
             
             const input = document.getElementById('chatInput');
+            const fileInput = document.getElementById('adminChatFileInput');
             const replyText = input.value.trim();
+            const files = fileInput ? Array.from(fileInput.files) : [];
             
-            if (!replyText) {
-                alert('Введите текст ответа');
+            if (!replyText && files.length === 0) {
+                alert('Введите текст ответа или выберите изображение');
                 return;
             }
             
@@ -1550,16 +1557,22 @@
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
             
             try {
+                // Используем FormData для отправки файлов
+                const formData = new FormData();
+                formData.append('messageId', messageId);
+                formData.append('replyText', replyText || '');
+                formData.append('password', adminPassword);
+                
+                // Добавляем файлы, если есть
+                if (files.length > 0) {
+                    files.forEach(file => {
+                        formData.append('images', file);
+                    });
+                }
+                
                 const response = await fetch('/api/admin/support-reply', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        messageId: messageId,
-                        replyText: replyText,
-                        password: adminPassword
-                    })
+                    body: formData
                 });
                 
                 const data = await response.json();
@@ -1570,6 +1583,9 @@
                 
                 if (data.success) {
                     input.value = '';
+                    if (fileInput) {
+                        fileInput.value = '';
+                    }
                     // Reload messages to show new reply
                     await loadSupportMessages();
                     // Re-select current chat
