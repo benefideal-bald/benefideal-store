@@ -6114,30 +6114,59 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
         // Send to Telegram
         const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
         let telegramMessageId = null;
+        const axios = require('axios');
+        const FormData = require('form-data');
         
-        if (imageFile) {
-            // Send photo with caption
-            const photoUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`;
-            const FormData = require('form-data');
-            const formData = new FormData();
-            
-            formData.append('chat_id', CHAT_ID);
-            formData.append('photo', require('fs').createReadStream(imageFile.path));
-            formData.append('caption', telegramMessage);
-            formData.append('parse_mode', 'HTML');
-            formData.append('reply_markup', JSON.stringify(replyKeyboard));
-            
-            const axios = require('axios');
-            const photoResponse = await axios.post(photoUrl, formData, {
-                headers: formData.getHeaders()
-            });
-            telegramMessageId = photoResponse.data.result?.message_id;
-            
-            // НЕ удаляем файл - сохраняем для админ-панели
-            // Файл уже сохранен с уникальным именем в supportUploadDir
+        if (imageFiles.length > 0) {
+            // Send photos (multiple or single)
+            if (imageFiles.length === 1) {
+                // Single photo
+                const photoUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`;
+                const formData = new FormData();
+                
+                formData.append('chat_id', CHAT_ID);
+                formData.append('photo', require('fs').createReadStream(imageFiles[0].path));
+                formData.append('caption', telegramMessage);
+                formData.append('parse_mode', 'HTML');
+                formData.append('reply_markup', JSON.stringify(replyKeyboard));
+                
+                const photoResponse = await axios.post(photoUrl, formData, {
+                    headers: formData.getHeaders()
+                });
+                telegramMessageId = photoResponse.data.result?.message_id;
+            } else {
+                // Multiple photos - send as media group
+                const mediaGroup = imageFiles.map((file, index) => ({
+                    type: 'photo',
+                    media: `attach://photo_${index}`,
+                    caption: index === 0 ? telegramMessage : undefined,
+                    parse_mode: index === 0 ? 'HTML' : undefined
+                }));
+                
+                const formData = new FormData();
+                formData.append('chat_id', CHAT_ID);
+                imageFiles.forEach((file, index) => {
+                    formData.append(`photo_${index}`, require('fs').createReadStream(file.path));
+                });
+                formData.append('media', JSON.stringify(mediaGroup));
+                
+                const mediaResponse = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMediaGroup`, formData, {
+                    headers: formData.getHeaders()
+                });
+                
+                // Send reply button separately
+                if (mediaResponse.data.result && mediaResponse.data.result.length > 0) {
+                    telegramMessageId = mediaResponse.data.result[0].message_id;
+                    await axios.post(telegramUrl, {
+                        chat_id: CHAT_ID,
+                        text: '💬 Ответить на сообщение',
+                        reply_to_message_id: telegramMessageId,
+                        reply_markup: replyKeyboard
+                    });
+                }
+            }
         } else {
             // Send text message
-            const axios = require('axios');
             console.log('📤 Sending message with keyboard:', JSON.stringify(replyKeyboard, null, 2));
             const textResponse = await axios.post(telegramUrl, {
                 chat_id: CHAT_ID,
