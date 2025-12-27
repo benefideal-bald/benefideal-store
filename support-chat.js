@@ -213,8 +213,17 @@
             return;
         }
         
-        // Find input area container
+        // Find input area container - ensure we have the right parent
+        if (!chatInputArea) {
+            console.error('chatInputArea not found');
+            return;
+        }
+        
         const inputAreaContainer = chatInputArea.parentElement;
+        if (!inputAreaContainer) {
+            console.error('inputAreaContainer not found');
+            return;
+        }
         
         // Remove existing preview container if any
         let previewContainer = inputAreaContainer.querySelector('.support-chat-images-preview-container');
@@ -222,7 +231,8 @@
             previewContainer = document.createElement('div');
             previewContainer.className = 'support-chat-images-preview-container';
             previewContainer.style.cssText = 'padding: 8px; background: var(--gray-50, #f3f4f6); border-bottom: 1px solid var(--gray-200, #e5e7eb); width: 100%; display: flex; flex-wrap: wrap; gap: 8px;';
-            inputAreaContainer.parentElement.insertBefore(previewContainer, chatInputArea);
+            // Insert before input area
+            inputAreaContainer.parentElement.insertBefore(previewContainer, inputAreaContainer);
         }
         
         // Process each file
