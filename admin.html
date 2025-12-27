@@ -1126,8 +1126,21 @@
         
         // Messages Modal
         function openMessagesModal() {
+            console.log('Opening messages modal...');
             const modal = document.getElementById('messagesModal');
             const list = document.getElementById('messagesList');
+            
+            if (!modal) {
+                console.error('Messages modal not found!');
+                alert('Модальное окно не найдено. Обновите страницу.');
+                return;
+            }
+            
+            if (!list) {
+                console.error('Messages list not found!');
+                alert('Список сообщений не найден. Обновите страницу.');
+                return;
+            }
             
             modal.classList.add('active');
             list.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка сообщений...</div>';
