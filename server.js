@@ -5756,6 +5756,87 @@ app.get('/api/test', (req, res) => {
     });
 });
 
+// Support Chat - Send message to Telegram
+// Create uploads/support directory if it doesn't exist
+const supportUploadDir = path.join(process.cwd(), 'uploads', 'support');
+if (!require('fs').existsSync(supportUploadDir)) {
+    require('fs').mkdirSync(supportUploadDir, { recursive: true });
+}
+
+const supportUpload = multer({ 
+    dest: supportUploadDir,
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+app.post('/api/support/send-message', supportUpload.single('image'), async (req, res) => {
+    try {
+        const message = req.body.message || '';
+        const imageFile = req.file;
+        
+        if (!message.trim() && !imageFile) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Сообщение или изображение обязательно' 
+            });
+        }
+        
+        // Get user info
+        const userIP = req.ip || req.connection.remoteAddress;
+        const userAgent = req.get('user-agent') || 'Unknown';
+        const timestamp = new Date().toLocaleString('ru-RU');
+        
+        // Build message text
+        let telegramMessage = `📨 <b>Новое сообщение из чата поддержки</b>\n\n`;
+        telegramMessage += `💬 <b>Сообщение:</b> ${message || '(только изображение)'}\n\n`;
+        telegramMessage += `🕐 <b>Время:</b> ${timestamp}\n`;
+        telegramMessage += `🌐 <b>IP:</b> ${userIP}\n`;
+        telegramMessage += `📱 <b>Браузер:</b> ${userAgent.substring(0, 100)}`;
+        
+        // Send to Telegram
+        const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        
+        if (imageFile) {
+            // Send photo with caption
+            const photoUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`;
+            const FormData = require('form-data');
+            const formData = new FormData();
+            
+            formData.append('chat_id', CHAT_ID);
+            formData.append('photo', require('fs').createReadStream(imageFile.path));
+            formData.append('caption', telegramMessage);
+            formData.append('parse_mode', 'HTML');
+            
+            const axios = require('axios');
+            await axios.post(photoUrl, formData, {
+                headers: formData.getHeaders()
+            });
+            
+            // Clean up file
+            require('fs').unlinkSync(imageFile.path);
+        } else {
+            // Send text message
+            const axios = require('axios');
+            await axios.post(telegramUrl, {
+                chat_id: CHAT_ID,
+                text: telegramMessage,
+                parse_mode: 'HTML'
+            });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Сообщение отправлено' 
+        });
+        
+    } catch (error) {
+        console.error('Error sending support message:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Ошибка отправки сообщения' 
+        });
+    }
+});
+
 // Serve static files AFTER API routes
 // This ensures API routes are processed first
 app.use(express.static('.'));
