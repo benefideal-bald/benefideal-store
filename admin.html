@@ -1230,8 +1230,8 @@
                                     </div>
                                 ` : ''}
                                 <div class="reply-form">
-                                    <input type="text" class="reply-input" id="replyInput_${msg.messageId}" placeholder="Введите ответ..." onkeypress="if(event.key==='Enter') sendReply('${msg.messageId}')">
-                                    <button class="reply-btn" onclick="sendReply('${msg.messageId}')">
+                                    <input type="text" class="reply-input" id="replyInput_${msg.messageId.replace(/[^a-zA-Z0-9_]/g, '_')}" placeholder="Введите ответ..." onkeypress="if(event.key==='Enter') { event.preventDefault(); sendReply('${msg.messageId.replace(/'/g, "\\'")}'); }" autocomplete="off">
+                                    <button class="reply-btn" onclick="sendReply('${msg.messageId.replace(/'/g, "\\'")}')">
                                         <i class="fas fa-paper-plane"></i> Отправить
                                     </button>
                                 </div>
