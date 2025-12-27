@@ -19,15 +19,27 @@
 
 ## Шаг 2: Настройте Webhook
 
-Откройте в браузере (замените `ВАШ_URL` на ваш реальный URL):
+### ⚠️ ВАЖНО: Если `benefideal.ru` не работает, используйте Railway URL!
+
+**Вариант А: Используйте Railway URL напрямую (РЕКОМЕНДУЕТСЯ)**
+
+Откройте в браузере (замените `ВАШ_RAILWAY_URL` на ваш реальный Railway URL):
 
 ```
-https://ВАШ_URL/api/telegram/set-webhook
+https://ВАШ_RAILWAY_URL/api/telegram/set-webhook?url=https://ВАШ_RAILWAY_URL/api/telegram/webhook
 ```
 
-**Примеры:**
-- Если Railway URL: `https://benefideal-store-production.up.railway.app/api/telegram/set-webhook`
-- Если свой домен: `https://benefideal.ru/api/telegram/set-webhook`
+**Пример:**
+```
+https://benefideal-store-production.up.railway.app/api/telegram/set-webhook?url=https://benefideal-store-production.up.railway.app/api/telegram/webhook
+```
+
+**Вариант Б: Если домен `benefideal.ru` настроен правильно**
+
+Откройте:
+```
+https://benefideal.ru/api/telegram/set-webhook
+```
 
 **Вы должны увидеть:**
 ```json
@@ -37,6 +49,10 @@ https://ВАШ_URL/api/telegram/set-webhook
   "webhookUrl": "https://ваш-url/api/telegram/webhook"
 }
 ```
+
+**Если видите ошибку "Failed to resolve host":**
+- Используйте Вариант А (Railway URL)
+- Или проверьте настройки DNS для `benefideal.ru`
 
 ---
 
