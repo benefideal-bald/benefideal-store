@@ -110,8 +110,12 @@
     }
     
     // Send message
-    async function sendMessage(text, imageFile = null, imagePreview = null) {
-        if (!text.trim() && !imageFile) return;
+    async function sendMessage(text, imageFiles = null, imagePreviews = null) {
+        // Support both single file (legacy) and array of files
+        const files = Array.isArray(imageFiles) ? imageFiles : (imageFiles ? [imageFiles] : []);
+        const previews = Array.isArray(imagePreviews) ? imagePreviews : (imagePreviews ? [imagePreviews] : []);
+        
+        if (!text.trim() && files.length === 0) return;
         
         const message = {
             type: 'user',
