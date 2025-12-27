@@ -6010,9 +6010,9 @@ app.post('/api/telegram/webhook', async (req, res) => {
             } else {
                 console.log('ℹ️ No callback_query in webhook body');
             }
-        
-        // Handle text message from admin (reply to support message)
-        if (body.message && body.message.text && body.message.chat.id == CHAT_ID) {
+            
+            // Handle text message from admin (reply to support message)
+            if (body.message && body.message.text && body.message.chat.id == CHAT_ID) {
             const chatId = body.message.chat.id.toString();
             const replyText = body.message.text;
             const isReply = body.message.reply_to_message;
@@ -6115,9 +6115,10 @@ app.post('/api/telegram/webhook', async (req, res) => {
                 console.log('⚠️ Could not find messageId for this reply');
             }
         }
-    } catch (error) {
-        console.error('❌ Error handling Telegram webhook:', error);
-    }
+        } catch (error) {
+            console.error('❌ Error handling Telegram webhook:', error);
+        }
+    });
 });
 
 // Endpoint to send reply to client (called when admin sends text message after clicking reply)
