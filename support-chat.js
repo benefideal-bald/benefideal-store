@@ -219,14 +219,21 @@
             return;
         }
         
-        const inputAreaContainer = chatInputArea.parentElement;
+        const inputAreaContainer = chatInputArea.closest('.support-chat-input-area');
         if (!inputAreaContainer) {
             console.error('inputAreaContainer not found');
             return;
         }
         
+        // Find the parent container (support-chat-window)
+        const chatWindow = inputAreaContainer.closest('.support-chat-window');
+        if (!chatWindow) {
+            console.error('chatWindow not found');
+            return;
+        }
+        
         // Remove existing preview container if any
-        let previewContainer = inputAreaContainer.querySelector('.support-chat-images-preview-container');
+        let previewContainer = chatWindow.querySelector('.support-chat-images-preview-container');
         if (!previewContainer) {
             previewContainer = document.createElement('div');
             previewContainer.className = 'support-chat-images-preview-container';
