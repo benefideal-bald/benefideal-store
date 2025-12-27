@@ -260,14 +260,48 @@
     
     // Send button click
     chatSend.addEventListener('click', function() {
-        sendMessage(chatInput.value);
+        const text = chatInput.value.trim();
+        if (text || selectedFile) {
+            // Remove preview if exists
+            const preview = chatMessages.querySelector('.preview');
+            if (preview) {
+                preview.remove();
+            }
+            
+            sendMessage(text, selectedFile, selectedFilePreview);
+            
+            // Clear file selection
+            selectedFile = null;
+            selectedFilePreview = null;
+            fileInput.value = '';
+            if (window.removeSelectedFile) {
+                window.removeSelectedFile();
+            }
+        }
     });
     
     // Enter key to send
     chatInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            sendMessage(chatInput.value);
+            const text = chatInput.value.trim();
+            if (text || selectedFile) {
+                // Remove preview if exists
+                const preview = chatMessages.querySelector('.preview');
+                if (preview) {
+                    preview.remove();
+                }
+                
+                sendMessage(text, selectedFile, selectedFilePreview);
+                
+                // Clear file selection
+                selectedFile = null;
+                selectedFilePreview = null;
+                fileInput.value = '';
+                if (window.removeSelectedFile) {
+                    window.removeSelectedFile();
+                }
+            }
         }
     });
     
