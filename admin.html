@@ -1187,8 +1187,13 @@
                                 <strong>Сообщение #${msg.messageId.substring(0, 10)}...</strong>
                                 <span class="message-time">${timestamp}</span>
                             </div>
+                            ${msg.hasImage && msg.imageFilename ? `
+                                <div class="message-image" style="margin-bottom: var(--space-3);">
+                                    <img src="/uploads/support/${msg.imageFilename}" alt="Изображение" style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+                                </div>
+                            ` : ''}
                             <div class="message-text">
-                                ${msg.message || '(только изображение)'}
+                                ${msg.message || (msg.hasImage ? '(только изображение)' : '')}
                             </div>
                             ${messageReplies.length > 0 ? `
                                 <div class="message-replies">

@@ -538,7 +538,8 @@ app.get('/api/admin/support-messages', (req, res) => {
             messageId,
             message: data.message || '',
             timestamp: data.timestamp || 0,
-            hasImage: data.hasImage || false
+            hasImage: data.hasImage || false,
+            imageFilename: data.imageFilename || null
         })).sort((a, b) => b.timestamp - a.timestamp);
         
         res.json({
@@ -549,6 +550,24 @@ app.get('/api/admin/support-messages', (req, res) => {
     } catch (error) {
         console.error('Error loading support messages:', error);
         res.status(500).json({ success: false, error: 'Ошибка загрузки сообщений' });
+    }
+});
+
+// Serve support images
+app.get('/uploads/support/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(process.cwd(), 'uploads', 'support', filename);
+    
+    // Security check - only allow files from support directory
+    if (!filePath.startsWith(path.join(process.cwd(), 'uploads', 'support'))) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+    
+    const fs = require('fs');
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).json({ error: 'File not found' });
     }
 });
 
@@ -5912,7 +5931,16 @@ if (!require('fs').existsSync(supportUploadDir)) {
 }
 
 const supportUpload = multer({ 
-    dest: supportUploadDir,
+    storage: multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, supportUploadDir);
+        },
+        filename: function (req, file, cb) {
+            // Сохраняем с уникальным именем, чтобы не удалять
+            const uniqueName = `support_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${file.originalname}`;
+            cb(null, uniqueName);
+        }
+    }),
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
@@ -5969,8 +5997,8 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
             });
             telegramMessageId = photoResponse.data.result?.message_id;
             
-            // Clean up file
-            require('fs').unlinkSync(imageFile.path);
+            // НЕ удаляем файл - сохраняем для админ-панели
+            // Файл уже сохранен с уникальным именем в supportUploadDir
         } else {
             // Send text message
             const axios = require('axios');
@@ -6002,6 +6030,7 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
             message: message,
             timestamp: Date.now(),
             hasImage: !!imageFile,
+            imageFilename: imageFile ? imageFile.filename : null, // Сохраняем имя файла для отображения
             telegramMessageId: telegramMessageId // Сохраняем ID сообщения в Telegram для поиска при ответе
         };
         
