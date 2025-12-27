@@ -11,6 +11,7 @@
     const chatSend = document.getElementById('supportChatSend');
     const fileInput = document.getElementById('supportChatFileInput');
     const chatBadge = document.getElementById('supportChatBadge');
+    const chatInputArea = document.querySelector('.support-chat-input-area');
     
     let isOpen = false;
     let messageHistory = [];
@@ -207,25 +208,30 @@
             // Save file for later sending (when user clicks send button)
             selectedFile = file;
             
-            // Show image preview
+            // Show image preview above input area
             const reader = new FileReader();
             reader.onload = function(e) {
                 selectedFilePreview = e.target.result;
                 
-                // Show preview in chat (but don't send yet)
+                // Remove existing preview if any
+                const existingPreview = chatInputArea.querySelector('.support-chat-image-preview');
+                if (existingPreview) {
+                    existingPreview.remove();
+                }
+                
+                // Create preview above input
                 const previewDiv = document.createElement('div');
-                previewDiv.className = 'support-chat-message user preview';
+                previewDiv.className = 'support-chat-image-preview';
+                previewDiv.style.cssText = 'position: relative; padding: var(--space-2); background: var(--gray-50); border-bottom: 1px solid var(--gray-200);';
                 previewDiv.innerHTML = `
-                    <div class="support-chat-message-content">
-                        <img src="${selectedFilePreview}" alt="Превью" class="support-chat-image">
-                        <p style="color: var(--gray-500); font-style: italic;">Изображение выбрано. Введите сообщение и нажмите "Отправить"</p>
-                        <button class="support-chat-remove-image" style="margin-top: 8px; padding: 4px 8px; background: var(--error, #dc3545); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;" onclick="this.closest('.preview').remove(); if (window.removeSelectedFile) window.removeSelectedFile();">
-                            <i class="fas fa-times"></i> Убрать
-                        </button>
-                    </div>
+                    <img src="${selectedFilePreview}" alt="Превью" style="max-width: 200px; max-height: 150px; border-radius: var(--radius-md); display: block;">
+                    <button class="support-chat-remove-image" style="position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;" onclick="if (window.removeSelectedFile) { window.removeSelectedFile(); this.closest('.support-chat-image-preview').remove(); }">
+                        <i class="fas fa-times"></i>
+                    </button>
                 `;
-                chatMessages.appendChild(previewDiv);
-                scrollToBottom();
+                
+                // Insert preview before input area
+                chatInputArea.parentNode.insertBefore(previewDiv, chatInputArea);
             };
             reader.readAsDataURL(file);
         }
@@ -236,6 +242,11 @@
         selectedFile = null;
         selectedFilePreview = null;
         fileInput.value = '';
+        // Remove preview if exists
+        const preview = document.querySelector('.support-chat-image-preview');
+        if (preview) {
+            preview.remove();
+        }
     };
     
     // Toggle chat
@@ -263,7 +274,7 @@
         const text = chatInput.value.trim();
         if (text || selectedFile) {
             // Remove preview if exists
-            const preview = chatMessages.querySelector('.preview');
+            const preview = document.querySelector('.support-chat-image-preview');
             if (preview) {
                 preview.remove();
             }
@@ -274,9 +285,6 @@
             selectedFile = null;
             selectedFilePreview = null;
             fileInput.value = '';
-            if (window.removeSelectedFile) {
-                window.removeSelectedFile();
-            }
         }
     });
     
@@ -287,7 +295,7 @@
             const text = chatInput.value.trim();
             if (text || selectedFile) {
                 // Remove preview if exists
-                const preview = chatMessages.querySelector('.preview');
+                const preview = document.querySelector('.support-chat-image-preview');
                 if (preview) {
                     preview.remove();
                 }
@@ -298,9 +306,6 @@
                 selectedFile = null;
                 selectedFilePreview = null;
                 fileInput.value = '';
-                if (window.removeSelectedFile) {
-                    window.removeSelectedFile();
-                }
             }
         }
     });
