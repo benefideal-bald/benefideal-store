@@ -163,6 +163,18 @@
                 successDiv.innerHTML = '<div class="support-chat-message-content"><i class="fas fa-check-circle"></i><p>Сообщение отправлено! Мы ответим вам в ближайшее время.</p></div>';
                 chatMessages.appendChild(successDiv);
                 scrollToBottom();
+                
+                // Start polling for replies if messageId is provided
+                if (data.messageId) {
+                    // Save messageId to localStorage
+                    const savedMessageIds = JSON.parse(localStorage.getItem('support_message_ids') || '[]');
+                    if (!savedMessageIds.includes(data.messageId)) {
+                        savedMessageIds.push(data.messageId);
+                        localStorage.setItem('support_message_ids', JSON.stringify(savedMessageIds));
+                    }
+                    
+                    startPollingForReplies(data.messageId);
+                }
             } else {
                 throw new Error(data.error || 'Ошибка отправки');
             }
@@ -231,7 +243,64 @@
         }
     });
     
+    // Polling for replies
+    let pollingIntervals = {};
+    
+    function startPollingForReplies(messageId) {
+        // Stop existing polling for this message
+        if (pollingIntervals[messageId]) {
+            clearInterval(pollingIntervals[messageId]);
+        }
+        
+        // Poll every 3 seconds
+        pollingIntervals[messageId] = setInterval(async () => {
+            try {
+                const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
+                    ? `http://localhost:3000/api/support/check-replies/${messageId}`
+                    : `${window.location.origin}/api/support/check-replies/${messageId}`;
+                
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                if (data.success && data.replies && data.replies.length > 0) {
+                    // Check which replies are new
+                    const existingTimestamps = messageHistory
+                        .filter(m => m.type === 'support' && m.timestamp)
+                        .map(m => m.timestamp);
+                    
+                    data.replies.forEach(reply => {
+                        if (!existingTimestamps.includes(reply.timestamp)) {
+                            // New reply - add to history
+                            const replyMessage = {
+                                type: 'support',
+                                text: reply.text,
+                                timestamp: reply.timestamp
+                            };
+                            
+                            messageHistory.push(replyMessage);
+                            saveHistory();
+                            renderMessages();
+                            
+                            // Show notification if chat is closed
+                            if (!isOpen) {
+                                chatBadge.style.display = 'flex';
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error polling for replies:', error);
+            }
+        }, 3000);
+    }
+    
     // Load history on init
     loadHistory();
+    
+    // Start polling for all messages in history that have messageId
+    const savedMessageIds = JSON.parse(localStorage.getItem('support_message_ids') || '[]');
+    savedMessageIds.forEach(messageId => {
+        startPollingForReplies(messageId);
+    });
 })();
 

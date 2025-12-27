@@ -5780,17 +5780,24 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
             });
         }
         
-        // Get user info
-        const userIP = req.ip || req.connection.remoteAddress;
-        const userAgent = req.get('user-agent') || 'Unknown';
+        // Generate unique message ID
+        const messageId = `support_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const timestamp = new Date().toLocaleString('ru-RU');
         
         // Build message text
         let telegramMessage = `📨 <b>Новое сообщение из чата поддержки</b>\n\n`;
-        telegramMessage += `💬 <b>Сообщение:</b> ${message || '(только изображение)'}\n\n`;
-        telegramMessage += `🕐 <b>Время:</b> ${timestamp}\n`;
-        telegramMessage += `🌐 <b>IP:</b> ${userIP}\n`;
-        telegramMessage += `📱 <b>Браузер:</b> ${userAgent.substring(0, 100)}`;
+        telegramMessage += `💬 <b>Сообщение:</b> ${message || '(только изображение)'}\n`;
+        telegramMessage += `🕐 <b>Время:</b> ${timestamp}`;
+        
+        // Inline keyboard with reply button
+        const replyKeyboard = {
+            inline_keyboard: [[
+                {
+                    text: '💬 Ответить',
+                    callback_data: `reply_${messageId}`
+                }
+            ]]
+        };
         
         // Send to Telegram
         const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -5805,6 +5812,7 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
             formData.append('photo', require('fs').createReadStream(imageFile.path));
             formData.append('caption', telegramMessage);
             formData.append('parse_mode', 'HTML');
+            formData.append('reply_markup', JSON.stringify(replyKeyboard));
             
             const axios = require('axios');
             await axios.post(photoUrl, formData, {
@@ -5819,13 +5827,43 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
             await axios.post(telegramUrl, {
                 chat_id: CHAT_ID,
                 text: telegramMessage,
-                parse_mode: 'HTML'
+                parse_mode: 'HTML',
+                reply_markup: replyKeyboard
             });
         }
         
+        // Store message mapping (messageId -> client info for future replies)
+        // In production, use a database. For now, store in memory with file backup
+        const supportMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
+        const fs = require('fs');
+        let supportMessages = {};
+        if (fs.existsSync(supportMessagesPath)) {
+            try {
+                supportMessages = JSON.parse(fs.readFileSync(supportMessagesPath, 'utf8'));
+            } catch (e) {
+                supportMessages = {};
+            }
+        }
+        
+        supportMessages[messageId] = {
+            message: message,
+            timestamp: Date.now(),
+            hasImage: !!imageFile
+        };
+        
+        // Ensure data directory exists
+        const dataDir = path.dirname(supportMessagesPath);
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(supportMessagesPath, JSON.stringify(supportMessages, null, 2));
+        
+        // Return messageId to client for polling
         res.json({ 
             success: true, 
-            message: 'Сообщение отправлено' 
+            message: 'Сообщение отправлено',
+            messageId: messageId
         });
         
     } catch (error) {
@@ -5833,6 +5871,209 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
         res.status(500).json({ 
             success: false, 
             error: 'Ошибка отправки сообщения' 
+        });
+    }
+});
+
+// Telegram webhook for callback queries (button clicks) and messages
+app.post('/api/telegram/webhook', async (req, res) => {
+    try {
+        const body = req.body;
+        
+        // Handle callback query (button click)
+        if (body.callback_query) {
+            const callbackQuery = body.callback_query;
+            
+            if (callbackQuery.data && callbackQuery.data.startsWith('reply_')) {
+                const messageId = callbackQuery.data.replace('reply_', '');
+                const chatId = callbackQuery.message.chat.id;
+                const messageText = callbackQuery.message.text || callbackQuery.message.caption || '';
+                
+                // Answer callback query to remove loading state
+                await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+                    callback_query_id: callbackQuery.id
+                });
+                
+                // Send message asking for reply text
+                await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    chat_id: chatId,
+                    text: `💬 Введите ответ для этого сообщения:\n\n${messageText}\n\nОтправьте текст ответа следующим сообщением.`,
+                    reply_to_message_id: callbackQuery.message.message_id,
+                    parse_mode: 'HTML'
+                });
+                
+                // Store pending reply (waiting for admin's text message)
+                const pendingRepliesPath = path.join(process.cwd(), 'data', 'pending_replies.json');
+                const fs = require('fs');
+                let pendingReplies = {};
+                if (fs.existsSync(pendingRepliesPath)) {
+                    try {
+                        pendingReplies = JSON.parse(fs.readFileSync(pendingRepliesPath, 'utf8'));
+                    } catch (e) {
+                        pendingReplies = {};
+                    }
+                }
+                
+                pendingReplies[chatId.toString()] = {
+                    messageId: messageId,
+                    originalMessage: messageText,
+                    timestamp: Date.now()
+                };
+                
+                const dataDir = path.dirname(pendingRepliesPath);
+                if (!fs.existsSync(dataDir)) {
+                    fs.mkdirSync(dataDir, { recursive: true });
+                }
+                
+                fs.writeFileSync(pendingRepliesPath, JSON.stringify(pendingReplies, null, 2));
+            }
+        }
+        
+        // Handle text message from admin (reply to support message)
+        if (body.message && body.message.text && body.message.chat.id == CHAT_ID) {
+            const chatId = body.message.chat.id.toString();
+            const replyText = body.message.text;
+            const isReply = body.message.reply_to_message;
+            
+            const pendingRepliesPath = path.join(process.cwd(), 'data', 'pending_replies.json');
+            const fs = require('fs');
+            
+            if (fs.existsSync(pendingRepliesPath)) {
+                try {
+                    const pendingReplies = JSON.parse(fs.readFileSync(pendingRepliesPath, 'utf8'));
+                    
+                    // Check if this is a reply to our "enter reply" message
+                    if (isReply && pendingReplies[chatId]) {
+                        const pending = pendingReplies[chatId];
+                        const messageId = pending.messageId;
+                        
+                        // Store reply for client
+                        const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
+                        let replies = {};
+                        if (fs.existsSync(repliesPath)) {
+                            try {
+                                replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
+                            } catch (e) {
+                                replies = {};
+                            }
+                        }
+                        
+                        if (!replies[messageId]) {
+                            replies[messageId] = [];
+                        }
+                        
+                        replies[messageId].push({
+                            text: replyText,
+                            timestamp: Date.now()
+                        });
+                        
+                        const dataDir = path.dirname(repliesPath);
+                        if (!fs.existsSync(dataDir)) {
+                            fs.mkdirSync(dataDir, { recursive: true });
+                        }
+                        
+                        fs.writeFileSync(repliesPath, JSON.stringify(replies, null, 2));
+                        
+                        // Remove pending reply
+                        delete pendingReplies[chatId];
+                        fs.writeFileSync(pendingRepliesPath, JSON.stringify(pendingReplies, null, 2));
+                        
+                        // Confirm to admin
+                        await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                            chat_id: chatId,
+                            text: `✅ Ответ отправлен клиенту!`,
+                            reply_to_message_id: body.message.message_id
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error processing admin reply:', e);
+                }
+            }
+        }
+        
+        res.status(200).json({ ok: true });
+    } catch (error) {
+        console.error('Error handling Telegram webhook:', error);
+        res.status(200).json({ ok: true }); // Always return 200 to Telegram
+    }
+});
+
+// Endpoint to send reply to client (called when admin sends text message after clicking reply)
+app.post('/api/support/send-reply', async (req, res) => {
+    try {
+        const { messageId, replyText } = req.body;
+        
+        if (!messageId || !replyText) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'messageId и replyText обязательны' 
+            });
+        }
+        
+        // Store reply for client to fetch
+        const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
+        const fs = require('fs');
+        let replies = {};
+        if (fs.existsSync(repliesPath)) {
+            try {
+                replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
+            } catch (e) {
+                replies = {};
+            }
+        }
+        
+        if (!replies[messageId]) {
+            replies[messageId] = [];
+        }
+        
+        replies[messageId].push({
+            text: replyText,
+            timestamp: Date.now()
+        });
+        
+        const dataDir = path.dirname(repliesPath);
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(repliesPath, JSON.stringify(replies, null, 2));
+        
+        res.json({ 
+            success: true, 
+            message: 'Ответ отправлен клиенту' 
+        });
+    } catch (error) {
+        console.error('Error sending reply:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Ошибка отправки ответа' 
+        });
+    }
+});
+
+// Endpoint for client to check for replies
+app.get('/api/support/check-replies/:messageId', (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
+        const fs = require('fs');
+        
+        if (!fs.existsSync(repliesPath)) {
+            return res.json({ success: true, replies: [] });
+        }
+        
+        const replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
+        const messageReplies = replies[messageId] || [];
+        
+        res.json({ 
+            success: true, 
+            replies: messageReplies 
+        });
+    } catch (error) {
+        console.error('Error checking replies:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Ошибка проверки ответов' 
         });
     }
 });
