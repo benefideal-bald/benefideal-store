@@ -594,12 +594,22 @@ app.get('/api/admin/support-messages', (req, res) => {
                 }
             }
             
+            // Ensure imageFilenames is an array
+            let imageFilenames = [];
+            if (data.imageFilenames && Array.isArray(data.imageFilenames)) {
+                imageFilenames = data.imageFilenames;
+            } else if (data.imageFilename) {
+                // Legacy support - convert single filename to array
+                imageFilenames = [data.imageFilename];
+            }
+            
             return {
                 messageId,
                 message: data.message || '',
                 timestamp: data.timestamp || 0,
                 hasImage: data.hasImage || false,
                 imageFilename: data.imageFilename || null,
+                imageFilenames: imageFilenames, // Always return as array
                 clientId: clientId,
                 clientIP: clientIP
             };
