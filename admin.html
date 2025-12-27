@@ -398,6 +398,9 @@
                 <a href="renewals.html" class="refresh-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-2);">
                     <i class="fas fa-calendar-alt"></i> Продления
                 </a>
+                <button class="refresh-btn" onclick="openMessagesModal()" style="display: inline-flex; align-items: center; gap: var(--space-2);">
+                    <i class="fas fa-comments"></i> Сообщения
+                </button>
                 <button class="refresh-btn" onclick="loadOrders()">
                     <i class="fas fa-sync-alt"></i> Обновить
                 </button>
@@ -450,6 +453,23 @@
             <div id="ordersContainer">
                 <div class="loading">
                     <i class="fas fa-spinner fa-spin"></i> Загрузка заказов...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Modal -->
+    <div id="messagesModal" class="messages-modal">
+        <div class="messages-modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Сообщения из чата поддержки</h2>
+                <button class="modal-close" onclick="closeMessagesModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="messages-list" id="messagesList">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Загрузка сообщений...
                 </div>
             </div>
         </div>
@@ -986,6 +1006,132 @@
         document.getElementById('renewalsModal')?.addEventListener('click', function(e) {
             if (e.target === this) {
                 closeRenewalsModal();
+            }
+        });
+        
+        // Messages Modal
+        function openMessagesModal() {
+            const modal = document.getElementById('messagesModal');
+            const list = document.getElementById('messagesList');
+            
+            modal.classList.add('active');
+            list.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка сообщений...</div>';
+            
+            loadSupportMessages();
+        }
+        
+        function closeMessagesModal() {
+            document.getElementById('messagesModal').classList.remove('active');
+        }
+        
+        async function loadSupportMessages() {
+            try {
+                const response = await fetch('/api/admin/support-messages?password=' + encodeURIComponent(adminPassword));
+                const data = await response.json();
+                
+                if (!data.success) {
+                    document.getElementById('messagesList').innerHTML = '<div class="error">Ошибка загрузки сообщений</div>';
+                    return;
+                }
+                
+                const messages = data.messages || [];
+                const replies = data.replies || {};
+                
+                if (messages.length === 0) {
+                    document.getElementById('messagesList').innerHTML = '<div class="empty">Нет сообщений</div>';
+                    return;
+                }
+                
+                let html = '';
+                messages.forEach(msg => {
+                    const messageReplies = replies[msg.messageId] || [];
+                    const timestamp = new Date(msg.timestamp).toLocaleString('ru-RU');
+                    
+                    html += `
+                        <div class="message-item">
+                            <div class="message-header">
+                                <strong>Сообщение #${msg.messageId.substring(0, 10)}...</strong>
+                                <span class="message-time">${timestamp}</span>
+                            </div>
+                            <div class="message-text">
+                                ${msg.message || '(только изображение)'}
+                            </div>
+                            ${messageReplies.length > 0 ? `
+                                <div class="message-replies">
+                                    <strong style="display: block; margin-bottom: var(--space-2);">Ответы:</strong>
+                                    ${messageReplies.map(reply => `
+                                        <div class="reply-item">
+                                            <div>${reply.text}</div>
+                                            <div class="message-time" style="margin-top: var(--space-1);">${new Date(reply.timestamp).toLocaleString('ru-RU')}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            <div class="reply-form">
+                                <input type="text" class="reply-input" id="replyInput_${msg.messageId}" placeholder="Введите ответ..." onkeypress="if(event.key==='Enter') sendReply('${msg.messageId}')">
+                                <button class="reply-btn" onclick="sendReply('${msg.messageId}')">
+                                    <i class="fas fa-paper-plane"></i> Отправить
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('messagesList').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                document.getElementById('messagesList').innerHTML = '<div class="error">Ошибка загрузки сообщений</div>';
+            }
+        }
+        
+        async function sendReply(messageId) {
+            const input = document.getElementById('replyInput_' + messageId);
+            const replyText = input.value.trim();
+            
+            if (!replyText) {
+                alert('Введите текст ответа');
+                return;
+            }
+            
+            const button = input.nextElementSibling;
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+            
+            try {
+                const response = await fetch('/api/admin/support-reply', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messageId: messageId,
+                        replyText: replyText,
+                        password: adminPassword
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    input.value = '';
+                    loadSupportMessages(); // Перезагружаем сообщения
+                } else {
+                    alert('Ошибка отправки ответа: ' + (data.error || 'Неизвестная ошибка'));
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('Error sending reply:', error);
+                alert('Ошибка отправки ответа');
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+        
+        document.getElementById('messagesModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeMessagesModal();
             }
         });
     </script>

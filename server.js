@@ -500,6 +500,107 @@ app.get('/force-add-nikita', (req, res) => {
     });
 });
 
+// Admin API - Get support messages
+app.get('/api/admin/support-messages', (req, res) => {
+    const password = req.query.password;
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '2728276';
+    
+    if (password !== ADMIN_PASSWORD) {
+        return res.status(401).json({ success: false, error: 'Неверный пароль' });
+    }
+    
+    try {
+        const supportMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
+        const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
+        const fs = require('fs');
+        
+        let messages = {};
+        let replies = {};
+        
+        if (fs.existsSync(supportMessagesPath)) {
+            try {
+                messages = JSON.parse(fs.readFileSync(supportMessagesPath, 'utf8'));
+            } catch (e) {
+                messages = {};
+            }
+        }
+        
+        if (fs.existsSync(repliesPath)) {
+            try {
+                replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
+            } catch (e) {
+                replies = {};
+            }
+        }
+        
+        // Convert to array and sort by timestamp (newest first)
+        const messagesArray = Object.entries(messages).map(([messageId, data]) => ({
+            messageId,
+            message: data.message || '',
+            timestamp: data.timestamp || 0,
+            hasImage: data.hasImage || false
+        })).sort((a, b) => b.timestamp - a.timestamp);
+        
+        res.json({
+            success: true,
+            messages: messagesArray,
+            replies: replies
+        });
+    } catch (error) {
+        console.error('Error loading support messages:', error);
+        res.status(500).json({ success: false, error: 'Ошибка загрузки сообщений' });
+    }
+});
+
+// Admin API - Send reply to support message
+app.post('/api/admin/support-reply', async (req, res) => {
+    const { messageId, replyText, password } = req.body;
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '2728276';
+    
+    if (password !== ADMIN_PASSWORD) {
+        return res.status(401).json({ success: false, error: 'Неверный пароль' });
+    }
+    
+    if (!messageId || !replyText) {
+        return res.status(400).json({ success: false, error: 'messageId и replyText обязательны' });
+    }
+    
+    try {
+        // Store reply for client
+        const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
+        const fs = require('fs');
+        let replies = {};
+        if (fs.existsSync(repliesPath)) {
+            try {
+                replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
+            } catch (e) {
+                replies = {};
+            }
+        }
+        
+        if (!replies[messageId]) {
+            replies[messageId] = [];
+        }
+        
+        replies[messageId].push({
+            text: replyText,
+            timestamp: Date.now()
+        });
+        
+        const dataDir = path.dirname(repliesPath);
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(repliesPath, JSON.stringify(replies, null, 2));
+        
+        res.json({ success: true, message: 'Ответ отправлен' });
+    } catch (error) {
+        console.error('Error sending reply:', error);
+        res.status(500).json({ success: false, error: 'Ошибка отправки ответа' });
+    }
+});
+
 app.get('/api/admin/orders', (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || '2728276';
     const providedPassword = req.query.password || req.headers['x-admin-password'];
