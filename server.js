@@ -49,6 +49,10 @@ const reviewsJsonPathGit = path.join(process.cwd(), 'reviews.json'); // Файл
 // КРИТИЧЕСКИ ВАЖНО: orders.json храним в корне проекта (Git) - как reviews.json
 // Это гарантирует, что заказы не потеряются при деплое
 const ordersJsonPath = path.join(process.cwd(), 'orders.json'); // Файл в Git для заказов
+// КРИТИЧЕСКИ ВАЖНО: support_messages.json храним в корне проекта (Git) - как orders.json и reviews.json
+// Это гарантирует, что сообщения поддержки не потеряются при деплое
+const supportMessagesJsonPath = path.join(process.cwd(), 'support_messages.json'); // Файл в Git для сообщений
+const supportRepliesJsonPath = path.join(process.cwd(), 'support_replies.json'); // Файл в Git для ответов
 const fs = require('fs');
 
 // КРИТИЧЕСКИ ВАЖНО: Проверяем, существует ли база данных и её размер
@@ -510,30 +514,32 @@ app.get('/api/admin/support-messages', (req, res) => {
     }
     
     try {
-        const supportMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
-        const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
+        // КРИТИЧЕСКИ ВАЖНО: Читаем из корневого файла (Git версия) - как orders.json и reviews.json
         const fs = require('fs');
         
         let messages = {};
         let replies = {};
         
-        if (fs.existsSync(supportMessagesPath)) {
+        // Читаем сообщения из корневого файла (Git версия)
+        if (fs.existsSync(supportMessagesJsonPath)) {
             try {
-                const fileContent = fs.readFileSync(supportMessagesPath, 'utf8');
+                const fileContent = fs.readFileSync(supportMessagesJsonPath, 'utf8');
                 messages = JSON.parse(fileContent);
-                console.log(`📥 Loaded ${Object.keys(messages).length} messages from support_messages.json`);
+                console.log(`📥 Loaded ${Object.keys(messages).length} messages from support_messages.json (Git version)`);
             } catch (e) {
                 console.error('Error reading support_messages.json:', e);
                 messages = {};
             }
         } else {
-            console.log('⚠️ support_messages.json not found');
+            console.log('⚠️ support_messages.json not found - will be created on first message');
         }
         
-        if (fs.existsSync(repliesPath)) {
+        // Читаем ответы из корневого файла (Git версия)
+        if (fs.existsSync(supportRepliesJsonPath)) {
             try {
-                replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
+                replies = JSON.parse(fs.readFileSync(supportRepliesJsonPath, 'utf8'));
             } catch (e) {
+                console.error('Error reading support_replies.json:', e);
                 replies = {};
             }
         }
@@ -570,6 +576,7 @@ app.get('/api/admin/support-messages', (req, res) => {
         });
         
         // Сохраняем обновленные данные обратно (с clientId для старых сообщений)
+        // КРИТИЧЕСКИ ВАЖНО: Сохраняем в корневой файл (Git версия) - НЕ ПОТЕРЯЕТСЯ при деплое!
         if (messagesArray.length > 0) {
             const updatedMessages = {};
             Object.entries(messages).forEach(([messageId, data]) => {
@@ -589,12 +596,9 @@ app.get('/api/admin/support-messages', (req, res) => {
                 }
             });
             
-            // Сохраняем обновленные данные
-            const dataDir = path.dirname(supportMessagesPath);
-            if (!fs.existsSync(dataDir)) {
-                fs.mkdirSync(dataDir, { recursive: true });
-            }
-            fs.writeFileSync(supportMessagesPath, JSON.stringify(updatedMessages, null, 2));
+            // Сохраняем в корневой файл (Git версия)
+            fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(updatedMessages, null, 2), 'utf8');
+            console.log(`✅ Updated support_messages.json (Git version) with clientId for old messages`);
         }
         
         // Group messages by clientId (chats)
@@ -6279,11 +6283,11 @@ app.post('/api/telegram/webhook', async (req, res) => {
                 console.log('✅ Processing admin reply:', { messageId, replyText });
                 
                 // Store reply for client
-                const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
+                // КРИТИЧЕСКИ ВАЖНО: Сохраняем в корневой файл (Git версия) - НЕ ПОТЕРЯЕТСЯ при деплое!
                 let replies = {};
-                if (fs.existsSync(repliesPath)) {
+                if (fs.existsSync(supportRepliesJsonPath)) {
                     try {
-                        replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
+                        replies = JSON.parse(fs.readFileSync(supportRepliesJsonPath, 'utf8'));
                     } catch (e) {
                         replies = {};
                     }
@@ -6298,12 +6302,9 @@ app.post('/api/telegram/webhook', async (req, res) => {
                     timestamp: Date.now()
                 });
                 
-                const dataDir = path.dirname(repliesPath);
-                if (!fs.existsSync(dataDir)) {
-                    fs.mkdirSync(dataDir, { recursive: true });
-                }
-                
-                fs.writeFileSync(repliesPath, JSON.stringify(replies, null, 2));
+                // Сохраняем в корневой файл (Git версия)
+                fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(replies, null, 2), 'utf8');
+                console.log(`✅ Saved reply to support_replies.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
                 
                 // Remove pending reply if exists
                 if (fs.existsSync(pendingRepliesPath)) {
@@ -6399,14 +6400,14 @@ app.post('/api/support/send-reply', async (req, res) => {
 app.get('/api/support/check-replies/:messageId', (req, res) => {
     try {
         const { messageId } = req.params;
-        const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
         const fs = require('fs');
         
-        if (!fs.existsSync(repliesPath)) {
+        // КРИТИЧЕСКИ ВАЖНО: Читаем из корневого файла (Git версия)
+        if (!fs.existsSync(supportRepliesJsonPath)) {
             return res.json({ success: true, replies: [] });
         }
         
-        const replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
+        const replies = JSON.parse(fs.readFileSync(supportRepliesJsonPath, 'utf8'));
         const messageReplies = replies[messageId] || [];
         
         res.json({ 
