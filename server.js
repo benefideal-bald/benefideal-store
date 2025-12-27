@@ -863,20 +863,47 @@ app.post('/api/admin/support-reply', async (req, res) => {
     
     try {
         // КРИТИЧЕСКИ ВАЖНО: Сохраняем в SQLite базу данных - данные НЕ ПОТЕРЯЮТСЯ при деплое!
-        db.run(`
+        // Используем prepare/run/finalize как для отзывов - это гарантирует надежное сохранение
+        const stmt = db.prepare(`
             INSERT INTO support_replies (message_id, reply_text, timestamp)
             VALUES (?, ?, ?)
-        `, [messageId, replyText, Date.now()], function(err) {
+        `);
+        
+        stmt.run([messageId, replyText, Date.now()], function(err) {
             if (err) {
                 console.error('❌ Error saving reply to database:', err);
+                stmt.finalize();
                 return res.status(500).json({ success: false, error: 'Ошибка сохранения ответа' });
             }
             
-            console.log(`✅ Reply saved to database with ID: ${this.lastID}`);
+            console.log(`✅ Saved reply to DATABASE (persistent storage) - ID: ${this.lastID}`);
+            console.log(`   ✅ Ответ сохранен в базу данных - НЕ ПОТЕРЯЕТСЯ при деплое!`);
+            
+            // Принудительно синхронизируем данные с диском
+            db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
+                if (checkpointErr) {
+                    console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
+                } else {
+                    console.log('✅ WAL checkpoint completed - reply is safely saved to disk');
+                }
+            });
+            
+            stmt.finalize();
+            
+            // 🔄 ДОПОЛНИТЕЛЬНО: после сохранения в базу синхронизируем JSON файлы и коммитим в Git
+            if (typeof snapshotAllSupportRepliesToJsonFiles === 'function') {
+                (async () => {
+                    try {
+                        await snapshotAllSupportRepliesToJsonFiles();
+                    } catch (e) {
+                        console.warn('⚠️ Failed to snapshot support replies to JSON files after new reply:', e.message);
+                    }
+                })();
+            }
+            
+            // Отправляем ответ ТОЛЬКО ОДИН РАЗ здесь
             res.json({ success: true, message: 'Ответ отправлен клиенту' });
         });
-        
-        res.json({ success: true, message: 'Ответ отправлен клиенту' });
     } catch (error) {
         console.error('Error sending reply:', error);
         res.status(500).json({ success: false, error: 'Ошибка отправки ответа' });
