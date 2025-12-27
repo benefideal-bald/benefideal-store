@@ -1346,18 +1346,35 @@
                 return;
             }
             
-            if (!list) {
-                console.error('Messages list not found!');
-                alert('Список сообщений не найден. Обновите страницу.');
+            console.log('Modal found, opening...');
+            modal.classList.add('active');
+            
+            // Initialize chat interface
+            const chatsList = document.getElementById('chatsList');
+            const chatMessages = document.getElementById('chatMessages');
+            const chatHeader = document.getElementById('chatHeader');
+            const chatInputArea = document.getElementById('chatInputArea');
+            
+            if (!chatsList) {
+                console.error('Chats list not found!');
+                alert('Список чатов не найден. Обновите страницу.');
                 return;
             }
             
-            console.log('Modal found, opening...');
-            modal.classList.add('active');
-            const chatsList = document.getElementById('chatsList');
-            if (chatsList) {
-                chatsList.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка чатов...</div>';
+            // Reset chat interface
+            chatsList.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка чатов...</div>';
+            if (chatMessages) {
+                chatMessages.innerHTML = '<div class="chat-empty"><div style="text-align: center;"><i class="fas fa-comments" style="font-size: 3rem; color: var(--gray-300); margin-bottom: var(--space-3);"></i><p>Выберите чат из списка слева</p></div></div>';
             }
+            if (chatHeader) {
+                chatHeader.style.display = 'none';
+            }
+            if (chatInputArea) {
+                chatInputArea.style.display = 'none';
+            }
+            
+            // Reset current chat
+            currentChatId = null;
             
             loadSupportMessages();
         };
