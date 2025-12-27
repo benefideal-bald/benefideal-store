@@ -6253,6 +6253,18 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
         console.log(`✅ Saved support message to support_messages.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
         console.log(`📝 Total messages saved: ${Object.keys(supportMessages).length}`);
         
+        // Автоматически коммитим в Git через GitHub API (как для отзывов)
+        // Это гарантирует, что сообщения не потеряются при деплое
+        if (typeof commitSupportMessagesToGitViaAPI === 'function') {
+            (async () => {
+                try {
+                    await commitSupportMessagesToGitViaAPI();
+                } catch (e) {
+                    console.warn('⚠️ Failed to commit support messages to Git (не критично):', e.message);
+                }
+            })();
+        }
+        
         // Return messageId to client for polling
         res.json({ 
             success: true, 
@@ -6425,6 +6437,18 @@ app.post('/api/telegram/webhook', async (req, res) => {
                 fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(replies, null, 2), 'utf8');
                 console.log(`✅ Saved reply to support_replies.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
                 console.log(`📝 Total replies saved: ${Object.keys(replies).length}`);
+                
+                // Автоматически коммитим в Git через GitHub API (как для отзывов)
+                // Это гарантирует, что ответы не потеряются при деплое
+                if (typeof commitSupportRepliesToGitViaAPI === 'function') {
+                    (async () => {
+                        try {
+                            await commitSupportRepliesToGitViaAPI();
+                        } catch (e) {
+                            console.warn('⚠️ Failed to commit support replies to Git (не критично):', e.message);
+                        }
+                    })();
+                }
                 
                 // Remove pending reply if exists
                 if (fs.existsSync(pendingRepliesPath)) {
