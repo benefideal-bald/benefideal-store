@@ -631,8 +631,27 @@ app.get('/api/admin/support-messages', (req, res) => {
             ORDER BY timestamp DESC
         `, [], (err, messagesRows) => {
             if (err) {
-                console.error('Error reading messages from database:', err);
-                return res.status(500).json({ success: false, error: 'Ошибка загрузки сообщений' });
+                console.error('❌ Error reading messages from database:', err);
+                // Если таблица не существует, возвращаем пустой результат
+                if (err.message && err.message.includes('no such table')) {
+                    console.log('📋 Table support_messages does not exist yet - returning empty result');
+                    return res.json({
+                        success: true,
+                        chats: [],
+                        replies: {}
+                    });
+                }
+                return res.status(500).json({ success: false, error: 'Ошибка загрузки сообщений: ' + err.message });
+            }
+            
+            // Если сообщений нет, возвращаем пустой результат
+            if (!messagesRows || messagesRows.length === 0) {
+                console.log('📋 No messages found in database - returning empty result');
+                return res.json({
+                    success: true,
+                    chats: [],
+                    replies: {}
+                });
             }
             
             // Читаем ответы из базы данных
@@ -645,21 +664,30 @@ app.get('/api/admin/support-messages', (req, res) => {
                 ORDER BY timestamp ASC
             `, [], (errReplies, repliesRows) => {
                 if (errReplies) {
-                    console.error('Error reading replies from database:', errReplies);
-                    return res.status(500).json({ success: false, error: 'Ошибка загрузки ответов' });
+                    console.error('❌ Error reading replies from database:', errReplies);
+                    // Если таблица не существует, продолжаем без ответов
+                    if (errReplies.message && errReplies.message.includes('no such table')) {
+                        console.log('📋 Table support_replies does not exist yet - continuing without replies');
+                        repliesRows = [];
+                    } else {
+                        console.warn('⚠️ Error reading replies, continuing without replies:', errReplies.message);
+                        repliesRows = [];
+                    }
                 }
                 
                 // Преобразуем ответы в формат { messageId: [replies] }
                 const replies = {};
-                repliesRows.forEach(reply => {
-                    if (!replies[reply.message_id]) {
-                        replies[reply.message_id] = [];
-                    }
-                    replies[reply.message_id].push({
-                        text: reply.text,
-                        timestamp: reply.timestamp
+                if (repliesRows && repliesRows.length > 0) {
+                    repliesRows.forEach(reply => {
+                        if (!replies[reply.message_id]) {
+                            replies[reply.message_id] = [];
+                        }
+                        replies[reply.message_id].push({
+                            text: reply.text,
+                            timestamp: reply.timestamp
+                        });
                     });
-                });
+                }
                 
                 // Преобразуем сообщения в нужный формат
                 const messagesArray = messagesRows.map(row => {
@@ -669,20 +697,20 @@ app.get('/api/admin/support-messages', (req, res) => {
                         try {
                             imageFilenames = JSON.parse(row.image_filenames);
                         } catch (e) {
-                            console.warn('Error parsing image_filenames:', e);
+                            console.warn('⚠️ Error parsing image_filenames:', e);
                         }
                     }
                     
                     return {
                         messageId: row.message_id,
-                        message: row.message,
-                        timestamp: row.timestamp,
+                        message: row.message || '',
+                        timestamp: row.timestamp || Date.now(),
                         hasImage: row.hasImage === 1,
                         imageFilenames: imageFilenames,
                         imageFilename: imageFilenames.length > 0 ? imageFilenames[0] : null, // Legacy support
-                        telegramMessageId: row.telegram_message_id,
-                        clientId: row.clientId,
-                        clientIP: row.clientIP
+                        telegramMessageId: row.telegram_message_id || null,
+                        clientId: row.clientId || 'unknown',
+                        clientIP: row.clientIP || 'unknown'
                     };
                 });
                 
@@ -722,8 +750,8 @@ app.get('/api/admin/support-messages', (req, res) => {
             });
         });
     } catch (error) {
-        console.error('Error loading support messages:', error);
-        res.status(500).json({ success: false, error: 'Ошибка загрузки сообщений' });
+        console.error('❌ Error loading support messages:', error);
+        res.status(500).json({ success: false, error: 'Ошибка загрузки сообщений: ' + error.message });
     }
 });
 
