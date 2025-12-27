@@ -5873,6 +5873,7 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
         } else {
             // Send text message
             const axios = require('axios');
+            console.log('📤 Sending message with keyboard:', JSON.stringify(replyKeyboard, null, 2));
             const textResponse = await axios.post(telegramUrl, {
                 chat_id: CHAT_ID,
                 text: telegramMessage,
@@ -5880,6 +5881,7 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
                 reply_markup: replyKeyboard
             });
             telegramMessageId = textResponse.data.result?.message_id;
+            console.log('✅ Message sent, response:', JSON.stringify(textResponse.data, null, 2));
         }
         
         // Store message mapping (messageId -> client info for future replies)
