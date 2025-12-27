@@ -746,6 +746,18 @@ app.post('/api/admin/support-reply', async (req, res) => {
         console.log(`✅ Saved reply to support_replies.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
         console.log(`📝 Total replies saved: ${Object.keys(replies).length}`);
         
+        // Автоматически коммитим в Git через GitHub API (как для отзывов)
+        // Это гарантирует, что ответы не потеряются при деплое
+        if (typeof commitSupportRepliesToGitViaAPI === 'function') {
+            (async () => {
+                try {
+                    await commitSupportRepliesToGitViaAPI();
+                } catch (e) {
+                    console.warn('⚠️ Failed to commit support replies to Git (не критично):', e.message);
+                }
+            })();
+        }
+        
         res.json({ success: true, message: 'Ответ отправлен клиенту' });
     } catch (error) {
         console.error('Error sending reply:', error);
