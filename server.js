@@ -215,9 +215,6 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
             }
         });
         
-        // Мигрируем данные из JSON в базу данных при старте (если есть)
-        migrateSupportMessagesFromJSON();
-        
         // Проверяем количество сообщений поддержки при старте
         db.get(`SELECT COUNT(*) as count FROM support_messages`, [], (err, countRow) => {
             if (!err && countRow) {
@@ -227,6 +224,8 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CR
                 } else {
                     console.log(`📋 Support messages database is empty - will be populated on first message`);
                 }
+            } else if (err && err.message && err.message.includes('no such table')) {
+                console.log(`📋 Support messages table does not exist yet - will be created in db.serialize()`);
             }
         });
         
