@@ -1354,7 +1354,10 @@
             
             console.log('Modal found, opening...');
             modal.classList.add('active');
-            list.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка сообщений...</div>';
+            const chatsList = document.getElementById('chatsList');
+            if (chatsList) {
+                chatsList.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка чатов...</div>';
+            }
             
             loadSupportMessages();
         };
@@ -1368,98 +1371,199 @@
             document.getElementById('messagesModal').classList.remove('active');
         }
         
+        let allChats = [];
+        let allReplies = {};
+        let currentChatId = null;
+        
         async function loadSupportMessages() {
             try {
                 const response = await fetch('/api/admin/support-messages?password=' + encodeURIComponent(adminPassword));
                 const data = await response.json();
                 
                 if (!data.success) {
-                    document.getElementById('messagesList').innerHTML = '<div class="error">Ошибка загрузки сообщений</div>';
+                    document.getElementById('chatsList').innerHTML = '<div class="error">Ошибка загрузки сообщений</div>';
                     return;
                 }
                 
-                const chats = data.chats || [];
-                const replies = data.replies || {};
+                allChats = data.chats || [];
+                allReplies = data.replies || {};
                 
-                if (chats.length === 0) {
-                    document.getElementById('messagesList').innerHTML = '<div class="empty">Нет сообщений</div>';
+                if (allChats.length === 0) {
+                    document.getElementById('chatsList').innerHTML = '<div class="empty">Нет сообщений</div>';
                     return;
                 }
                 
-                let html = '';
-                chats.forEach((chat, chatIndex) => {
-                    const clientInfo = `Клиент #${chat.clientId} (IP: ${chat.clientIP})`;
-                    html += `
-                        <div class="chat-section" style="margin-bottom: var(--space-6); padding-bottom: var(--space-4); border-bottom: 2px solid var(--gray-300);">
-                            <div style="font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: var(--space-4);">
-                                <i class="fas fa-user"></i> ${clientInfo}
-                                <span style="font-size: 0.85rem; font-weight: 400; color: var(--gray-500); margin-left: var(--space-2);">
-                                    (${chat.messages.length} ${chat.messages.length === 1 ? 'сообщение' : chat.messages.length < 5 ? 'сообщения' : 'сообщений'})
-                                </span>
-                            </div>
-                    `;
-                    
-                    chat.messages.forEach(msg => {
-                        const messageReplies = replies[msg.messageId] || [];
-                        const timestamp = new Date(msg.timestamp).toLocaleString('ru-RU');
-                        
-                        html += `
-                            <div class="message-item" style="margin-bottom: var(--space-4);">
-                                <div class="message-header">
-                                    <strong>Сообщение #${msg.messageId}</strong>
-                                    <span class="message-time">${timestamp}</span>
-                                </div>
-                                ${msg.hasImage ? `
-                                    <div class="message-image" style="margin-bottom: var(--space-3); display: flex; flex-wrap: wrap; gap: var(--space-2);">
-                                        ${(() => {
-                                            // Get all filenames - prioritize imageFilenames array
-                                            let filenames = [];
-                                            if (msg.imageFilenames && Array.isArray(msg.imageFilenames) && msg.imageFilenames.length > 0) {
-                                                filenames = msg.imageFilenames;
-                                            } else if (msg.imageFilename) {
-                                                filenames = [msg.imageFilename];
-                                            }
-                                            console.log('Displaying images for message:', msg.messageId, 'filenames:', filenames, 'hasImage:', msg.hasImage);
-                                            if (filenames.length === 0) {
-                                                return '<p style="color: var(--gray-500);">Изображения не найдены</p>';
-                                            }
-                                            return filenames.map((filename, idx) => `
-                                                <img src="/uploads/support/${filename}" alt="Изображение ${idx + 1}" style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md); border: 2px solid #10b981; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);" onerror="console.error('Failed to load image:', '${filename}'); this.style.display='none';">
-                                            `).join('');
-                                        })()}
-                                    </div>
-                                ` : ''}
-                                <div class="message-text">
-                                    ${msg.message || (msg.hasImage ? '(только изображение)' : '')}
-                                </div>
-                                ${messageReplies.length > 0 ? `
-                                    <div class="message-replies">
-                                        <strong style="display: block; margin-bottom: var(--space-2);">Ответы:</strong>
-                                        ${messageReplies.map(reply => `
-                                            <div class="reply-item">
-                                                <div>${reply.text}</div>
-                                                <div class="message-time" style="margin-top: var(--space-1);">${new Date(reply.timestamp).toLocaleString('ru-RU')}</div>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                ` : ''}
-                                <div class="reply-form">
-                                    <input type="text" class="reply-input" id="replyInput_${msg.messageId.replace(/[^a-zA-Z0-9_]/g, '_')}" placeholder="Введите ответ..." onkeypress="if(event.key==='Enter') { event.preventDefault(); sendReply('${msg.messageId.replace(/'/g, "\\'")}'); }" autocomplete="off">
-                                    <button class="reply-btn" onclick="sendReply('${msg.messageId.replace(/'/g, "\\'")}')">
-                                        <i class="fas fa-paper-plane"></i> Отправить
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    
-                    html += `</div>`;
-                });
+                // Render chats list
+                renderChatsList();
                 
-                document.getElementById('messagesList').innerHTML = html;
+                // If no chat selected, select first one
+                if (!currentChatId && allChats.length > 0) {
+                    selectChat(allChats[0].clientId);
+                }
             } catch (error) {
                 console.error('Error loading messages:', error);
-                document.getElementById('messagesList').innerHTML = '<div class="error">Ошибка загрузки сообщений</div>';
+                document.getElementById('chatsList').innerHTML = '<div class="error">Ошибка загрузки сообщений</div>';
+            }
+        }
+        
+        function renderChatsList() {
+            let html = '';
+            allChats.forEach((chat) => {
+                const lastMessage = chat.messages[0]; // Messages are sorted newest first
+                const lastMessageText = lastMessage ? (lastMessage.message || (lastMessage.hasImage ? '📷 Изображение' : '')) : '';
+                const lastMessageTime = lastMessage ? new Date(lastMessage.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+                const isActive = currentChatId === chat.clientId;
+                
+                html += `
+                    <div class="chat-item ${isActive ? 'active' : ''}" onclick="selectChat('${chat.clientId}')">
+                        <div class="chat-item-header">
+                            <i class="fas fa-user"></i> Клиент #${chat.clientId.substring(0, 8)}
+                        </div>
+                        <div class="chat-item-preview">${lastMessageText || 'Нет сообщений'}</div>
+                        <div class="chat-item-time">${lastMessageTime}</div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('chatsList').innerHTML = html;
+        }
+        
+        function selectChat(clientId) {
+            currentChatId = clientId;
+            const chat = allChats.find(c => c.clientId === clientId);
+            
+            if (!chat) return;
+            
+            // Update active state in list
+            renderChatsList();
+            
+            // Show chat header
+            document.getElementById('chatClientInfo').textContent = `Клиент #${chat.clientId} (IP: ${chat.clientIP})`;
+            document.getElementById('chatHeader').style.display = 'block';
+            document.getElementById('chatInputArea').style.display = 'flex';
+            
+            // Render chat messages
+            renderChatMessages(chat);
+        }
+        
+        function renderChatMessages(chat) {
+            const messagesContainer = document.getElementById('chatMessages');
+            
+            // Combine all messages and replies in chronological order
+            const allMessages = [];
+            
+            chat.messages.forEach(msg => {
+                // Add client message
+                allMessages.push({
+                    type: 'client',
+                    messageId: msg.messageId,
+                    text: msg.message,
+                    images: msg.imageFilenames || (msg.imageFilename ? [msg.imageFilename] : []),
+                    timestamp: msg.timestamp
+                });
+                
+                // Add admin replies
+                const replies = allReplies[msg.messageId] || [];
+                replies.forEach(reply => {
+                    allMessages.push({
+                        type: 'admin',
+                        text: reply.text,
+                        timestamp: reply.timestamp
+                    });
+                });
+            });
+            
+            // Sort by timestamp (oldest first)
+            allMessages.sort((a, b) => a.timestamp - b.timestamp);
+            
+            if (allMessages.length === 0) {
+                messagesContainer.innerHTML = '<div class="chat-empty"><p>Нет сообщений в этом чате</p></div>';
+                return;
+            }
+            
+            let html = '';
+            allMessages.forEach(msg => {
+                const time = new Date(msg.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                
+                html += `
+                    <div class="chat-message ${msg.type}">
+                        ${msg.images && msg.images.length > 0 ? `
+                            <div class="chat-message-images">
+                                ${msg.images.map(filename => `
+                                    <img src="/uploads/support/${filename}" alt="Изображение" class="chat-message-image">
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        ${msg.text ? `
+                            <div class="chat-message-bubble">
+                                ${msg.text}
+                            </div>
+                        ` : ''}
+                        <div class="chat-message-time">${time}</div>
+                    </div>
+                `;
+            });
+            
+            messagesContainer.innerHTML = html;
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        async function sendChatReply() {
+            if (!currentChatId) return;
+            
+            const chat = allChats.find(c => c.clientId === currentChatId);
+            if (!chat || chat.messages.length === 0) return;
+            
+            const input = document.getElementById('chatInput');
+            const replyText = input.value.trim();
+            
+            if (!replyText) {
+                alert('Введите текст ответа');
+                return;
+            }
+            
+            // Use the last message ID (newest message from client)
+            const lastMessage = chat.messages[0];
+            const messageId = lastMessage.messageId;
+            
+            const button = document.querySelector('.chat-send-btn');
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+            
+            try {
+                const response = await fetch('/api/admin/support-reply', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messageId: messageId,
+                        replyText: replyText,
+                        password: adminPassword
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    input.value = '';
+                    // Reload messages to show new reply
+                    await loadSupportMessages();
+                    // Re-select current chat
+                    selectChat(currentChatId);
+                } else {
+                    alert('Ошибка отправки ответа: ' + (data.error || 'Неизвестная ошибка'));
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('Error sending reply:', error);
+                alert('Ошибка отправки ответа');
+                button.disabled = false;
+                button.innerHTML = originalText;
             }
         }
         
