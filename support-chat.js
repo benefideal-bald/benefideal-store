@@ -67,7 +67,7 @@
         if (msg.type === 'user') {
             div.innerHTML = `
                 <div class="support-chat-message-content">
-                    ${msg.image ? `<img src="${msg.image}" alt="Скриншот" class="support-chat-image">` : ''}
+                    ${(msg.images || (msg.image ? [msg.image] : [])).map(img => `<img src="${img}" alt="Скриншот" class="support-chat-image">`).join('')}
                     <p>${escapeHtml(msg.text)}</p>
                     <span class="support-chat-time">${formatTime(msg.timestamp)}</span>
                 </div>
