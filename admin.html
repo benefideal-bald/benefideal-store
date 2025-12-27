@@ -1428,7 +1428,7 @@
             document.getElementById('chatsList').innerHTML = html;
         }
         
-        function selectChat(clientId) {
+        window.selectChat = function(clientId) {
             currentChatId = clientId;
             const chat = allChats.find(c => c.clientId === clientId);
             
@@ -1444,7 +1444,7 @@
             
             // Render chat messages
             renderChatMessages(chat);
-        }
+        };
         
         function renderChatMessages(chat) {
             const messagesContainer = document.getElementById('chatMessages');
@@ -1510,7 +1510,7 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
         
-        async function sendChatReply() {
+        window.sendChatReply = async function() {
             if (!currentChatId) return;
             
             const chat = allChats.find(c => c.clientId === currentChatId);
