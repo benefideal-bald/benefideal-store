@@ -520,6 +520,36 @@ app.get('/api/admin/support-messages', (req, res) => {
         let messages = {};
         let replies = {};
         
+        // МИГРАЦИЯ: Проверяем старый путь (data/) и переносим данные в корень, если нужно
+        const oldMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
+        const oldRepliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
+        
+        // Если корневой файл не существует, но есть старый - мигрируем данные
+        if (!fs.existsSync(supportMessagesJsonPath) && fs.existsSync(oldMessagesPath)) {
+            try {
+                console.log('🔄 Migrating support_messages.json from data/ to root...');
+                const oldMessages = JSON.parse(fs.readFileSync(oldMessagesPath, 'utf8'));
+                fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(oldMessages, null, 2), 'utf8');
+                messages = oldMessages;
+                console.log(`✅ Migrated ${Object.keys(messages).length} messages from data/ to root`);
+            } catch (e) {
+                console.error('Error migrating messages:', e);
+            }
+        }
+        
+        // Если корневой файл не существует, но есть старый - мигрируем ответы
+        if (!fs.existsSync(supportRepliesJsonPath) && fs.existsSync(oldRepliesPath)) {
+            try {
+                console.log('🔄 Migrating support_replies.json from data/ to root...');
+                const oldReplies = JSON.parse(fs.readFileSync(oldRepliesPath, 'utf8'));
+                fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(oldReplies, null, 2), 'utf8');
+                replies = oldReplies;
+                console.log(`✅ Migrated replies from data/ to root`);
+            } catch (e) {
+                console.error('Error migrating replies:', e);
+            }
+        }
+        
         // Читаем сообщения из корневого файла (Git версия)
         if (fs.existsSync(supportMessagesJsonPath)) {
             try {
