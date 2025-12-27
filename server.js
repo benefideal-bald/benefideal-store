@@ -632,26 +632,18 @@ app.get('/api/admin/support-messages', (req, res) => {
         `, [], (err, messagesRows) => {
             if (err) {
                 console.error('❌ Error reading messages from database:', err);
-                // Если таблица не существует, возвращаем пустой результат
+                // Если таблица не существует, пробуем прочитать из JSON
                 if (err.message && err.message.includes('no such table')) {
-                    console.log('📋 Table support_messages does not exist yet - returning empty result');
-                    return res.json({
-                        success: true,
-                        chats: [],
-                        replies: {}
-                    });
+                    console.log('📋 Table support_messages does not exist yet - trying to read from JSON');
+                    return readMessagesFromJSON(req, res);
                 }
                 return res.status(500).json({ success: false, error: 'Ошибка загрузки сообщений: ' + err.message });
             }
             
-            // Если сообщений нет, возвращаем пустой результат
+            // Если сообщений нет в БД, пробуем прочитать из JSON (fallback)
             if (!messagesRows || messagesRows.length === 0) {
-                console.log('📋 No messages found in database - returning empty result');
-                return res.json({
-                    success: true,
-                    chats: [],
-                    replies: {}
-                });
+                console.log('📋 No messages found in database - trying to read from JSON as fallback');
+                return readMessagesFromJSON(req, res);
             }
             
             // Читаем ответы из базы данных
@@ -665,10 +657,35 @@ app.get('/api/admin/support-messages', (req, res) => {
             `, [], (errReplies, repliesRows) => {
                 if (errReplies) {
                     console.error('❌ Error reading replies from database:', errReplies);
-                    // Если таблица не существует, продолжаем без ответов
+                    // Если таблица не существует, пробуем прочитать из JSON
                     if (errReplies.message && errReplies.message.includes('no such table')) {
-                        console.log('📋 Table support_replies does not exist yet - continuing without replies');
+                        console.log('📋 Table support_replies does not exist yet - trying to read from JSON');
+                        const fs = require('fs');
+                        let jsonReplies = {};
+                        if (fs.existsSync(supportRepliesJsonPath)) {
+                            try {
+                                const content = fs.readFileSync(supportRepliesJsonPath, 'utf8').trim();
+                                if (content && content !== '{}') {
+                                    jsonReplies = JSON.parse(content);
+                                    console.log(`📥 Loaded replies from JSON (fallback)`);
+                                }
+                            } catch (e) {
+                                console.error('Error reading support_replies.json:', e);
+                            }
+                        }
+                        // Преобразуем JSON replies в формат массива
                         repliesRows = [];
+                        Object.entries(jsonReplies).forEach(([msgId, repliesArray]) => {
+                            if (Array.isArray(repliesArray)) {
+                                repliesArray.forEach(reply => {
+                                    repliesRows.push({
+                                        message_id: msgId,
+                                        text: reply.text,
+                                        timestamp: reply.timestamp
+                                    });
+                                });
+                            }
+                        });
                     } else {
                         console.warn('⚠️ Error reading replies, continuing without replies:', errReplies.message);
                         repliesRows = [];
