@@ -6235,8 +6235,10 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
         };
         
         // Сохраняем в корневой файл (Git версия) - НЕ ПОТЕРЯЕТСЯ при деплое!
+        // КРИТИЧЕСКИ ВАЖНО: Файл должен быть в Git (как orders.json и reviews.json)
         fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(supportMessages, null, 2), 'utf8');
         console.log(`✅ Saved support message to support_messages.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
+        console.log(`📝 Total messages saved: ${Object.keys(supportMessages).length}`);
         
         // Return messageId to client for polling
         res.json({ 
