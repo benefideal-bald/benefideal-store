@@ -369,6 +369,65 @@ db.serialize(() => {
         }
     });
     
+    // КРИТИЧЕСКИ ВАЖНО: Таблица для сообщений поддержки - данные НЕ ПОТЕРЯЮТСЯ при деплое!
+    // Используем SQLite базу данных, которая сохраняется на сервере
+    db.run(`
+        CREATE TABLE IF NOT EXISTS support_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message_id TEXT UNIQUE NOT NULL,
+            message_text TEXT,
+            client_id TEXT NOT NULL,
+            client_ip TEXT,
+            has_image INTEGER DEFAULT 0,
+            image_filenames TEXT,
+            telegram_message_id TEXT,
+            timestamp INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `, (err) => {
+        if (err) {
+            console.error('❌ Error creating support_messages table:', err);
+        } else {
+            console.log('✅ Support messages table created/verified');
+        }
+    });
+    
+    // КРИТИЧЕСКИ ВАЖНО: Таблица для ответов поддержки - данные НЕ ПОТЕРЯЮТСЯ при деплое!
+    db.run(`
+        CREATE TABLE IF NOT EXISTS support_replies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message_id TEXT NOT NULL,
+            reply_text TEXT NOT NULL,
+            timestamp INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `, (err) => {
+        if (err) {
+            console.error('❌ Error creating support_replies table:', err);
+        } else {
+            console.log('✅ Support replies table created/verified');
+        }
+    });
+    
+    // Создаем индексы для быстрого поиска
+    db.run(`CREATE INDEX IF NOT EXISTS idx_support_messages_client_id ON support_messages(client_id)`, (err) => {
+        if (err && !err.message.includes('already exists')) {
+            console.error('Error creating index on support_messages:', err);
+        }
+    });
+    
+    db.run(`CREATE INDEX IF NOT EXISTS idx_support_messages_timestamp ON support_messages(timestamp)`, (err) => {
+        if (err && !err.message.includes('already exists')) {
+            console.error('Error creating index on support_messages timestamp:', err);
+        }
+    });
+    
+    db.run(`CREATE INDEX IF NOT EXISTS idx_support_replies_message_id ON support_replies(message_id)`, (err) => {
+        if (err && !err.message.includes('already exists')) {
+            console.error('Error creating index on support_replies:', err);
+        }
+    });
+    
     // КРИТИЧЕСКИ ВАЖНО: Проверяем и восстанавливаем ВСЕ отзывы при каждом запуске
     // Это гарантирует, что отзывы НИКОГДА не пропадут
     db.get(`SELECT COUNT(*) as count FROM reviews`, (err, row) => {
