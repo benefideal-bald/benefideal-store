@@ -200,55 +200,60 @@
         }
     }
     
-    // Handle file input
+    // Handle file input (multiple files support)
     fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Размер файла не должен превышать 5 МБ');
-                fileInput.value = '';
-                selectedFile = null;
-                selectedFilePreview = null;
-                return;
-            }
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        
+        // Check file sizes
+        const invalidFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+        if (invalidFiles.length > 0) {
+            alert(`Некоторые файлы превышают 5 МБ. Максимальный размер файла: 5 МБ`);
+            fileInput.value = '';
+            return;
+        }
+        
+        // Find input area container
+        const inputAreaContainer = chatInputArea.parentElement;
+        
+        // Remove existing preview container if any
+        let previewContainer = inputAreaContainer.querySelector('.support-chat-images-preview-container');
+        if (!previewContainer) {
+            previewContainer = document.createElement('div');
+            previewContainer.className = 'support-chat-images-preview-container';
+            previewContainer.style.cssText = 'padding: 8px; background: var(--gray-50, #f3f4f6); border-bottom: 1px solid var(--gray-200, #e5e7eb); width: 100%; display: flex; flex-wrap: wrap; gap: 8px;';
+            inputAreaContainer.parentElement.insertBefore(previewContainer, chatInputArea);
+        }
+        
+        // Process each file
+        files.forEach((file) => {
+            const fileIndex = selectedFiles.length;
+            selectedFiles.push(file);
             
-            // Save file for later sending (when user clicks send button)
-            selectedFile = file;
-            
-            // Show small image preview above input area (DO NOT SEND - just show preview)
             const reader = new FileReader();
             reader.onload = function(e) {
-                selectedFilePreview = e.target.result;
+                const preview = e.target.result;
+                selectedFilePreviews.push(preview);
                 
-                // Remove existing preview if any
-                const existingPreview = document.querySelector('.support-chat-image-preview');
-                if (existingPreview) {
-                    existingPreview.remove();
-                }
-                
-                // Find input area container
-                const inputAreaContainer = chatInputArea.parentElement;
-                
-                // Create small preview above input with centered X button
-                const previewDiv = document.createElement('div');
-                previewDiv.className = 'support-chat-image-preview';
-                previewDiv.style.cssText = 'position: relative; padding: 8px; background: var(--gray-50, #f3f4f6); border-bottom: 1px solid var(--gray-200, #e5e7eb); width: 100%; text-align: center;';
-                previewDiv.innerHTML = `
-                    <div style="position: relative; display: inline-block;">
-                        <img src="${selectedFilePreview}" alt="Превью" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; display: block;">
-                        <button type="button" class="support-chat-remove-image" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 32px; height: 32px; background: rgba(220, 53, 69, 0.95); color: white; border: 2px solid white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 10;" onclick="if (window.removeSelectedFile) { window.removeSelectedFile(); }">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
+                // Create preview item with green border
+                const previewItem = document.createElement('div');
+                previewItem.className = 'support-chat-image-preview-item';
+                previewItem.dataset.index = fileIndex;
+                previewItem.style.cssText = 'position: relative; display: inline-block;';
+                previewItem.innerHTML = `
+                    <img src="${preview}" alt="Превью" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; display: block; border: 2px solid #10b981; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
+                    <button type="button" class="support-chat-remove-image" data-index="${fileIndex}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 32px; height: 32px; background: rgba(220, 53, 69, 0.95); color: white; border: 2px solid white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 10;" onclick="if (window.removeSelectedFileByIndex) { window.removeSelectedFileByIndex(${fileIndex}); }">
+                        <i class="fas fa-times"></i>
+                    </button>
                 `;
                 
-                // Insert preview before input area
-                inputAreaContainer.insertBefore(previewDiv, chatInputArea);
+                previewContainer.appendChild(previewItem);
             };
             reader.readAsDataURL(file);
-            
-            // IMPORTANT: Do NOT call sendMessage here - file is saved and will be sent only when user clicks Send button
-        }
+        });
+        
+        // Clear file input to allow selecting same files again
+        fileInput.value = '';
     });
     
     // Make remove function accessible globally for the remove button
@@ -327,18 +332,19 @@
     // Send button click
     chatSend.addEventListener('click', function() {
         const text = chatInput.value.trim();
-        if (text || selectedFile) {
-            // Remove preview if exists
-            const preview = document.querySelector('.support-chat-image-preview');
-            if (preview) {
-                preview.remove();
+        if (text || (selectedFiles && selectedFiles.length > 0)) {
+            // Remove preview container if exists
+            const previewContainer = document.querySelector('.support-chat-images-preview-container');
+            if (previewContainer) {
+                previewContainer.remove();
             }
             
-            sendMessage(text, selectedFile, selectedFilePreview);
+            // Send message with all selected files
+            sendMessage(text, selectedFiles.length > 0 ? selectedFiles : null, selectedFilePreviews.length > 0 ? selectedFilePreviews : null);
             
             // Clear file selection
-            selectedFile = null;
-            selectedFilePreview = null;
+            selectedFiles = [];
+            selectedFilePreviews = [];
             fileInput.value = '';
         }
     });
@@ -348,18 +354,19 @@
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             const text = chatInput.value.trim();
-            if (text || selectedFile) {
-                // Remove preview if exists
-                const preview = document.querySelector('.support-chat-image-preview');
-                if (preview) {
-                    preview.remove();
+            if (text || (selectedFiles && selectedFiles.length > 0)) {
+                // Remove preview container if exists
+                const previewContainer = document.querySelector('.support-chat-images-preview-container');
+                if (previewContainer) {
+                    previewContainer.remove();
                 }
                 
-                sendMessage(text, selectedFile, selectedFilePreview);
+                // Send message with all selected files
+                sendMessage(text, selectedFiles.length > 0 ? selectedFiles : null, selectedFilePreviews.length > 0 ? selectedFilePreviews : null);
                 
                 // Clear file selection
-                selectedFile = null;
-                selectedFilePreview = null;
+                selectedFiles = [];
+                selectedFilePreviews = [];
                 fileInput.value = '';
             }
         }
