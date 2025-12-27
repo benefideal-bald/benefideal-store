@@ -5904,28 +5904,45 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
 app.post('/api/telegram/webhook', async (req, res) => {
     try {
         const body = req.body;
+        console.log('📥 Telegram webhook received:', JSON.stringify(body, null, 2));
         
         // Handle callback query (button click)
         if (body.callback_query) {
             const callbackQuery = body.callback_query;
+            console.log('🔘 Callback query received:', callbackQuery.data);
             
             if (callbackQuery.data && callbackQuery.data.startsWith('reply_')) {
                 const messageId = callbackQuery.data.replace('reply_', '');
                 const chatId = callbackQuery.message.chat.id;
                 const messageText = callbackQuery.message.text || callbackQuery.message.caption || '';
                 
-                // Answer callback query to remove loading state
-                await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
-                    callback_query_id: callbackQuery.id
-                });
+                console.log('💬 Processing reply button click:', { messageId, chatId });
+                
+                // Answer callback query first to remove loading state
+                try {
+                    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+                        callback_query_id: callbackQuery.id,
+                        text: 'Введите ваш ответ следующим сообщением'
+                    });
+                    console.log('✅ Callback query answered');
+                } catch (error) {
+                    console.error('❌ Error answering callback query:', error.response?.data || error.message);
+                }
                 
                 // Send message asking for reply text
-                await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `💬 Введите ответ для этого сообщения:\n\n${messageText}\n\nОтправьте текст ответа следующим сообщением.`,
-                    reply_to_message_id: callbackQuery.message.message_id,
-                    parse_mode: 'HTML'
-                });
+                try {
+                    const replyMessage = `💬 <b>Введите ответ для этого сообщения:</b>\n\n${messageText}\n\n<i>Отправьте текст ответа следующим сообщением.</i>`;
+                    
+                    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                        chat_id: chatId,
+                        text: replyMessage,
+                        reply_to_message_id: callbackQuery.message.message_id,
+                        parse_mode: 'HTML'
+                    });
+                    console.log('✅ Reply prompt sent');
+                } catch (error) {
+                    console.error('❌ Error sending reply prompt:', error.response?.data || error.message);
+                }
                 
                 // Store pending reply (waiting for admin's text message)
                 const pendingRepliesPath = path.join(process.cwd(), 'data', 'pending_replies.json');
@@ -5935,6 +5952,7 @@ app.post('/api/telegram/webhook', async (req, res) => {
                     try {
                         pendingReplies = JSON.parse(fs.readFileSync(pendingRepliesPath, 'utf8'));
                     } catch (e) {
+                        console.error('Error reading pending replies:', e);
                         pendingReplies = {};
                     }
                 }
@@ -5951,6 +5969,7 @@ app.post('/api/telegram/webhook', async (req, res) => {
                 }
                 
                 fs.writeFileSync(pendingRepliesPath, JSON.stringify(pendingReplies, null, 2));
+                console.log('✅ Pending reply stored');
             }
         }
         
