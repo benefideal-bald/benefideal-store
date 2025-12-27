@@ -1553,7 +1553,7 @@
                     // Reload messages to show new reply
                     await loadSupportMessages();
                     // Re-select current chat
-                    selectChat(currentChatId);
+                    window.selectChat(currentChatId);
                 } else {
                     alert('Ошибка отправки ответа: ' + (data.error || 'Неизвестная ошибка'));
                     button.disabled = false;
