@@ -6383,70 +6383,48 @@ app.post('/api/telegram/webhook', async (req, res) => {
                 }
             }
             
-            // If not found in pending, try to find by Telegram message ID in support_messages.json (Git version)
-            if (!messageId && isReply && fs.existsSync(supportMessagesJsonPath)) {
-                try {
-                    const supportMessages = JSON.parse(fs.readFileSync(supportMessagesJsonPath, 'utf8'));
-                    // Find messageId by Telegram message ID
-                    for (const [msgId, msgData] of Object.entries(supportMessages)) {
-                        if (msgData.telegramMessageId === repliedToMessageId) {
-                            messageId = msgId;
-                            console.log('✅ Found messageId from support_messages.json (Git version):', messageId);
-                            break;
+            // КРИТИЧЕСКИ ВАЖНО: Ищем messageId в базе данных по telegram_message_id
+            if (!messageId && isReply) {
+                db.get(`
+                    SELECT message_id FROM support_messages 
+                    WHERE telegram_message_id = ?
+                    LIMIT 1
+                `, [repliedToMessageId], (err, row) => {
+                    if (!err && row) {
+                        messageId = row.message_id;
+                        console.log('✅ Found messageId from database:', messageId);
+                        
+                        // Сохраняем ответ в базу данных
+                        if (messageId && replyText) {
+                            db.run(`
+                                INSERT INTO support_replies (message_id, reply_text, timestamp)
+                                VALUES (?, ?, ?)
+                            `, [messageId, replyText, Date.now()], function(insertErr) {
+                                if (insertErr) {
+                                    console.error('❌ Error saving reply to database:', insertErr);
+                                } else {
+                                    console.log(`✅ Reply saved to database with ID: ${this.lastID}`);
+                                }
+                            });
                         }
                     }
-                } catch (e) {
-                    console.error('Error reading support messages:', e);
-                }
+                });
+            } else if (messageId && replyText) {
+                // Сохраняем ответ в базу данных
+                db.run(`
+                    INSERT INTO support_replies (message_id, reply_text, timestamp)
+                    VALUES (?, ?, ?)
+                `, [messageId, replyText, Date.now()], function(err) {
+                    if (err) {
+                        console.error('❌ Error saving reply to database:', err);
+                    } else {
+                        console.log(`✅ Reply saved to database with ID: ${this.lastID}`);
+                    }
+                });
             }
             
             if (messageId) {
                 console.log('✅ Processing admin reply:', { messageId, replyText });
-                
-                // Store reply for client
-                // КРИТИЧЕСКИ ВАЖНО: Сохраняем в корневой файл (Git версия) - НЕ ПОТЕРЯЕТСЯ при деплое!
-                // Читаем существующие ответы ПЕРЕД сохранением нового
-                let replies = {};
-                if (fs.existsSync(supportRepliesJsonPath)) {
-                    try {
-                        const existingContent = fs.readFileSync(supportRepliesJsonPath, 'utf8');
-                        if (existingContent.trim()) {
-                            replies = JSON.parse(existingContent);
-                            console.log(`📥 Loaded existing replies from support_replies.json`);
-                        }
-                    } catch (e) {
-                        console.error('Error reading support_replies.json:', e);
-                        replies = {};
-                    }
-                }
-                
-                if (!replies[messageId]) {
-                    replies[messageId] = [];
-                }
-                
-                replies[messageId].push({
-                    text: replyText,
-                    timestamp: Date.now()
-                });
-                
-                // Сохраняем в корневой файл (Git версия)
-                // КРИТИЧЕСКИ ВАЖНО: Файл должен быть в Git (как orders.json и reviews.json)
-                // Файл сохраняется на сервере и будет доступен при следующем деплое
-                fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(replies, null, 2), 'utf8');
-                console.log(`✅ Saved reply to support_replies.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
-                console.log(`📝 Total replies saved: ${Object.keys(replies).length}`);
-                
-                // Автоматически коммитим в Git через GitHub API (как для отзывов)
-                // Это гарантирует, что ответы не потеряются при деплое
-                if (typeof commitSupportRepliesToGitViaAPI === 'function') {
-                    (async () => {
-                        try {
-                            await commitSupportRepliesToGitViaAPI();
-                        } catch (e) {
-                            console.warn('⚠️ Failed to commit support replies to Git (не критично):', e.message);
-                        }
-                    })();
-                }
                 
                 // Remove pending reply if exists
                 if (fs.existsSync(pendingRepliesPath)) {
