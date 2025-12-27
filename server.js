@@ -6262,15 +6262,15 @@ app.post('/api/telegram/webhook', async (req, res) => {
                 }
             }
             
-            // If not found in pending, try to find by Telegram message ID in support_messages.json (if it's a reply)
-            if (!messageId && isReply && fs.existsSync(supportMessagesPath)) {
+            // If not found in pending, try to find by Telegram message ID in support_messages.json (Git version)
+            if (!messageId && isReply && fs.existsSync(supportMessagesJsonPath)) {
                 try {
-                    const supportMessages = JSON.parse(fs.readFileSync(supportMessagesPath, 'utf8'));
+                    const supportMessages = JSON.parse(fs.readFileSync(supportMessagesJsonPath, 'utf8'));
                     // Find messageId by Telegram message ID
                     for (const [msgId, msgData] of Object.entries(supportMessages)) {
                         if (msgData.telegramMessageId === repliedToMessageId) {
                             messageId = msgId;
-                            console.log('✅ Found messageId from support_messages:', messageId);
+                            console.log('✅ Found messageId from support_messages.json (Git version):', messageId);
                             break;
                         }
                     }
