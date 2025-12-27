@@ -6112,14 +6112,17 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
         }
         
         // Store message mapping (messageId -> client info for future replies)
-        // In production, use a database. For now, store in memory with file backup
-        const supportMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
+        // КРИТИЧЕСКИ ВАЖНО: Сохраняем в корневой файл (Git версия) - как orders.json и reviews.json
+        // Это гарантирует, что сообщения не потеряются при деплое
         const fs = require('fs');
         let supportMessages = {};
-        if (fs.existsSync(supportMessagesPath)) {
+        
+        // Читаем из корневого файла (Git версия)
+        if (fs.existsSync(supportMessagesJsonPath)) {
             try {
-                supportMessages = JSON.parse(fs.readFileSync(supportMessagesPath, 'utf8'));
+                supportMessages = JSON.parse(fs.readFileSync(supportMessagesJsonPath, 'utf8'));
             } catch (e) {
+                console.error('Error reading support_messages.json:', e);
                 supportMessages = {};
             }
         }
@@ -6134,13 +6137,9 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
             clientIP: ip // IP адрес клиента (для идентификации)
         };
         
-        // Ensure data directory exists
-        const dataDir = path.dirname(supportMessagesPath);
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-        }
-        
-        fs.writeFileSync(supportMessagesPath, JSON.stringify(supportMessages, null, 2));
+        // Сохраняем в корневой файл (Git версия) - НЕ ПОТЕРЯЕТСЯ при деплое!
+        fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(supportMessages, null, 2), 'utf8');
+        console.log(`✅ Saved support message to support_messages.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
         
         // Return messageId to client for polling
         res.json({ 
@@ -6244,7 +6243,7 @@ app.post('/api/telegram/webhook', async (req, res) => {
             
             // Check pending replies FIRST (from button click) - это приоритет
             const pendingRepliesPath = path.join(process.cwd(), 'data', 'pending_replies.json');
-            const supportMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
+            // КРИТИЧЕСКИ ВАЖНО: Используем корневой файл (Git версия)
             const fs = require('fs');
             
             let messageId = null;
