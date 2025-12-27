@@ -5826,6 +5826,7 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
         
         // Send to Telegram
         const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        let telegramMessageId = null;
         
         if (imageFile) {
             // Send photo with caption
@@ -5840,21 +5841,23 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
             formData.append('reply_markup', JSON.stringify(replyKeyboard));
             
             const axios = require('axios');
-            await axios.post(photoUrl, formData, {
+            const photoResponse = await axios.post(photoUrl, formData, {
                 headers: formData.getHeaders()
             });
+            telegramMessageId = photoResponse.data.result?.message_id;
             
             // Clean up file
             require('fs').unlinkSync(imageFile.path);
         } else {
             // Send text message
             const axios = require('axios');
-            await axios.post(telegramUrl, {
+            const textResponse = await axios.post(telegramUrl, {
                 chat_id: CHAT_ID,
                 text: telegramMessage,
                 parse_mode: 'HTML',
                 reply_markup: replyKeyboard
             });
+            telegramMessageId = textResponse.data.result?.message_id;
         }
         
         // Store message mapping (messageId -> client info for future replies)
@@ -5873,7 +5876,8 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
         supportMessages[messageId] = {
             message: message,
             timestamp: Date.now(),
-            hasImage: !!imageFile
+            hasImage: !!imageFile,
+            telegramMessageId: telegramMessageId // Сохраняем ID сообщения в Telegram для поиска при ответе
         };
         
         // Ensure data directory exists
@@ -5902,6 +5906,9 @@ app.post('/api/support/send-message', supportUpload.single('image'), async (req,
 
 // Telegram webhook for callback queries (button clicks) and messages
 app.post('/api/telegram/webhook', async (req, res) => {
+    // Отвечаем сразу, чтобы Telegram не повторял запрос
+    res.status(200).json({ ok: true });
+    
     try {
         const body = req.body;
         console.log('📥 Telegram webhook received:', JSON.stringify(body, null, 2));
@@ -5978,78 +5985,107 @@ app.post('/api/telegram/webhook', async (req, res) => {
             const chatId = body.message.chat.id.toString();
             const replyText = body.message.text;
             const isReply = body.message.reply_to_message;
+            const repliedToMessageId = isReply ? isReply.message_id : null;
             
-            console.log('📨 Admin message received:', { chatId, replyText, isReply: !!isReply });
+            console.log('📨 Admin message received:', { chatId, replyText, isReply: !!isReply, repliedToMessageId });
             
+            // Try to find messageId from pending replies OR from support_messages.json
             const pendingRepliesPath = path.join(process.cwd(), 'data', 'pending_replies.json');
+            const supportMessagesPath = path.join(process.cwd(), 'data', 'support_messages.json');
             const fs = require('fs');
             
+            let messageId = null;
+            
+            // First check pending replies (from button click)
             if (fs.existsSync(pendingRepliesPath)) {
                 try {
                     const pendingReplies = JSON.parse(fs.readFileSync(pendingRepliesPath, 'utf8'));
-                    
-                    // Check if this is a reply to our "enter reply" message
                     if (isReply && pendingReplies[chatId]) {
-                        const pending = pendingReplies[chatId];
-                        const messageId = pending.messageId;
-                        
-                        console.log('✅ Processing admin reply:', { messageId, replyText });
-                        
-                        // Store reply for client
-                        const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
-                        let replies = {};
-                        if (fs.existsSync(repliesPath)) {
-                            try {
-                                replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
-                            } catch (e) {
-                                replies = {};
-                            }
-                        }
-                        
-                        if (!replies[messageId]) {
-                            replies[messageId] = [];
-                        }
-                        
-                        replies[messageId].push({
-                            text: replyText,
-                            timestamp: Date.now()
-                        });
-                        
-                        const dataDir = path.dirname(repliesPath);
-                        if (!fs.existsSync(dataDir)) {
-                            fs.mkdirSync(dataDir, { recursive: true });
-                        }
-                        
-                        fs.writeFileSync(repliesPath, JSON.stringify(replies, null, 2));
-                        
-                        // Remove pending reply
-                        delete pendingReplies[chatId];
-                        fs.writeFileSync(pendingRepliesPath, JSON.stringify(pendingReplies, null, 2));
-                        
-                        // Confirm to admin
-                        try {
-                            await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                                chat_id: chatId,
-                                text: `✅ Ответ отправлен клиенту!`,
-                                reply_to_message_id: body.message.message_id
-                            });
-                            console.log('✅ Confirmation sent to admin');
-                        } catch (error) {
-                            console.error('❌ Error sending confirmation:', error.response?.data || error.message);
-                        }
-                    } else {
-                        console.log('⚠️ Message is not a reply to support message or no pending reply found');
+                        messageId = pendingReplies[chatId].messageId;
+                        console.log('✅ Found messageId from pending replies:', messageId);
                     }
                 } catch (e) {
-                    console.error('❌ Error processing admin reply:', e);
+                    console.error('Error reading pending replies:', e);
                 }
             }
+            
+            // If not found, try to find by Telegram message ID in support_messages.json
+            if (!messageId && isReply && fs.existsSync(supportMessagesPath)) {
+                try {
+                    const supportMessages = JSON.parse(fs.readFileSync(supportMessagesPath, 'utf8'));
+                    // Find messageId by Telegram message ID
+                    for (const [msgId, msgData] of Object.entries(supportMessages)) {
+                        if (msgData.telegramMessageId === repliedToMessageId) {
+                            messageId = msgId;
+                            console.log('✅ Found messageId from support_messages:', messageId);
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error reading support messages:', e);
+                }
+            }
+            
+            if (messageId) {
+                console.log('✅ Processing admin reply:', { messageId, replyText });
+                
+                // Store reply for client
+                const repliesPath = path.join(process.cwd(), 'data', 'support_replies.json');
+                let replies = {};
+                if (fs.existsSync(repliesPath)) {
+                    try {
+                        replies = JSON.parse(fs.readFileSync(repliesPath, 'utf8'));
+                    } catch (e) {
+                        replies = {};
+                    }
+                }
+                
+                if (!replies[messageId]) {
+                    replies[messageId] = [];
+                }
+                
+                replies[messageId].push({
+                    text: replyText,
+                    timestamp: Date.now()
+                });
+                
+                const dataDir = path.dirname(repliesPath);
+                if (!fs.existsSync(dataDir)) {
+                    fs.mkdirSync(dataDir, { recursive: true });
+                }
+                
+                fs.writeFileSync(repliesPath, JSON.stringify(replies, null, 2));
+                
+                // Remove pending reply if exists
+                if (fs.existsSync(pendingRepliesPath)) {
+                    try {
+                        const pendingReplies = JSON.parse(fs.readFileSync(pendingRepliesPath, 'utf8'));
+                        if (pendingReplies[chatId]) {
+                            delete pendingReplies[chatId];
+                            fs.writeFileSync(pendingRepliesPath, JSON.stringify(pendingReplies, null, 2));
+                        }
+                    } catch (e) {
+                        // Ignore
+                    }
+                }
+                
+                // Confirm to admin
+                try {
+                    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                        chat_id: chatId,
+                        text: `✅ Ответ отправлен клиенту!`,
+                        reply_to_message_id: body.message.message_id
+                    });
+                    console.log('✅ Confirmation sent to admin');
+                } catch (error) {
+                    console.error('❌ Error sending confirmation:', error.response?.data || error.message);
+                }
+            } else {
+                console.log('⚠️ Could not find messageId for this reply');
+            }
         }
-        
-        res.status(200).json({ ok: true });
     } catch (error) {
-        console.error('Error handling Telegram webhook:', error);
-        res.status(200).json({ ok: true }); // Always return 200 to Telegram
+        console.error('❌ Error handling Telegram webhook:', error);
     }
 });
 
