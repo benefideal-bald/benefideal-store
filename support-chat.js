@@ -208,30 +208,35 @@
             // Save file for later sending (when user clicks send button)
             selectedFile = file;
             
-            // Show image preview above input area
+            // Show small image preview above input area
             const reader = new FileReader();
             reader.onload = function(e) {
                 selectedFilePreview = e.target.result;
                 
                 // Remove existing preview if any
-                const existingPreview = chatInputArea.querySelector('.support-chat-image-preview');
+                const existingPreview = document.querySelector('.support-chat-image-preview');
                 if (existingPreview) {
                     existingPreview.remove();
                 }
                 
-                // Create preview above input
+                // Find input area container
+                const inputAreaContainer = chatInputArea.parentElement;
+                
+                // Create small preview above input
                 const previewDiv = document.createElement('div');
                 previewDiv.className = 'support-chat-image-preview';
-                previewDiv.style.cssText = 'position: relative; padding: var(--space-2); background: var(--gray-50); border-bottom: 1px solid var(--gray-200);';
+                previewDiv.style.cssText = 'position: relative; display: inline-block; padding: 8px; background: var(--gray-50, #f3f4f6); border-bottom: 1px solid var(--gray-200, #e5e7eb);';
                 previewDiv.innerHTML = `
-                    <img src="${selectedFilePreview}" alt="Превью" style="max-width: 200px; max-height: 150px; border-radius: var(--radius-md); display: block;">
-                    <button class="support-chat-remove-image" style="position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;" onclick="if (window.removeSelectedFile) { window.removeSelectedFile(); this.closest('.support-chat-image-preview').remove(); }">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div style="position: relative; display: inline-block;">
+                        <img src="${selectedFilePreview}" alt="Превью" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; display: block;">
+                        <button type="button" class="support-chat-remove-image" style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: rgba(220, 53, 69, 0.9); color: white; border: 2px solid white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; padding: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" onclick="if (window.removeSelectedFile) { window.removeSelectedFile(); }">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 `;
                 
                 // Insert preview before input area
-                chatInputArea.parentNode.insertBefore(previewDiv, chatInputArea);
+                inputAreaContainer.insertBefore(previewDiv, chatInputArea);
             };
             reader.readAsDataURL(file);
         }
@@ -248,6 +253,11 @@
             preview.remove();
         }
     };
+    
+    // Ensure chatInputArea is available
+    if (!chatInputArea) {
+        console.error('chatInputArea not found');
+    }
     
     // Toggle chat
     chatToggle.addEventListener('click', function() {
