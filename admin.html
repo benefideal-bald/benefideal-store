@@ -1414,7 +1414,7 @@
                 
                 // If no chat selected, select first one
                 if (!currentChatId && allChats.length > 0) {
-                    selectChat(allChats[0].clientId);
+                    window.selectChat(allChats[0].clientId);
                 }
             } catch (error) {
                 console.error('Error loading messages:', error);
