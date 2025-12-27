@@ -6064,11 +6064,21 @@ const supportUpload = multer({
 app.post('/api/support/send-message', supportUpload.array('images', 10), async (req, res) => {
     try {
         const message = req.body.message || '';
-        const imageFiles = req.files || []; // Array of files
+        let imageFiles = req.files || []; // Array of files
+        
+        // Ensure imageFiles is an array
+        if (!Array.isArray(imageFiles)) {
+            imageFiles = imageFiles ? [imageFiles] : [];
+        }
         
         // Support legacy single image upload
         if (!imageFiles.length && req.file) {
-            imageFiles.push(req.file);
+            imageFiles = [req.file];
+        }
+        
+        console.log(`📥 Received message with ${imageFiles.length} images`);
+        if (imageFiles.length > 0) {
+            console.log(`📷 Image filenames:`, imageFiles.map(f => f.filename || f.originalname || 'unknown'));
         }
         
         if (!message.trim() && imageFiles.length === 0) {
