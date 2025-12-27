@@ -334,6 +334,17 @@
             border: 1px solid var(--gray-300);
             border-radius: var(--radius-md);
             font-size: 0.9rem;
+            background: white;
+            cursor: text;
+            pointer-events: auto;
+            z-index: 1;
+            position: relative;
+        }
+        
+        .reply-input:focus {
+            outline: 2px solid var(--primary);
+            outline-offset: -2px;
+            border-color: var(--primary);
         }
         
         .reply-btn {
@@ -1239,7 +1250,16 @@
         }
         
         async function sendReply(messageId) {
-            const input = document.getElementById('replyInput_' + messageId);
+            // Безопасное получение ID поля ввода
+            const safeId = 'replyInput_' + messageId.replace(/[^a-zA-Z0-9_]/g, '_');
+            const input = document.getElementById(safeId);
+            
+            if (!input) {
+                console.error('Input field not found for messageId:', messageId, 'safeId:', safeId);
+                alert('Ошибка: поле ввода не найдено. Обновите страницу.');
+                return;
+            }
+            
             const replyText = input.value.trim();
             
             if (!replyText) {
