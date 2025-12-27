@@ -6096,6 +6096,9 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
         // Build message text
         let telegramMessage = `📨 <b>Новое сообщение из чата поддержки</b>\n\n`;
         telegramMessage += `💬 <b>Сообщение:</b> ${message || '(только изображение)'}\n`;
+        if (imageFiles.length > 1) {
+            telegramMessage += `📷 <b>Изображений:</b> ${imageFiles.length}\n`;
+        }
         telegramMessage += `🕐 <b>Время:</b> ${timestamp}`;
         
         // Inline keyboard with reply button

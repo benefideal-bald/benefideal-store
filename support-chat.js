@@ -120,7 +120,8 @@
         const message = {
             type: 'user',
             text: text.trim(),
-            image: imagePreview,
+            images: previews, // Array of previews
+            image: previews.length > 0 ? previews[0] : null, // Legacy support
             timestamp: Date.now()
         };
         
@@ -148,9 +149,11 @@
             const formData = new FormData();
             formData.append('message', text.trim());
             
-            // Append file if provided
-            if (imageFile) {
-                formData.append('image', imageFile);
+            // Append files if provided (support multiple files)
+            if (files && files.length > 0) {
+                files.forEach((file) => {
+                    formData.append('images', file); // Use 'images' for multiple files
+                });
             }
             
             const response = await fetch(apiUrl, {
