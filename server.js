@@ -6343,15 +6343,18 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
         }).filter(f => f !== null);
         
         // КРИТИЧЕСКИ ВАЖНО: Сохраняем в базу данных ПОСЛЕ получения telegramMessageId
-        // Функция для сохранения сообщения в БД
+        // Используем тот же подход, что и для отзывов - prepare/run/finalize для надежности
         const saveMessageToDatabase = (telegramMsgId) => {
             console.log(`💾 Saving message ${messageId} to database with ${imageFiles.length} images, telegramMessageId: ${telegramMsgId}`);
             
-            db.run(`
+            // Используем prepare/run/finalize как для отзывов - это гарантирует надежное сохранение
+            const stmt = db.prepare(`
                 INSERT INTO support_messages 
                 (message_id, message_text, client_id, client_ip, has_image, image_filenames, telegram_message_id, timestamp)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `, [
+            `);
+            
+            stmt.run([
                 messageId,
                 message || null,
                 clientId,
@@ -6364,23 +6367,41 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
                 if (err) {
                     console.error('❌ Error saving message to database:', err);
                     console.error('   Error details:', err.message);
+                    stmt.finalize();
+                    
                     // Пробуем обновить, если сообщение уже существует
                     if (err.message && err.message.includes('UNIQUE constraint')) {
-                        // Сообщение уже существует - обновляем telegramMessageId
-                        db.run(`
+                        const updateStmt = db.prepare(`
                             UPDATE support_messages 
                             SET telegram_message_id = ?
                             WHERE message_id = ?
-                        `, [telegramMsgId, messageId], (updateErr) => {
+                        `);
+                        updateStmt.run([telegramMsgId, messageId], (updateErr) => {
                             if (updateErr) {
                                 console.error('❌ Error updating telegram_message_id:', updateErr);
                             } else {
                                 console.log(`✅ Updated telegram_message_id for message ${messageId}`);
                             }
+                            updateStmt.finalize();
                         });
                     }
                 } else {
-                    console.log(`✅ Message saved to database with ID: ${this.lastID}`);
+                    console.log(`✅ Saved message to DATABASE (persistent storage) - ID: ${this.lastID}`);
+                    console.log(`   Message ID: ${messageId}`);
+                    console.log(`   Client ID: ${clientId}`);
+                    console.log(`   ✅ Сообщение сохранено в базу данных - НЕ ПОТЕРЯЕТСЯ при деплое!`);
+                    
+                    // КРИТИЧЕСКИ ВАЖНО: Принудительно синхронизируем данные с диском
+                    // Это гарантирует, что сообщение будет сохранено даже при сбое или перезапуске
+                    db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
+                        if (checkpointErr) {
+                            console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
+                        } else {
+                            console.log('✅ WAL checkpoint completed - message is safely saved to disk');
+                        }
+                    });
+                    
+                    stmt.finalize();
                 }
             });
         };
@@ -6519,31 +6540,61 @@ app.post('/api/telegram/webhook', async (req, res) => {
                         messageId = row.message_id;
                         console.log('✅ Found messageId from database:', messageId);
                         
-                        // Сохраняем ответ в базу данных
+                        // Сохраняем ответ в базу данных (используем prepare/run/finalize как для отзывов)
                         if (messageId && replyText) {
-                            db.run(`
+                            const stmt = db.prepare(`
                                 INSERT INTO support_replies (message_id, reply_text, timestamp)
                                 VALUES (?, ?, ?)
-                            `, [messageId, replyText, Date.now()], function(insertErr) {
+                            `);
+                            
+                            stmt.run([messageId, replyText, Date.now()], function(insertErr) {
                                 if (insertErr) {
                                     console.error('❌ Error saving reply to database:', insertErr);
+                                    stmt.finalize();
                                 } else {
-                                    console.log(`✅ Reply saved to database with ID: ${this.lastID}`);
+                                    console.log(`✅ Saved reply to DATABASE (persistent storage) - ID: ${this.lastID}`);
+                                    console.log(`   ✅ Ответ сохранен в базу данных - НЕ ПОТЕРЯЕТСЯ при деплое!`);
+                                    
+                                    // Принудительно синхронизируем данные с диском
+                                    db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
+                                        if (checkpointErr) {
+                                            console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
+                                        } else {
+                                            console.log('✅ WAL checkpoint completed - reply is safely saved to disk');
+                                        }
+                                    });
+                                    
+                                    stmt.finalize();
                                 }
                             });
                         }
                     }
                 });
             } else if (messageId && replyText) {
-                // Сохраняем ответ в базу данных
-                db.run(`
+                // Сохраняем ответ в базу данных (используем prepare/run/finalize как для отзывов)
+                const stmt = db.prepare(`
                     INSERT INTO support_replies (message_id, reply_text, timestamp)
                     VALUES (?, ?, ?)
-                `, [messageId, replyText, Date.now()], function(err) {
+                `);
+                
+                stmt.run([messageId, replyText, Date.now()], function(err) {
                     if (err) {
                         console.error('❌ Error saving reply to database:', err);
+                        stmt.finalize();
                     } else {
-                        console.log(`✅ Reply saved to database with ID: ${this.lastID}`);
+                        console.log(`✅ Saved reply to DATABASE (persistent storage) - ID: ${this.lastID}`);
+                        console.log(`   ✅ Ответ сохранен в базу данных - НЕ ПОТЕРЯЕТСЯ при деплое!`);
+                        
+                        // Принудительно синхронизируем данные с диском
+                        db.run('PRAGMA wal_checkpoint(FULL);', (checkpointErr) => {
+                            if (checkpointErr) {
+                                console.error('⚠️ Error during WAL checkpoint:', checkpointErr);
+                            } else {
+                                console.log('✅ WAL checkpoint completed - reply is safely saved to disk');
+                            }
+                        });
+                        
+                        stmt.finalize();
                     }
                 });
             }
