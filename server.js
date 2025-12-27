@@ -6204,10 +6204,15 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
         const fs = require('fs');
         let supportMessages = {};
         
-        // Читаем из корневого файла (Git версия)
+        // КРИТИЧЕСКИ ВАЖНО: Читаем существующие сообщения ПЕРЕД сохранением нового
+        // Это гарантирует, что мы не потеряем старые сообщения
         if (fs.existsSync(supportMessagesJsonPath)) {
             try {
-                supportMessages = JSON.parse(fs.readFileSync(supportMessagesJsonPath, 'utf8'));
+                const existingContent = fs.readFileSync(supportMessagesJsonPath, 'utf8');
+                if (existingContent.trim()) {
+                    supportMessages = JSON.parse(existingContent);
+                    console.log(`📥 Loaded ${Object.keys(supportMessages).length} existing messages from support_messages.json`);
+                }
             } catch (e) {
                 console.error('Error reading support_messages.json:', e);
                 supportMessages = {};
@@ -6223,6 +6228,7 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
         
         console.log(`💾 Saving message ${messageId} with ${imageFiles.length} images, ${imageFilenames.length} filenames:`, imageFilenames);
         
+        // Добавляем новое сообщение к существующим (не перезаписываем!)
         supportMessages[messageId] = {
             message: message,
             timestamp: Date.now(),
@@ -6236,6 +6242,7 @@ app.post('/api/support/send-message', supportUpload.array('images', 10), async (
         
         // Сохраняем в корневой файл (Git версия) - НЕ ПОТЕРЯЕТСЯ при деплое!
         // КРИТИЧЕСКИ ВАЖНО: Файл должен быть в Git (как orders.json и reviews.json)
+        // Файл сохраняется на сервере и будет доступен при следующем деплое
         fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(supportMessages, null, 2), 'utf8');
         console.log(`✅ Saved support message to support_messages.json (Git version) - НЕ ПОТЕРЯЕТСЯ при деплое!`);
         console.log(`📝 Total messages saved: ${Object.keys(supportMessages).length}`);
