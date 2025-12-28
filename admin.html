@@ -240,6 +240,29 @@
             .table-cell {
                 white-space: normal;
             }
+            
+            /* Оптимизация админ-панели на мобильных */
+            .admin-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--space-4);
+            }
+            
+            .admin-header-buttons {
+                width: 100%;
+            }
+            
+            /* Кнопка "Сообщения" на вторую строку под "Продления" */
+            .messages-btn {
+                order: 3;
+                width: 100%;
+            }
+            
+            /* "Продления" и "Обновить" на первой строке */
+            .admin-header-buttons > a:first-child,
+            .admin-header-buttons > button:not(.messages-btn) {
+                flex: 1;
+            }
         }
         
         /* Modal styles */
@@ -696,11 +719,11 @@
         
         <div class="admin-header">
             <h1 class="admin-title">Админ-панель - Заказы</h1>
-            <div style="display: flex; gap: var(--space-3);">
+            <div class="admin-header-buttons" style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                 <a href="renewals.html" class="refresh-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-2);">
                     <i class="fas fa-calendar-alt"></i> Продления
                 </a>
-                <button class="refresh-btn" onclick="openMessagesModal()" style="display: inline-flex; align-items: center; gap: var(--space-2);">
+                <button class="refresh-btn messages-btn" onclick="openMessagesModal()" style="display: inline-flex; align-items: center; gap: var(--space-2);">
                     <i class="fas fa-comments"></i> Сообщения
                 </button>
                 <button class="refresh-btn" onclick="loadOrders()">
