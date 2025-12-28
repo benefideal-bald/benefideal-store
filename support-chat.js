@@ -432,67 +432,78 @@
         console.error('chatInputArea not found');
     }
     
-    // Toggle chat
+    // Toggle chat (как корзина)
     chatToggle.addEventListener('click', function(e) {
-        console.log('🔘 Chat toggle clicked, isMobile:', isMobile, 'isOpen:', isOpen);
-        
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
         
-        isOpen = !isOpen;
-        console.log('🔘 New isOpen state:', isOpen);
-        
         if (isMobile) {
-            // Мобильные: используем модальное окно
-            if (chatModal) {
-                const isOpening = !chatModal.classList.contains('active');
-                chatModal.classList.toggle('active');
-                console.log('📱 Mobile modal toggled, isOpening:', isOpening);
-                
-                if (isOpening) {
-                    document.body.classList.add('chat-open');
-                } else {
-                    document.body.classList.remove('chat-open');
-                }
-            } else {
+            // Мобильные: используем модальное окно (как корзина)
+            if (!chatModal) {
                 console.error('❌ chatModal not found on mobile!');
+                return;
+            }
+            
+            const isOpening = !chatModal.classList.contains('active');
+            chatModal.classList.toggle('active');
+            
+            if (isOpening) {
+                document.body.classList.add('chat-open');
+                isOpen = true;
+            } else {
+                document.body.classList.remove('chat-open');
+                isOpen = false;
             }
         } else {
             // Десктоп: используем старое окно
-            if (chatWidget) {
-                chatWidget.classList.toggle('open', isOpen);
-                console.log('💻 Desktop widget toggled, isOpen:', isOpen);
-            } else {
+            if (!chatWidget) {
                 console.error('❌ chatWidget not found on desktop!');
+                return;
+            }
+            
+            const isOpening = !chatWidget.classList.contains('open');
+            chatWidget.classList.toggle('open');
+            
+            if (isOpening) {
+                isOpen = true;
+            } else {
+                isOpen = false;
             }
         }
         
-        if (isOpen && activeInput) {
-            setTimeout(() => {
-                activeInput.focus();
-                scrollToBottom();
-            }, 100);
-        }
-        
-        if (chatBadge) {
-            chatBadge.style.display = 'none';
+        if (isOpen) {
+            if (activeInput) {
+                setTimeout(() => {
+                    activeInput.focus();
+                    scrollToBottom();
+                }, 100);
+            }
+            if (chatBadge) {
+                chatBadge.style.display = 'none';
+            }
         }
     });
     
     // Close chat
-    activeClose.addEventListener('click', function() {
-        isOpen = false;
-        if (isMobile) {
-            chatModal.classList.remove('active');
-            document.body.classList.remove('chat-open');
-        } else {
-            chatWidget.classList.remove('open');
-        }
-    });
+    if (activeClose) {
+        activeClose.addEventListener('click', function() {
+            isOpen = false;
+            if (isMobile) {
+                if (chatModal) {
+                    chatModal.classList.remove('active');
+                }
+                document.body.classList.remove('chat-open');
+            } else {
+                if (chatWidget) {
+                    chatWidget.classList.remove('open');
+                }
+            }
+        });
+    }
     
-    // Закрываем чат при клике на overlay (только на мобильных)
+    // Закрываем чат при клике на overlay (только на мобильных, как корзина)
     if (isMobile && chatModal) {
         chatModal.addEventListener('click', function(e) {
             // Закрываем только если клик был на сам modal (overlay), а не на content
