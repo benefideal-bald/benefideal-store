@@ -4638,10 +4638,18 @@ input[type="radio"][name="paymentMethod"] {
         width: 100vw;
         height: 100vh;
         min-height: 100vh;
+        /* Overlay не должен блокировать клики на чат */
+        pointer-events: auto;
     }
 
     .support-chat-widget.open .support-chat-overlay {
         display: block;
+    }
+    
+    /* Чат должен быть выше overlay и кликабельным */
+    .support-chat-window {
+        z-index: 9999 !important;
+        pointer-events: auto !important;
     }
 
     /* Блокируем прокрутку body когда чат открыт (только на мобильных) */
