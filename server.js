@@ -872,7 +872,9 @@ app.get('/uploads/support/:filename', (req, res) => {
 });
 
 // Admin API - Send reply to support message (with image support)
-app.post('/api/admin/support-reply', supportUpload.array('images', 10), async (req, res) => {
+app.post('/api/admin/support-reply', (req, res, next) => {
+    getSupportUpload().array('images', 10)(req, res, next);
+}, async (req, res) => {
     const { messageId, replyText, password } = req.body;
     const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '2728276';
     
@@ -6441,27 +6443,39 @@ app.get('/api/telegram/set-webhook', async (req, res) => {
 });
 
 // Support Chat - Send message to Telegram
-// Create uploads/support directory if it doesn't exist
+// КРИТИЧЕСКИ ВАЖНО: Инициализация supportUpload ПОСЛЕ запуска сервера
+// Создаем директорию лениво (только при первом использовании)
+let supportUpload = null;
 const supportUploadDir = path.join(process.cwd(), 'uploads', 'support');
-if (!require('fs').existsSync(supportUploadDir)) {
-    require('fs').mkdirSync(supportUploadDir, { recursive: true });
+
+function getSupportUpload() {
+    if (!supportUpload) {
+        // Создаем директорию только при первом использовании
+        const fs = require('fs');
+        if (!fs.existsSync(supportUploadDir)) {
+            fs.mkdirSync(supportUploadDir, { recursive: true });
+        }
+        
+        supportUpload = multer({ 
+            storage: multer.diskStorage({
+                destination: function (req, file, cb) {
+                    cb(null, supportUploadDir);
+                },
+                filename: function (req, file, cb) {
+                    // Сохраняем с уникальным именем, чтобы не удалять
+                    const uniqueName = `support_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${file.originalname}`;
+                    cb(null, uniqueName);
+                }
+            }),
+            limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+        });
+    }
+    return supportUpload;
 }
 
-const supportUpload = multer({ 
-    storage: multer.diskStorage({
-        destination: function (req, file, cb) {
-            cb(null, supportUploadDir);
-        },
-        filename: function (req, file, cb) {
-            // Сохраняем с уникальным именем, чтобы не удалять
-            const uniqueName = `support_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${file.originalname}`;
-            cb(null, uniqueName);
-        }
-    }),
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
-
-app.post('/api/support/send-message', supportUpload.array('images', 10), async (req, res) => {
+app.post('/api/support/send-message', (req, res, next) => {
+    getSupportUpload().array('images', 10)(req, res, next);
+}, async (req, res) => {
     try {
         const message = req.body.message || '';
         let imageFiles = req.files || []; // Array of files
