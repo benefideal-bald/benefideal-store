@@ -376,6 +376,15 @@
         chatWindow.classList.toggle('open', isOpen);
         chatWidget.classList.toggle('open', isOpen);
         
+        // Блокируем прокрутку body на мобильных (как корзина)
+        if (window.innerWidth <= 768) {
+            if (isOpen) {
+                document.body.classList.add('chat-open');
+            } else {
+                document.body.classList.remove('chat-open');
+            }
+        }
+        
         if (isOpen) {
             chatInput.focus();
             scrollToBottom();
@@ -388,6 +397,11 @@
         isOpen = false;
         chatWindow.classList.remove('open');
         chatWidget.classList.remove('open');
+        
+        // Убираем блокировку прокрутки на мобильных
+        if (window.innerWidth <= 768) {
+            document.body.classList.remove('chat-open');
+        }
     });
     
     // Send button click

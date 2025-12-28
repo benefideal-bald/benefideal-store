@@ -4422,6 +4422,65 @@ input[type="radio"][name="paymentMethod"] {
     display: none;
 }
 
+/* Мобильные стили для чата - как корзина */
+@media (max-width: 768px) {
+    .support-chat-widget {
+        position: fixed;
+        bottom: 15px;
+        right: 15px;
+    }
+    
+    .support-chat-toggle {
+        width: 56px;
+        height: 56px;
+        font-size: 1.3rem;
+    }
+    
+    /* Чат на мобильных - по центру, как корзина */
+    .support-chat-window {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        bottom: auto !important;
+        right: auto !important;
+        width: calc(100vw - 40px) !important;
+        max-width: 600px !important;
+        height: calc(100vh - 120px) !important;
+        max-height: 85vh !important;
+        border-radius: var(--radius-2xl) !important;
+        box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.5),
+            0 10px 30px rgba(0, 0, 0, 0.4) !important;
+    }
+    
+    .support-chat-widget.open .support-chat-window {
+        transform: translate(-50%, -50%) scale(1) !important;
+    }
+    
+    .support-chat-header {
+        border-radius: var(--radius-2xl) var(--radius-2xl) 0 0 !important;
+    }
+    
+    /* Overlay для чата на мобильных (как у корзины) */
+    .support-chat-widget.open::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9998;
+        pointer-events: none;
+    }
+    
+    /* Блокируем прокрутку body когда чат открыт */
+    body.chat-open {
+        overflow: hidden !important;
+    }
+}
+
 .support-chat-header {
     background: var(--gradient-button);
     color: var(--white);
