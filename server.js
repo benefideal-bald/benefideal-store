@@ -28,25 +28,20 @@ app.get('/health', (req, res) => {
 // КРИТИЧЕСКИ ВАЖНО: Запускаем сервер СРАЗУ после healthcheck endpoint, ДО middleware
 // Это позволяет Railway получить ответ от healthcheck немедленно, даже если БД еще инициализируется
 // Railway требует, чтобы сервер слушал на 0.0.0.0 для доступа извне
-let server;
-try {
-    server = app.listen(PORT, '0.0.0.0', () => {
-        console.log(`✅ Server running on port ${PORT} (started early for healthcheck)`);
-        console.log(`✅ Healthcheck endpoint ready at /health`);
-    });
-    
-    // Обработка ошибок сервера
-    server.on('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-            console.error(`❌ Port ${PORT} is already in use`);
-        } else {
-            console.error('❌ Server error:', err);
-        }
-    });
-} catch (err) {
-    console.error('❌ Failed to start server:', err);
-    process.exit(1);
-}
+// Используем синхронный запуск без try-catch для максимальной простоты и скорости
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT} (started early for healthcheck)`);
+    console.log(`✅ Healthcheck endpoint ready at /health`);
+});
+
+// Обработка ошибок сервера
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use`);
+    } else {
+        console.error('❌ Server error:', err);
+    }
+});
 
 // Middleware
 // ВАЖНО: Настраиваем trust proxy для правильного определения HTTPS за прокси (Railway/Render)
