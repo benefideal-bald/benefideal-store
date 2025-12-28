@@ -7255,6 +7255,26 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
 // Логируем финальную информацию о готовности
 console.log(`✅ Server fully initialized and ready`);
 
+// Start server - bind to 0.0.0.0 for Railway
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Database path: ${dbPath}`);
+    console.log('Subscription reminders scheduled');
+    console.log('API routes available:');
+    console.log('  GET  /api/test - Test endpoint');
+    console.log('  GET  /api/reviews - Get reviews');
+    console.log('  POST /api/review - Submit review');
+    console.log('  POST /api/review/verify - Verify review eligibility');
+    console.log('  POST /api/subscription - Submit subscription');
+    console.log('  GET  /api/debug/sync-reviews-from-root - Sync reviews from root to data/');
+}).on('error', (err) => {
+    console.error('❌ Server error:', err);
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use`);
+    }
+});
+
 // Graceful shutdown
 process.on('SIGINT', () => {
     db.close((err) => {
