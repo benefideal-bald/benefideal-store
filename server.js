@@ -2951,11 +2951,11 @@ async function commitOrdersToGitViaAPI() {
 
 // УДАЛЕНО: Автоматические коммиты для сообщений поддержки больше не нужны
 // Чат удаляется при закрытии вкладки клиента, поэтому коммиты в Git не требуются
-// Функция оставлена для совместимости, но не используется
+// Функция полностью отключена - ничего не делает
 async function commitSupportMessagesToGitViaAPI() {
     // Функция отключена - автоматические коммиты не нужны
+    console.log('🚫 commitSupportMessagesToGitViaAPI отключена - автоматические коммиты не нужны');
     return false;
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'benefideal-bald/benefideal-store';
     const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
     
@@ -3014,65 +3014,10 @@ async function commitSupportMessagesToGitViaAPI() {
 
 // УДАЛЕНО: Автоматические коммиты для ответов поддержки больше не нужны
 // Чат удаляется при закрытии вкладки клиента, поэтому коммиты в Git не требуются
-// Функция оставлена для совместимости, но не используется
+// Функция полностью отключена - ничего не делает
 async function commitSupportRepliesToGitViaAPI() {
     // Функция отключена - автоматические коммиты не нужны
     return false;
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-    const GITHUB_REPO = process.env.GITHUB_REPO || 'benefideal-bald/benefideal-store';
-    const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
-    
-    if (!GITHUB_TOKEN) {
-        console.error(`🚨 GITHUB_TOKEN не установлен - support_replies.json НЕ будет автоматически сохраняться в GitHub!`);
-        return false;
-    }
-    
-    try {
-        // Читаем текущий файл support_replies.json
-        const fileContent = fs.readFileSync(supportRepliesJsonPath, 'utf8');
-        const contentBase64 = Buffer.from(fileContent).toString('base64');
-        
-        // Получаем SHA текущего файла
-        const getFileSha = await axios.get(
-            `https://api.github.com/repos/${GITHUB_REPO}/contents/support_replies.json?ref=${GITHUB_BRANCH}`,
-            {
-                headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            }
-        ).catch(() => null);
-        
-        const sha = getFileSha?.data?.sha || null;
-        
-        // Коммитим изменения через GitHub API
-        const commitMessage = `Auto-commit: новый ответ поддержки добавлен (${new Date().toISOString()})`;
-        
-        const response = await axios.put(
-            `https://api.github.com/repos/${GITHUB_REPO}/contents/support_replies.json`,
-            {
-                message: commitMessage,
-                content: contentBase64,
-                branch: GITHUB_BRANCH,
-                ...(sha ? { sha: sha } : {})
-            },
-            {
-                headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-        
-        console.log(`✅ support_replies.json автоматически закоммичен в GitHub!`);
-        console.log(`   Commit SHA: ${response.data.commit.sha}`);
-        return true;
-    } catch (error) {
-        console.error(`❌ Ошибка при автокоммите support_replies.json в GitHub:`, error.response?.data || error.message);
-        console.warn(`   ВАЖНО: закоммить support_replies.json вручную, чтобы ответы не потерялись при следующем деплое.`);
-        return false;
-    }
 }
 
 // УДАЛЕНО: Автоматические коммиты для сообщений поддержки больше не нужны
