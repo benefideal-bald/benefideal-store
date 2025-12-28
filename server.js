@@ -30,6 +30,20 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); // Для обработки form-urlencoded (нужно для enot.io webhook)
 app.use(express.static('.')); // Для статических файлов
 
+// КРИТИЧЕСКИ ВАЖНО: Запускаем сервер СРАЗУ после middleware, ДО всех синхронных операций с файлами
+// Это гарантирует, что healthcheck работает немедленно, даже если файловые операции медленные
+console.log(`🚀 Starting server on port ${PORT}...`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`✅ Healthcheck endpoint ready at /health`);
+}).on('error', (err) => {
+    console.error('❌ Server listen error:', err);
+    if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use`);
+    }
+    process.exit(1);
+});
+
 // Initialize SQLite database FIRST
 // КРИТИЧЕСКИ ВАЖНО: На Render нужно использовать персистентное хранилище
 // На Render Free плане файлы сохраняются в /opt/render/project/src/
