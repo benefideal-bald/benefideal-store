@@ -4438,6 +4438,11 @@ input[type="radio"][name="paymentMethod"] {
         position: relative !important;
     }
     
+    /* Скрываем кнопку когда чат открыт на мобильных */
+    .support-chat-widget.open .support-chat-toggle {
+        display: none !important;
+    }
+    
     /* Чат на мобильных - по центру, как корзина */
     .support-chat-window {
         position: fixed !important;
