@@ -211,13 +211,14 @@
                 scrollToBottom();
                 
                 // КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что чат остается кликабельным после отправки
-                // На мобильных не должно быть блокировки прокрутки, если чат открыт
-                if (window.innerWidth <= 768 && isOpen) {
-                    // Чат открыт - оставляем блокировку прокрутки
-                    // Но убеждаемся, что элементы кликабельны
-                    chatInput.disabled = false;
-                    chatSend.disabled = false;
-                    fileInput.disabled = false;
+                // Разблокируем все элементы после успешной отправки
+                chatInput.disabled = false;
+                chatSend.disabled = false;
+                fileInput.disabled = false;
+                
+                // Убеждаемся, что чат открыт и кликабелен
+                if (isOpen) {
+                    chatInput.focus();
                 }
                 
                 // Save clientId for deletion on page unload
