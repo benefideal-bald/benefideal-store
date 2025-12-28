@@ -4498,6 +4498,11 @@ input[type="radio"][name="paymentMethod"] {
     body.chat-open {
         overflow: hidden !important;
     }
+    
+    /* Предотвращаем зум при открытии клавиатуры - размер шрифта минимум 16px */
+    .support-chat-input {
+        font-size: 16px !important; /* Минимум 16px предотвращает зум на iOS */
+    }
 }
 
 .support-chat-header {
