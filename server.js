@@ -7251,9 +7251,6 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
     }
 });
 
-// Сервер уже запущен в начале файла для healthcheck
-// Логируем финальную информацию о готовности
-console.log(`✅ Server fully initialized and ready`);
 
 // Start server - bind to 0.0.0.0 for Railway
 app.listen(PORT, '0.0.0.0', () => {
