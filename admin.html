@@ -1396,6 +1396,97 @@
         let allReplies = {};
         let currentChatId = null;
         
+        // Превью изображений для админ-панели
+        let adminSelectedFiles = [];
+        let adminSelectedPreviews = [];
+        
+        // Инициализация превью изображений при загрузке страницы
+        function initAdminImagePreview() {
+            const adminFileInput = document.getElementById('adminChatFileInput');
+            const adminPreviewContainer = document.getElementById('adminImagePreviewContainer');
+            
+            if (!adminFileInput || !adminPreviewContainer) return;
+            
+            adminFileInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                if (files.length === 0) return;
+                
+                adminSelectedFiles = files;
+                adminSelectedPreviews = [];
+                
+                // Очищаем предыдущие превью
+                adminPreviewContainer.innerHTML = '';
+                adminPreviewContainer.style.display = 'flex';
+                adminPreviewContainer.style.flexWrap = 'wrap';
+                adminPreviewContainer.style.gap = '8px';
+                adminPreviewContainer.style.marginBottom = '8px';
+                adminPreviewContainer.style.padding = '8px';
+                adminPreviewContainer.style.border = '2px solid #10b981';
+                adminPreviewContainer.style.borderRadius = '8px';
+                
+                files.forEach((file, index) => {
+                    if (!file.type.startsWith('image/')) return;
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert(`Файл ${file.name} слишком большой (максимум 5MB)`);
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const previewItem = document.createElement('div');
+                        previewItem.style.position = 'relative';
+                        previewItem.style.width = '80px';
+                        previewItem.style.height = '80px';
+                        previewItem.style.border = '2px solid #10b981';
+                        previewItem.style.borderRadius = '4px';
+                        previewItem.style.overflow = 'hidden';
+                        previewItem.style.flexShrink = '0';
+                        
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'cover';
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.innerHTML = '×';
+                        removeBtn.style.position = 'absolute';
+                        removeBtn.style.top = '50%';
+                        removeBtn.style.left = '50%';
+                        removeBtn.style.transform = 'translate(-50%, -50%)';
+                        removeBtn.style.width = '24px';
+                        removeBtn.style.height = '24px';
+                        removeBtn.style.borderRadius = '50%';
+                        removeBtn.style.background = '#ef4444';
+                        removeBtn.style.color = 'white';
+                        removeBtn.style.border = 'none';
+                        removeBtn.style.cursor = 'pointer';
+                        removeBtn.style.fontSize = '18px';
+                        removeBtn.style.fontWeight = 'bold';
+                        removeBtn.style.display = 'flex';
+                        removeBtn.style.alignItems = 'center';
+                        removeBtn.style.justifyContent = 'center';
+                        removeBtn.onclick = function() {
+                            adminSelectedFiles.splice(index, 1);
+                            adminSelectedPreviews.splice(index, 1);
+                            previewItem.remove();
+                            if (adminSelectedFiles.length === 0) {
+                                adminPreviewContainer.style.display = 'none';
+                                adminFileInput.value = '';
+                            }
+                        };
+                        
+                        previewItem.appendChild(img);
+                        previewItem.appendChild(removeBtn);
+                        adminPreviewContainer.appendChild(previewItem);
+                        
+                        adminSelectedPreviews.push(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+        }
+        
         async function loadSupportMessages() {
             try {
                 const response = await fetch('/api/admin/support-messages?password=' + encodeURIComponent(adminPassword));
