@@ -4622,6 +4622,30 @@ input[type="radio"][name="paymentMethod"] {
     color: #991b1b;
 }
 
+/* Overlay для чата на мобильных (как у корзины) */
+.support-chat-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9998;
+    backdrop-filter: none;
+}
+
+.support-chat-widget.open .support-chat-overlay {
+    display: block;
+}
+
+/* Блокируем прокрутку body когда чат открыт */
+body.chat-open {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+}
+
 @media (max-width: 768px) {
     .support-chat-widget {
         bottom: 15px;
@@ -4634,12 +4658,37 @@ input[type="radio"][name="paymentMethod"] {
         font-size: 1.3rem;
     }
     
+    /* На мобильных чат занимает весь экран */
     .support-chat-window {
-        width: calc(100vw - 30px);
-        height: calc(100vh - 100px);
-        max-height: 80vh;
-        bottom: 76px;
+        position: fixed;
+        top: 0;
+        left: 0;
         right: 0;
-        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+        bottom: auto;
+        right: auto;
+        box-shadow: none;
+    }
+    
+    .support-chat-header {
+        border-radius: 0;
+    }
+    
+    /* Уменьшаем отступы на мобильных */
+    .support-chat-messages {
+        padding: var(--space-3);
+    }
+    
+    .support-chat-input-area {
+        padding: var(--space-3);
+    }
+    
+    .support-chat-message-content {
+        max-width: 85%;
     }
 }
