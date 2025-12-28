@@ -22,12 +22,6 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
 });
 
-// КРИТИЧЕСКИ ВАЖНО: Запускаем сервер СРАЗУ после healthcheck, ДО middleware
-// Railway проверяет healthcheck очень рано, сервер должен быть готов немедленно
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Server running on port ${PORT} (started early for healthcheck)`);
-});
-
 // Middleware
 // ВАЖНО: Настраиваем trust proxy для правильного определения HTTPS за прокси (Railway/Render)
 app.set('trust proxy', true);
