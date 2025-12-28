@@ -22,6 +22,12 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
 });
 
+// КРИТИЧЕСКИ ВАЖНО: Запускаем сервер СРАЗУ после healthcheck, ДО middleware
+// Railway проверяет healthcheck очень рано, сервер должен быть готов немедленно
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT} (started early for healthcheck)`);
+});
+
 // Middleware
 // ВАЖНО: Настраиваем trust proxy для правильного определения HTTPS за прокси (Railway/Render)
 app.set('trust proxy', true);
@@ -7252,25 +7258,19 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
 });
 
 
-// Start server - bind to 0.0.0.0 for Railway
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Database path: ${dbPath}`);
-    console.log('Subscription reminders scheduled');
-    console.log('API routes available:');
-    console.log('  GET  /api/test - Test endpoint');
-    console.log('  GET  /api/reviews - Get reviews');
-    console.log('  POST /api/review - Submit review');
-    console.log('  POST /api/review/verify - Verify review eligibility');
-    console.log('  POST /api/subscription - Submit subscription');
-    console.log('  GET  /api/debug/sync-reviews-from-root - Sync reviews from root to data/');
-}).on('error', (err) => {
-    console.error('❌ Server error:', err);
-    if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use`);
-    }
-});
+// Server already started early for healthcheck
+// Log additional info when all routes are registered
+console.log(`✅ Server fully initialized`);
+console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`Database path: ${dbPath}`);
+console.log('Subscription reminders scheduled');
+console.log('API routes available:');
+console.log('  GET  /api/test - Test endpoint');
+console.log('  GET  /api/reviews - Get reviews');
+console.log('  POST /api/review - Submit review');
+console.log('  POST /api/review/verify - Verify review eligibility');
+console.log('  POST /api/subscription - Submit subscription');
+console.log('  GET  /api/debug/sync-reviews-from-root - Sync reviews from root to data/');
 
 // Graceful shutdown
 process.on('SIGINT', () => {
