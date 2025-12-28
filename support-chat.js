@@ -2,16 +2,37 @@
 (function() {
     'use strict';
     
-    const chatWidget = document.getElementById('supportChatWidget');
-    const chatToggle = document.getElementById('supportChatToggle');
-    const chatWindow = document.getElementById('supportChatWindow');
-    const chatClose = document.getElementById('supportChatClose');
-    const chatMessages = document.getElementById('supportChatMessages');
-    const chatInput = document.getElementById('supportChatInput');
-    const chatSend = document.getElementById('supportChatSend');
-    const fileInput = document.getElementById('supportChatFileInput');
-    const chatBadge = document.getElementById('supportChatBadge');
-    const chatInputArea = document.querySelector('.support-chat-input-area');
+    // Wait for DOM to be ready
+    function initChat() {
+        const chatWidget = document.getElementById('supportChatWidget');
+        const chatToggle = document.getElementById('supportChatToggle');
+        const chatWindow = document.getElementById('supportChatWindow');
+        const chatClose = document.getElementById('supportChatClose');
+        const chatMessages = document.getElementById('supportChatMessages');
+        const chatInput = document.getElementById('supportChatInput');
+        const chatSend = document.getElementById('supportChatSend');
+        const fileInput = document.getElementById('supportChatFileInput');
+        const chatBadge = document.getElementById('supportChatBadge');
+        const chatInputArea = document.querySelector('.support-chat-input-area');
+        
+        // Check if all elements exist
+        if (!chatWidget || !chatToggle || !chatWindow || !chatClose || !chatMessages || !chatInput || !chatSend || !fileInput || !chatBadge || !chatInputArea) {
+            console.error('❌ Support chat elements not found:', {
+                chatWidget: !!chatWidget,
+                chatToggle: !!chatToggle,
+                chatWindow: !!chatWindow,
+                chatClose: !!chatClose,
+                chatMessages: !!chatMessages,
+                chatInput: !!chatInput,
+                chatSend: !!chatSend,
+                fileInput: !!fileInput,
+                chatBadge: !!chatBadge,
+                chatInputArea: !!chatInputArea
+            });
+            return;
+        }
+        
+        console.log('✅ Support chat initialized');
     
     let isOpen = false;
     let messageHistory = [];
@@ -568,6 +589,15 @@
     } else {
         // Если нет истории, просто показываем приветственное сообщение
         renderMessages();
+    }
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initChat);
+    } else {
+        // DOM is already ready
+        initChat();
     }
 })();
 
