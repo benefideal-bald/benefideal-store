@@ -24,6 +24,14 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
 });
 
+// КРИТИЧЕСКИ ВАЖНО: Запускаем сервер СРАЗУ после healthcheck, ДО инициализации БД
+// Это позволяет Railway получить ответ от healthcheck немедленно, даже если БД еще инициализируется
+let serverStarted = false;
+const server = app.listen(PORT, '0.0.0.0', () => {
+    serverStarted = true;
+    console.log(`✅ Server running on port ${PORT} (started early for healthcheck)`);
+});
+
 // Middleware
 // ВАЖНО: Настраиваем trust proxy для правильного определения HTTPS за прокси (Railway/Render)
 app.set('trust proxy', true);
@@ -7020,9 +7028,10 @@ process.on('unhandledRejection', (reason, promise) => {
     // Don't exit on Render - let it restart
 });
 
-// Start server - bind to 0.0.0.0 for Render
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Server running on port ${PORT}`);
+// Server already started early (before DB initialization) for healthcheck
+// Just log additional info when DB is ready
+if (serverStarted) {
+    console.log(`✅ Server fully initialized`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`Database path: ${dbPath}`);
     console.log('Subscription reminders scheduled');
@@ -7033,7 +7042,10 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('  POST /api/review/verify - Verify review eligibility');
     console.log('  POST /api/subscription - Submit subscription');
     console.log('  GET  /api/debug/sync-reviews-from-root - Sync reviews from root to data/');
-}).on('error', (err) => {
+}
+
+// Handle server errors
+server.on('error', (err) => {
     console.error('❌ Server error:', err);
     if (err.code === 'EADDRINUSE') {
         console.error(`Port ${PORT} is already in use`);
