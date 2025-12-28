@@ -4631,7 +4631,7 @@ input[type="radio"][name="paymentMethod"] {
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.8);
+        background: rgba(0, 0, 0, 0.7);
         z-index: 9998;
         backdrop-filter: none;
         /* Фиксируем overlay - он не двигается */
@@ -4661,7 +4661,7 @@ input[type="radio"][name="paymentMethod"] {
         font-size: 1.3rem;
     }
     
-    /* Чат как корзина, но чуть больше - с округленными углами */
+    /* Чат как корзина, но чуть больше - с округленными углами и отступами сверху/снизу */
     .support-chat-window {
         position: fixed;
         top: 50%;
@@ -4669,8 +4669,8 @@ input[type="radio"][name="paymentMethod"] {
         transform: translate(-50%, -50%);
         width: calc(100vw - 40px);
         max-width: 600px;
-        height: calc(100vh - 80px);
-        max-height: 90vh;
+        height: calc(100vh - 120px);
+        max-height: 85vh;
         border-radius: var(--radius-2xl);
         bottom: auto;
         right: auto;
