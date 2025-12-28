@@ -405,17 +405,23 @@
     });
     
     // Закрываем чат при клике на overlay (только на мобильных, как корзина)
-    if (window.innerWidth <= 768) {
-        chatWidget.addEventListener('click', function(e) {
-            // Закрываем только если клик был на сам виджет (overlay), а не на окно
-            if (e.target === chatWidget && isOpen) {
+    chatWidget.addEventListener('click', function(e) {
+        // На мобильных закрываем при клике на виджет (но не на окно)
+        if (window.innerWidth <= 768 && isOpen) {
+            // Проверяем, что клик был не на окно и не на кнопку
+            if (e.target === chatWidget || (!chatWindow.contains(e.target) && e.target !== chatToggle)) {
                 isOpen = false;
                 chatWindow.classList.remove('open');
                 chatWidget.classList.remove('open');
                 document.body.classList.remove('chat-open');
             }
-        });
-    }
+        }
+    });
+    
+    // Предотвращаем закрытие при клике на само окно чата
+    chatWindow.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
     
     // Send button click
     chatSend.addEventListener('click', function() {
