@@ -2949,9 +2949,12 @@ async function commitOrdersToGitViaAPI() {
     }
 }
 
-// Функция для автоматического коммита support_messages.json в Git через GitHub API
-// Чтобы сообщения поддержки не стирались при деплоях (как для отзывов и заказов)
+// УДАЛЕНО: Автоматические коммиты для сообщений поддержки больше не нужны
+// Чат удаляется при закрытии вкладки клиента, поэтому коммиты в Git не требуются
+// Функция оставлена для совместимости, но не используется
 async function commitSupportMessagesToGitViaAPI() {
+    // Функция отключена - автоматические коммиты не нужны
+    return false;
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'benefideal-bald/benefideal-store';
     const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
@@ -3009,9 +3012,12 @@ async function commitSupportMessagesToGitViaAPI() {
     }
 }
 
-// Функция для автоматического коммита support_replies.json в Git через GitHub API
-// Чтобы ответы поддержки не стирались при деплоях (как для отзывов и заказов)
+// УДАЛЕНО: Автоматические коммиты для ответов поддержки больше не нужны
+// Чат удаляется при закрытии вкладки клиента, поэтому коммиты в Git не требуются
+// Функция оставлена для совместимости, но не используется
 async function commitSupportRepliesToGitViaAPI() {
+    // Функция отключена - автоматические коммиты не нужны
+    return false;
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'benefideal-bald/benefideal-store';
     const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
@@ -3069,9 +3075,12 @@ async function commitSupportRepliesToGitViaAPI() {
     }
 }
 
-// Функция для синхронизации всех сообщений поддержки из БД в JSON файлы и коммита в Git
-// Аналогично snapshotAllReviewsToJsonFiles - гарантирует, что данные не потеряются при деплое
+// УДАЛЕНО: Автоматические коммиты для сообщений поддержки больше не нужны
+// Чат удаляется при закрытии вкладки клиента, поэтому коммиты в Git не требуются
+// Функция отключена - не вызывает коммиты в Git
 async function snapshotAllSupportMessagesToJsonFiles() {
+    // Функция отключена - автоматические коммиты не нужны
+    return;
     try {
         // Читаем все сообщения из БД
         const messages = await new Promise((resolve, reject) => {
@@ -3135,8 +3144,12 @@ async function snapshotAllSupportMessagesToJsonFiles() {
     }
 }
 
-// Функция для синхронизации всех ответов поддержки из БД в JSON файлы и коммита в Git
+// УДАЛЕНО: Автоматические коммиты для ответов поддержки больше не нужны
+// Чат удаляется при закрытии вкладки клиента, поэтому коммиты в Git не требуются
+// Функция отключена - не вызывает коммиты в Git
 async function snapshotAllSupportRepliesToJsonFiles() {
+    // Функция отключена - автоматические коммиты не нужны
+    return;
     try {
         // Читаем все ответы из БД
         const replies = await new Promise((resolve, reject) => {
