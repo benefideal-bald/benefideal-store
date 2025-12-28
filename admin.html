@@ -1381,6 +1381,8 @@
             currentChatId = null;
             
             loadSupportMessages();
+            // Инициализируем превью изображений при открытии модального окна
+            setTimeout(initAdminImagePreview, 100);
         };
         
         // Also keep the regular function for backwards compatibility
