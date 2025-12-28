@@ -300,15 +300,13 @@
         </div>
     </div>
 
-    <!-- Support Chat Toggle Button (видна везде) -->
-    <button class="support-chat-toggle" id="supportChatToggle" aria-label="Открыть чат поддержки">
-        <i class="fas fa-comments"></i>
-        <span class="support-chat-badge" id="supportChatBadge" style="display: none;">1</span>
-    </button>
-
-    <!-- Support Chat Widget (десктоп) -->
+    <!-- Support Chat Widget -->
     <div class="support-chat-widget" id="supportChatWidget">
-        <!-- Support Chat Window (десктоп) -->
+        <button class="support-chat-toggle" id="supportChatToggle" aria-label="Открыть чат поддержки">
+            <i class="fas fa-comments"></i>
+            <span class="support-chat-badge" id="supportChatBadge" style="display: none;">1</span>
+        </button>
+        
         <div class="support-chat-window" id="supportChatWindow">
             <div class="support-chat-header">
                 <div class="support-chat-header-info">
@@ -342,45 +340,9 @@
             </div>
         </div>
     </div>
-    
-    <!-- Support Chat Modal (только для мобильных) -->
-    <div class="support-chat-modal" id="supportChatModal">
-        <div class="support-chat-content" id="supportChatModalContent">
-            <div class="support-chat-header">
-                <div class="support-chat-header-info">
-                    <i class="fas fa-headset"></i>
-                    <div>
-                        <h3>Поддержка</h3>
-                        <p>Обычно отвечаем в течение минуты</p>
-                    </div>
-                </div>
-                <button class="support-chat-close" id="supportChatModalClose" aria-label="Закрыть чат">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="support-chat-messages" id="supportChatModalMessages">
-                <div class="support-chat-welcome">
-                    <i class="fas fa-robot"></i>
-                    <p>Здравствуйте! Чем могу помочь?</p>
-                </div>
-            </div>
-            
-            <div class="support-chat-input-area">
-                <label class="support-chat-file-label" for="supportChatModalFileInput">
-                    <i class="fas fa-paperclip"></i>
-                    <input type="file" id="supportChatModalFileInput" accept="image/*" multiple style="display: none;">
-                </label>
-                <textarea id="supportChatModalInput" class="support-chat-input" placeholder="Напишите ваш вопрос..." maxlength="5000" rows="1"></textarea>
-                <button class="support-chat-send" id="supportChatModalSend" aria-label="Отправить сообщение">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
-        </div>
-    </div>
 
     <script src="script.js?v=4.0"></script>
-    <script src="support-chat.js?v=3.6"></script>
+    <script src="support-chat.js?v=4.0"></script>
     <script>
         // Track page visit (only once per page load)
         (function() {

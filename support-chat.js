@@ -4,9 +4,6 @@
     
     // Wait for DOM to be ready
     function initChat() {
-        const isMobile = window.innerWidth <= 768;
-        
-        // Элементы для десктопа
         const chatWidget = document.getElementById('supportChatWidget');
         const chatToggle = document.getElementById('supportChatToggle');
         const chatWindow = document.getElementById('supportChatWindow');
@@ -16,32 +13,26 @@
         const chatSend = document.getElementById('supportChatSend');
         const fileInput = document.getElementById('supportChatFileInput');
         const chatBadge = document.getElementById('supportChatBadge');
+        const chatInputArea = document.querySelector('.support-chat-input-area');
         
-        // Элементы для мобильных
-        const chatModal = document.getElementById('supportChatModal');
-        const chatModalContent = document.getElementById('supportChatModalContent');
-        const chatModalClose = document.getElementById('supportChatModalClose');
-        const chatModalMessages = document.getElementById('supportChatModalMessages');
-        const chatModalInput = document.getElementById('supportChatModalInput');
-        const chatModalSend = document.getElementById('supportChatModalSend');
-        const chatModalFileInput = document.getElementById('supportChatModalFileInput');
-        
-        // Выбираем активные элементы в зависимости от устройства
-        const activeWindow = isMobile ? chatModalContent : chatWindow;
-        const activeClose = isMobile ? chatModalClose : chatClose;
-        const activeMessages = isMobile ? chatModalMessages : chatMessages;
-        const activeInput = isMobile ? chatModalInput : chatInput;
-        const activeSend = isMobile ? chatModalSend : chatSend;
-        const activeFileInput = isMobile ? chatModalFileInput : fileInput;
-        const activeInputArea = activeWindow ? activeWindow.querySelector('.support-chat-input-area') : null;
-        
-        // КРИТИЧНО: Проверяем только кнопку - она обязательна
-        if (!chatToggle) {
-            console.error('❌ Support chat toggle button not found');
+        // Check if all elements exist
+        if (!chatWidget || !chatToggle || !chatWindow || !chatClose || !chatMessages || !chatInput || !chatSend || !fileInput || !chatBadge || !chatInputArea) {
+            console.error('❌ Support chat elements not found:', {
+                chatWidget: !!chatWidget,
+                chatToggle: !!chatToggle,
+                chatWindow: !!chatWindow,
+                chatClose: !!chatClose,
+                chatMessages: !!chatMessages,
+                chatInput: !!chatInput,
+                chatSend: !!chatSend,
+                fileInput: !!fileInput,
+                chatBadge: !!chatBadge,
+                chatInputArea: !!chatInputArea
+            });
             return;
         }
         
-        console.log('✅ Support chat initialized', isMobile ? '(mobile)' : '(desktop)');
+        console.log('✅ Support chat initialized');
     
     let isOpen = false;
     let messageHistory = [];
@@ -72,20 +63,20 @@
     
     // Render messages
     function renderMessages() {
-        activeMessages.innerHTML = '';
+        chatMessages.innerHTML = '';
         
         // Welcome message (показываем только если нет истории сообщений)
         if (messageHistory.length === 0) {
             const welcome = document.createElement('div');
             welcome.className = 'support-chat-welcome';
             welcome.innerHTML = '<i class="fas fa-robot"></i><p>Здравствуйте! Чем могу помочь?</p>';
-            activeMessages.appendChild(welcome);
+            chatMessages.appendChild(welcome);
         }
         
         // Render history
         messageHistory.forEach(msg => {
             const messageDiv = createMessageElement(msg);
-            activeMessages.appendChild(messageDiv);
+            chatMessages.appendChild(messageDiv);
         });
         
         scrollToBottom();
@@ -145,7 +136,7 @@
     
     // Scroll to bottom
     function scrollToBottom() {
-        activeMessages.scrollTop = activeMessages.scrollHeight;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
     }
     
     // Send message
@@ -169,20 +160,15 @@
         renderMessages();
         
         // Clear input
-        activeInput.value = '';
-        activeInput.style.height = '40px'; // Reset textarea height
-        activeFileInput.value = '';
-        
-        // КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что элементы не заблокированы
-        activeInput.disabled = false;
-        activeSend.disabled = false;
-        activeFileInput.disabled = false;
+        chatInput.value = '';
+        chatInput.style.height = '40px'; // Reset textarea height
+        fileInput.value = '';
         
         // Show sending indicator
         const sendingDiv = document.createElement('div');
         sendingDiv.className = 'support-chat-message support';
         sendingDiv.innerHTML = '<div class="support-chat-message-content"><i class="fas fa-headset"></i><p>Отправка...</p></div>';
-        activeMessages.appendChild(sendingDiv);
+        chatMessages.appendChild(sendingDiv);
         scrollToBottom();
         
         try {
@@ -216,25 +202,13 @@
                 const successDiv = document.createElement('div');
                 successDiv.className = 'support-chat-message support';
                 successDiv.innerHTML = '<div class="support-chat-message-content"><i class="fas fa-check-circle"></i><p>Сообщение отправлено! Осторожно, при обновлении страницы чат очищается.</p></div>';
-                activeMessages.appendChild(successDiv);
+                chatMessages.appendChild(successDiv);
                 scrollToBottom();
-                
-                // КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что чат остается кликабельным после отправки
-                // Разблокируем все элементы после успешной отправки
-                activeInput.disabled = false;
-                activeSend.disabled = false;
-                activeFileInput.disabled = false;
-                
-                // Принудительно убираем любые блокировки стилей
-                activeInput.style.pointerEvents = 'auto';
-                activeSend.style.pointerEvents = 'auto';
-                activeFileInput.style.pointerEvents = 'auto';
                 
                 // Убеждаемся, что чат открыт и кликабелен
                 if (isOpen) {
-                    // Небольшая задержка перед фокусом, чтобы браузер успел обработать изменения
                     setTimeout(() => {
-                        activeInput.focus();
+                        chatInput.focus();
                     }, 100);
                 }
                 
@@ -262,26 +236,16 @@
             console.error('Error sending message:', error);
             sendingDiv.remove();
             
-            // КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что элементы разблокированы после ошибки
-            activeInput.disabled = false;
-            activeSend.disabled = false;
-            activeFileInput.disabled = false;
-            
-            // Принудительно убираем любые блокировки стилей
-            activeInput.style.pointerEvents = 'auto';
-            activeSend.style.pointerEvents = 'auto';
-            activeFileInput.style.pointerEvents = 'auto';
-            
             const errorDiv = document.createElement('div');
             errorDiv.className = 'support-chat-message support error';
             errorDiv.innerHTML = '<div class="support-chat-message-content"><i class="fas fa-exclamation-circle"></i><p>Ошибка отправки. Попробуйте еще раз.</p></div>';
-            activeMessages.appendChild(errorDiv);
+            chatMessages.appendChild(errorDiv);
             scrollToBottom();
         }
     }
     
     // Handle file input (multiple files support)
-    activeFileInput.addEventListener('change', function(e) {
+    fileInput.addEventListener('change', function(e) {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
         
@@ -406,111 +370,25 @@
         console.error('chatInputArea not found');
     }
     
-    // Toggle chat - МАКСИМАЛЬНО ПРОСТАЯ ЛОГИКА
-    console.log('🔧 Adding click handler to button...');
-    
-    function handleChatToggle(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        console.log('🔘 Chat button clicked! isMobile:', isMobile);
-        
-        const currentIsMobile = window.innerWidth <= 768;
-        
-        if (currentIsMobile) {
-            // Мобильные: используем модальное окно
-            const chatModalEl = document.getElementById('supportChatModal');
-            console.log('📱 Mobile mode, chatModal:', !!chatModalEl);
-            
-            if (chatModalEl) {
-                const isOpening = !chatModalEl.classList.contains('active');
-                chatModalEl.classList.toggle('active');
-                console.log('📱 Modal toggled, isOpening:', isOpening);
-                
-                if (isOpening) {
-                    document.body.classList.add('chat-open');
-                    isOpen = true;
-                } else {
-                    document.body.classList.remove('chat-open');
-                    isOpen = false;
-                }
-            } else {
-                alert('Модальное окно не найдено! Проверьте консоль.');
-            }
-        } else {
-            // Десктоп: используем старое окно
-            const chatWidgetEl = document.getElementById('supportChatWidget');
-            console.log('💻 Desktop mode, chatWidget:', !!chatWidgetEl);
-            
-            if (chatWidgetEl) {
-                const isOpening = !chatWidgetEl.classList.contains('open');
-                chatWidgetEl.classList.toggle('open');
-                console.log('💻 Widget toggled, isOpening:', isOpening);
-                
-                if (isOpening) {
-                    isOpen = true;
-                } else {
-                    isOpen = false;
-                }
-            } else {
-                alert('Виджет чата не найден! Проверьте консоль.');
-            }
-        }
+    // Toggle chat
+    chatToggle.addEventListener('click', function() {
+        isOpen = !isOpen;
+        chatWindow.classList.toggle('open', isOpen);
+        chatWidget.classList.toggle('open', isOpen);
         
         if (isOpen) {
-            const currentActiveInput = currentIsMobile ? 
-                document.getElementById('supportChatModalInput') : 
-                document.getElementById('supportChatInput');
-            
-            if (currentActiveInput) {
-                setTimeout(() => {
-                    currentActiveInput.focus();
-                    const currentActiveMessages = currentIsMobile ?
-                        document.getElementById('supportChatModalMessages') :
-                        document.getElementById('supportChatMessages');
-                    if (currentActiveMessages) {
-                        currentActiveMessages.scrollTop = currentActiveMessages.scrollHeight;
-                    }
-                }, 100);
-            }
-            
-            if (chatBadge) {
-                chatBadge.style.display = 'none';
-            }
+            chatInput.focus();
+            scrollToBottom();
+            chatBadge.style.display = 'none';
         }
-    }
-    
-    chatToggle.addEventListener('click', handleChatToggle);
-    console.log('✅ Click handler added to button');
+    });
     
     // Close chat
-    if (activeClose) {
-        activeClose.addEventListener('click', function() {
-            isOpen = false;
-            if (isMobile) {
-                if (chatModal) {
-                    chatModal.classList.remove('active');
-                }
-                document.body.classList.remove('chat-open');
-            } else {
-                if (chatWidget) {
-                    chatWidget.classList.remove('open');
-                }
-            }
-        });
-    }
-    
-    // Закрываем чат при клике на overlay (только на мобильных, как корзина)
-    if (isMobile && chatModal) {
-        chatModal.addEventListener('click', function(e) {
-            // Закрываем только если клик был на сам modal (overlay), а не на content
-            if (e.target === chatModal) {
-                isOpen = false;
-                chatModal.classList.remove('active');
-                document.body.classList.remove('chat-open');
-            }
-        });
-    }
+    chatClose.addEventListener('click', function() {
+        isOpen = false;
+        chatWindow.classList.remove('open');
+        chatWidget.classList.remove('open');
+    });
     
     // Send button click
     activeSend.addEventListener('click', function() {
@@ -533,16 +411,16 @@
     });
     
     // Auto-resize textarea
-    activeInput.addEventListener('input', function() {
+    chatInput.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 150) + 'px';
     });
     
     // Enter key to send (Shift+Enter for new line)
-    activeInput.addEventListener('keydown', function(e) {
+    chatInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            const text = activeInput.value.trim();
+            const text = chatInput.value.trim();
             if (text || (selectedFiles && selectedFiles.length > 0)) {
                 // Remove preview container if exists
                 const previewContainer = document.querySelector('.support-chat-images-preview-container');
@@ -554,13 +432,13 @@
                 sendMessage(text, selectedFiles.length > 0 ? selectedFiles : null, selectedFilePreviews.length > 0 ? selectedFilePreviews : null);
                 
                 // Clear input and reset height
-                activeInput.value = '';
-                activeInput.style.height = 'auto';
+                chatInput.value = '';
+                chatInput.style.height = 'auto';
                 
                 // Clear file selection
                 selectedFiles = [];
                 selectedFilePreviews = [];
-                activeFileInput.value = '';
+                fileInput.value = '';
             }
         }
     });
@@ -633,11 +511,11 @@
         
         // Очищаем визуально чат сразу
         messageHistory = [];
-        activeMessages.innerHTML = '';
+        chatMessages.innerHTML = '';
         const welcome = document.createElement('div');
         welcome.className = 'support-chat-welcome';
         welcome.innerHTML = '<i class="fas fa-robot"></i><p>Здравствуйте! Чем могу помочь?</p>';
-        activeMessages.appendChild(welcome);
+        chatMessages.appendChild(welcome);
         
         // Останавливаем все polling
         Object.keys(pollingIntervals).forEach(messageId => {

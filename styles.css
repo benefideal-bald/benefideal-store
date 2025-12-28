@@ -4327,33 +4327,7 @@ input[type="radio"][name="paymentMethod"] {
    SUPPORT CHAT WIDGET
    ======================================== */
 
-/* Support Chat Toggle Button (видна везде) */
-.support-chat-toggle {
-    position: fixed !important;
-    bottom: 20px !important;
-    right: 20px !important;
-    width: 60px !important;
-    height: 60px !important;
-    border-radius: 50% !important;
-    background: var(--gradient-button) !important;
-    border: none !important;
-    color: var(--white) !important;
-    font-size: 1.5rem !important;
-    cursor: pointer !important;
-    box-shadow: 
-        0 4px 15px rgba(20, 184, 166, 0.4),
-        0 2px 8px rgba(20, 184, 166, 0.3),
-        0 1px 4px rgba(0, 0, 0, 0.2) !important;
-    transition: all var(--transition-base) !important;
-    z-index: 99999 !important; /* Выше всего */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-family: var(--font-primary) !important;
-    pointer-events: auto !important; /* Всегда кликабельна */
-}
-
-/* Support Chat Widget (десктоп - как раньше) */
+/* Support Chat Widget */
 .support-chat-widget {
     position: fixed;
     bottom: 20px;
@@ -4361,6 +4335,27 @@ input[type="radio"][name="paymentMethod"] {
     z-index: 9999;
     font-family: var(--font-primary);
 }
+
+.support-chat-toggle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--gradient-button);
+    border: none;
+    color: var(--white);
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 
+        0 4px 15px rgba(20, 184, 166, 0.4),
+        0 2px 8px rgba(20, 184, 166, 0.3),
+        0 1px 4px rgba(0, 0, 0, 0.2);
+    transition: all var(--transition-base);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 
 .support-chat-toggle:hover {
     transform: translateY(-2px) scale(1.05);
