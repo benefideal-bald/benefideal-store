@@ -7020,9 +7020,8 @@ process.on('unhandledRejection', (reason, promise) => {
     // Don't exit on Render - let it restart
 });
 
-// Server already started early (before DB initialization) for healthcheck
 // Log additional info when all routes are registered
-console.log(`✅ Server fully initialized`);
+console.log(`✅ All routes registered`);
 console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`Database path: ${dbPath}`);
 console.log('Subscription reminders scheduled');
@@ -7251,6 +7250,23 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
             success: false,
             error: error.message
         });
+    }
+});
+
+// КРИТИЧЕСКИ ВАЖНО: Запускаем сервер В КОНЦЕ, после всех маршрутов
+// Healthcheck endpoint уже зарегистрирован первым, поэтому будет работать сразу
+// Railway требует, чтобы сервер слушал на 0.0.0.0 для доступа извне
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`✅ Healthcheck endpoint ready at /health`);
+});
+
+// Обработка ошибок сервера
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use`);
+    } else {
+        console.error('❌ Server error:', err);
     }
 });
 
