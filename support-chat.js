@@ -406,20 +406,26 @@
         console.error('chatInputArea not found');
     }
     
-    // Toggle chat (как корзина) - ПРОСТАЯ ЛОГИКА
-    chatToggle.addEventListener('click', function(e) {
+    // Toggle chat - МАКСИМАЛЬНО ПРОСТАЯ ЛОГИКА
+    console.log('🔧 Adding click handler to button...');
+    
+    function handleChatToggle(e) {
         e.preventDefault();
         e.stopPropagation();
         
-        console.log('🔘 Chat button clicked!');
+        console.log('🔘 Chat button clicked! isMobile:', isMobile);
         
-        if (isMobile) {
-            // Мобильные: используем модальное окно (как корзина)
+        const currentIsMobile = window.innerWidth <= 768;
+        
+        if (currentIsMobile) {
+            // Мобильные: используем модальное окно
             const chatModalEl = document.getElementById('supportChatModal');
+            console.log('📱 Mobile mode, chatModal:', !!chatModalEl);
+            
             if (chatModalEl) {
                 const isOpening = !chatModalEl.classList.contains('active');
                 chatModalEl.classList.toggle('active');
-                console.log('📱 Mobile modal toggled, isOpening:', isOpening);
+                console.log('📱 Modal toggled, isOpening:', isOpening);
                 
                 if (isOpening) {
                     document.body.classList.add('chat-open');
@@ -429,15 +435,17 @@
                     isOpen = false;
                 }
             } else {
-                console.error('❌ chatModal not found!');
+                alert('Модальное окно не найдено! Проверьте консоль.');
             }
         } else {
             // Десктоп: используем старое окно
             const chatWidgetEl = document.getElementById('supportChatWidget');
+            console.log('💻 Desktop mode, chatWidget:', !!chatWidgetEl);
+            
             if (chatWidgetEl) {
                 const isOpening = !chatWidgetEl.classList.contains('open');
                 chatWidgetEl.classList.toggle('open');
-                console.log('💻 Desktop widget toggled, isOpening:', isOpening);
+                console.log('💻 Widget toggled, isOpening:', isOpening);
                 
                 if (isOpening) {
                     isOpen = true;
@@ -445,22 +453,35 @@
                     isOpen = false;
                 }
             } else {
-                console.error('❌ chatWidget not found!');
+                alert('Виджет чата не найден! Проверьте консоль.');
             }
         }
         
         if (isOpen) {
-            if (activeInput) {
+            const currentActiveInput = currentIsMobile ? 
+                document.getElementById('supportChatModalInput') : 
+                document.getElementById('supportChatInput');
+            
+            if (currentActiveInput) {
                 setTimeout(() => {
-                    activeInput.focus();
-                    scrollToBottom();
+                    currentActiveInput.focus();
+                    const currentActiveMessages = currentIsMobile ?
+                        document.getElementById('supportChatModalMessages') :
+                        document.getElementById('supportChatMessages');
+                    if (currentActiveMessages) {
+                        currentActiveMessages.scrollTop = currentActiveMessages.scrollHeight;
+                    }
                 }, 100);
             }
+            
             if (chatBadge) {
                 chatBadge.style.display = 'none';
             }
         }
-    });
+    }
+    
+    chatToggle.addEventListener('click', handleChatToggle);
+    console.log('✅ Click handler added to button');
     
     // Close chat
     if (activeClose) {
@@ -709,11 +730,20 @@
     }
     
     // Initialize when DOM is ready
+    function startInit() {
+        console.log('🚀 Starting chat initialization...');
+        try {
+            initChat();
+        } catch (error) {
+            console.error('❌ Error initializing chat:', error);
+        }
+    }
+    
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initChat);
+        document.addEventListener('DOMContentLoaded', startInit);
     } else {
         // DOM is already ready
-        initChat();
+        startInit();
     }
 })();
 
