@@ -4670,6 +4670,7 @@ input[type="radio"][name="paymentMethod"] {
     }
     
     /* Чат как корзина, но чуть больше - с округленными углами и отступами сверху/снизу */
+    /* КРИТИЧЕСКИ ВАЖНО: Чат должен быть белым и кликабельным, выше overlay! */
     .support-chat-window {
         position: fixed;
         top: 50%;
@@ -4688,6 +4689,11 @@ input[type="radio"][name="paymentMethod"] {
         box-shadow: 
             0 20px 60px rgba(0, 0, 0, 0.5),
             0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    
+    /* Все элементы внутри чата должны быть кликабельными */
+    .support-chat-window * {
+        pointer-events: auto !important;
     }
     
     .support-chat-widget.open .support-chat-window {
