@@ -2969,134 +2969,18 @@ async function commitSupportRepliesToGitViaAPI() {
 
 // УДАЛЕНО: Автоматические коммиты для сообщений поддержки больше не нужны
 // Чат удаляется при закрытии вкладки клиента, поэтому коммиты в Git не требуются
-// Функция отключена - не вызывает коммиты в Git
+// Функция полностью отключена - ничего не делает
 async function snapshotAllSupportMessagesToJsonFiles() {
     // Функция отключена - автоматические коммиты не нужны
     return;
-    try {
-        // Читаем все сообщения из БД
-        const messages = await new Promise((resolve, reject) => {
-            db.all(`
-                SELECT 
-                    message_id,
-                    message_text,
-                    client_id,
-                    client_ip,
-                    has_image,
-                    image_filenames,
-                    telegram_message_id,
-                    timestamp
-                FROM support_messages
-                ORDER BY timestamp ASC
-            `, [], (err, rows) => {
-                if (err) {
-                    console.error('❌ Error reading messages from database:', err);
-                    return resolve({});
-                }
-                
-                // Преобразуем в формат JSON (объект с message_id как ключ)
-                const messagesObj = {};
-                rows.forEach(row => {
-                    messagesObj[row.message_id] = {
-                        message: row.message_text || '',
-                        clientId: row.client_id,
-                        clientIp: row.client_ip,
-                        timestamp: row.timestamp,
-                        hasImage: row.has_image === 1,
-                        imageFilenames: row.image_filenames ? JSON.parse(row.image_filenames) : []
-                    };
-                });
-                
-                resolve(messagesObj);
-            });
-        });
-        
-        if (!messages || Object.keys(messages).length === 0) {
-            console.warn('⚠️ snapshotAllSupportMessagesToJsonFiles: no messages to snapshot');
-            return;
-        }
-        
-        // Сохраняем в корневой support_messages.json (Git-копия)
-        try {
-            fs.writeFileSync(supportMessagesJsonPath, JSON.stringify(messages, null, 2), 'utf8');
-            console.log(`✅ Snapshot: saved ${Object.keys(messages).length} messages to support_messages.json`);
-        } catch (err) {
-            console.warn('⚠️ Failed to write support_messages.json snapshot:', err.message);
-            return;
-        }
-        
-        // Пытаемся автоматически закоммитить изменения в GitHub
-        try {
-            await commitSupportMessagesToGitViaAPI();
-        } catch (err) {
-            console.warn('⚠️ Failed to auto-commit support_messages.json to GitHub (you can also commit manually):', err.message);
-        }
-    } catch (error) {
-        console.warn('⚠️ snapshotAllSupportMessagesToJsonFiles failed:', error.message);
-    }
 }
 
 // УДАЛЕНО: Автоматические коммиты для ответов поддержки больше не нужны
 // Чат удаляется при закрытии вкладки клиента, поэтому коммиты в Git не требуются
-// Функция отключена - не вызывает коммиты в Git
+// Функция полностью отключена - ничего не делает
 async function snapshotAllSupportRepliesToJsonFiles() {
     // Функция отключена - автоматические коммиты не нужны
     return;
-    try {
-        // Читаем все ответы из БД
-        const replies = await new Promise((resolve, reject) => {
-            db.all(`
-                SELECT 
-                    message_id,
-                    reply_text,
-                    timestamp
-                FROM support_replies
-                ORDER BY timestamp ASC
-            `, [], (err, rows) => {
-                if (err) {
-                    console.error('❌ Error reading replies from database:', err);
-                    return resolve({});
-                }
-                
-                // Преобразуем в формат JSON (объект с message_id как ключ, массив ответов)
-                const repliesObj = {};
-                rows.forEach(row => {
-                    if (!repliesObj[row.message_id]) {
-                        repliesObj[row.message_id] = [];
-                    }
-                    repliesObj[row.message_id].push({
-                        text: row.reply_text,
-                        timestamp: row.timestamp
-                    });
-                });
-                
-                resolve(repliesObj);
-            });
-        });
-        
-        if (!replies || Object.keys(replies).length === 0) {
-            console.warn('⚠️ snapshotAllSupportRepliesToJsonFiles: no replies to snapshot');
-            return;
-        }
-        
-        // Сохраняем в корневой support_replies.json (Git-копия)
-        try {
-            fs.writeFileSync(supportRepliesJsonPath, JSON.stringify(replies, null, 2), 'utf8');
-            console.log(`✅ Snapshot: saved replies to support_replies.json`);
-        } catch (err) {
-            console.warn('⚠️ Failed to write support_replies.json snapshot:', err.message);
-            return;
-        }
-        
-        // Пытаемся автоматически закоммитить изменения в GitHub
-        try {
-            await commitSupportRepliesToGitViaAPI();
-        } catch (err) {
-            console.warn('⚠️ Failed to auto-commit support_replies.json to GitHub (you can also commit manually):', err.message);
-        }
-    } catch (error) {
-        console.warn('⚠️ snapshotAllSupportRepliesToJsonFiles failed:', error.message);
-    }
 }
 
 // Helper function to write reviews to JSON file
