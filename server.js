@@ -2954,62 +2954,7 @@ async function commitOrdersToGitViaAPI() {
 // Функция полностью отключена - ничего не делает
 async function commitSupportMessagesToGitViaAPI() {
     // Функция отключена - автоматические коммиты не нужны
-    console.log('🚫 commitSupportMessagesToGitViaAPI отключена - автоматические коммиты не нужны');
     return false;
-    const GITHUB_REPO = process.env.GITHUB_REPO || 'benefideal-bald/benefideal-store';
-    const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
-    
-    if (!GITHUB_TOKEN) {
-        console.error(`🚨 GITHUB_TOKEN не установлен - support_messages.json НЕ будет автоматически сохраняться в GitHub!`);
-        return false;
-    }
-    
-    try {
-        // Читаем текущий файл support_messages.json
-        const fileContent = fs.readFileSync(supportMessagesJsonPath, 'utf8');
-        const contentBase64 = Buffer.from(fileContent).toString('base64');
-        
-        // Получаем SHA текущего файла
-        const getFileSha = await axios.get(
-            `https://api.github.com/repos/${GITHUB_REPO}/contents/support_messages.json?ref=${GITHUB_BRANCH}`,
-            {
-                headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            }
-        ).catch(() => null);
-        
-        const sha = getFileSha?.data?.sha || null;
-        
-        // Коммитим изменения через GitHub API
-        const commitMessage = `Auto-commit: новое сообщение поддержки добавлено (${new Date().toISOString()})`;
-        
-        const response = await axios.put(
-            `https://api.github.com/repos/${GITHUB_REPO}/contents/support_messages.json`,
-            {
-                message: commitMessage,
-                content: contentBase64,
-                branch: GITHUB_BRANCH,
-                ...(sha ? { sha: sha } : {})
-            },
-            {
-                headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-        
-        console.log(`✅ support_messages.json автоматически закоммичен в GitHub!`);
-        console.log(`   Commit SHA: ${response.data.commit.sha}`);
-        return true;
-    } catch (error) {
-        console.error(`❌ Ошибка при автокоммите support_messages.json в GitHub:`, error.response?.data || error.message);
-        console.warn(`   ВАЖНО: закоммить support_messages.json вручную, чтобы сообщения не потерялись при следующем деплое.`);
-        return false;
-    }
 }
 
 // УДАЛЕНО: Автоматические коммиты для ответов поддержки больше не нужны
