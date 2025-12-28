@@ -16,10 +16,17 @@ const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = '8460494431:AAFOmSEPrzQ1j4_L-4vBG_c38iL2rfx41us';
 const CHAT_ID = 8334777900;
 
-// Health check endpoint - FIRST, before any middleware or DB initialization
+// Health check endpoint - FIRST, before ANYTHING else
 // This ensures Railway/Render healthcheck passes immediately
+// КРИТИЧЕСКИ ВАЖНО: Регистрируем ДО middleware, чтобы отвечать мгновенно
 app.get('/health', (req, res) => {
+    // Отвечаем мгновенно, без задержек
     res.status(200).json({ status: 'ok' });
+});
+
+// Также регистрируем на корневом пути для совместимости
+app.get('/', (req, res) => {
+    res.status(200).json({ status: 'ok', service: 'benefideal-store' });
 });
 
 // Middleware
