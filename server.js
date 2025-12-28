@@ -7277,22 +7277,9 @@ app.post('/api/test-payment', upload.single('receipt'), async (req, res) => {
     }
 });
 
-// КРИТИЧЕСКИ ВАЖНО: Запускаем сервер В КОНЦЕ, после всех маршрутов
-// Healthcheck endpoint уже зарегистрирован первым, поэтому будет работать сразу
-// Railway требует, чтобы сервер слушал на 0.0.0.0 для доступа извне
-const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log(`✅ Healthcheck endpoint ready at /health`);
-});
-
-// Обработка ошибок сервера
-server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use`);
-    } else {
-        console.error('❌ Server error:', err);
-    }
-});
+// Сервер уже запущен в начале файла для healthcheck
+// Логируем финальную информацию о готовности
+console.log(`✅ Server fully initialized and ready`);
 
 // Graceful shutdown
 process.on('SIGINT', () => {
