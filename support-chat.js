@@ -592,11 +592,11 @@
         
         // Очищаем визуально чат сразу
         messageHistory = [];
-        chatMessages.innerHTML = '';
+        activeMessages.innerHTML = '';
         const welcome = document.createElement('div');
         welcome.className = 'support-chat-welcome';
         welcome.innerHTML = '<i class="fas fa-robot"></i><p>Здравствуйте! Чем могу помочь?</p>';
-        chatMessages.appendChild(welcome);
+        activeMessages.appendChild(welcome);
         
         // Останавливаем все polling
         Object.keys(pollingIntervals).forEach(messageId => {
