@@ -35,36 +35,10 @@
         const activeFileInput = isMobile ? chatModalFileInput : fileInput;
         const activeInputArea = activeWindow ? activeWindow.querySelector('.support-chat-input-area') : null;
         
-        // Проверяем только кнопку - она обязательна
+        // КРИТИЧНО: Проверяем только кнопку - она обязательна
         if (!chatToggle) {
             console.error('❌ Support chat toggle button not found');
             return;
-        }
-        
-        // Логируем найденные элементы для отладки
-        console.log('🔍 Chat elements check:', {
-            isMobile: isMobile,
-            chatToggle: !!chatToggle,
-            chatWidget: !!chatWidget,
-            chatWindow: !!chatWindow,
-            chatModal: !!chatModal,
-            chatModalContent: !!chatModalContent,
-            activeWindow: !!activeWindow,
-            activeClose: !!activeClose,
-            activeMessages: !!activeMessages,
-            activeInput: !!activeInput,
-            activeSend: !!activeSend,
-            activeFileInput: !!activeFileInput,
-            chatBadge: !!chatBadge,
-            activeInputArea: !!activeInputArea
-        });
-        
-        // Если критичные элементы не найдены - предупреждаем, но продолжаем
-        if (isMobile && !chatModal) {
-            console.warn('⚠️ Mobile chat modal not found, desktop mode will be used');
-        }
-        if (!isMobile && !chatWidget) {
-            console.warn('⚠️ Desktop chat widget not found');
         }
         
         console.log('✅ Support chat initialized', isMobile ? '(mobile)' : '(desktop)');
@@ -432,44 +406,46 @@
         console.error('chatInputArea not found');
     }
     
-    // Toggle chat (как корзина)
+    // Toggle chat (как корзина) - ПРОСТАЯ ЛОГИКА
     chatToggle.addEventListener('click', function(e) {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('🔘 Chat button clicked!');
         
         if (isMobile) {
             // Мобильные: используем модальное окно (как корзина)
-            if (!chatModal) {
-                console.error('❌ chatModal not found on mobile!');
-                return;
-            }
-            
-            const isOpening = !chatModal.classList.contains('active');
-            chatModal.classList.toggle('active');
-            
-            if (isOpening) {
-                document.body.classList.add('chat-open');
-                isOpen = true;
+            const chatModalEl = document.getElementById('supportChatModal');
+            if (chatModalEl) {
+                const isOpening = !chatModalEl.classList.contains('active');
+                chatModalEl.classList.toggle('active');
+                console.log('📱 Mobile modal toggled, isOpening:', isOpening);
+                
+                if (isOpening) {
+                    document.body.classList.add('chat-open');
+                    isOpen = true;
+                } else {
+                    document.body.classList.remove('chat-open');
+                    isOpen = false;
+                }
             } else {
-                document.body.classList.remove('chat-open');
-                isOpen = false;
+                console.error('❌ chatModal not found!');
             }
         } else {
             // Десктоп: используем старое окно
-            if (!chatWidget) {
-                console.error('❌ chatWidget not found on desktop!');
-                return;
-            }
-            
-            const isOpening = !chatWidget.classList.contains('open');
-            chatWidget.classList.toggle('open');
-            
-            if (isOpening) {
-                isOpen = true;
+            const chatWidgetEl = document.getElementById('supportChatWidget');
+            if (chatWidgetEl) {
+                const isOpening = !chatWidgetEl.classList.contains('open');
+                chatWidgetEl.classList.toggle('open');
+                console.log('💻 Desktop widget toggled, isOpening:', isOpening);
+                
+                if (isOpening) {
+                    isOpen = true;
+                } else {
+                    isOpen = false;
+                }
             } else {
-                isOpen = false;
+                console.error('❌ chatWidget not found!');
             }
         }
         
