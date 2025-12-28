@@ -4,7 +4,7 @@
     
     // Wait for DOM to be ready
     function initChat() {
-        const chatWidget = document.getElementById('supportChatWidget');
+        const chatModal = document.getElementById('supportChatModal');
         const chatToggle = document.getElementById('supportChatToggle');
         const chatWindow = document.getElementById('supportChatWindow');
         const chatClose = document.getElementById('supportChatClose');
@@ -16,9 +16,9 @@
         const chatInputArea = document.querySelector('.support-chat-input-area');
         
         // Check if all elements exist
-        if (!chatWidget || !chatToggle || !chatWindow || !chatClose || !chatMessages || !chatInput || !chatSend || !fileInput || !chatBadge || !chatInputArea) {
+        if (!chatModal || !chatToggle || !chatWindow || !chatClose || !chatMessages || !chatInput || !chatSend || !fileInput || !chatBadge || !chatInputArea) {
             console.error('❌ Support chat elements not found:', {
-                chatWidget: !!chatWidget,
+                chatModal: !!chatModal,
                 chatToggle: !!chatToggle,
                 chatWindow: !!chatWindow,
                 chatClose: !!chatClose,
@@ -220,7 +220,6 @@
                 chatInput.style.pointerEvents = 'auto';
                 chatSend.style.pointerEvents = 'auto';
                 fileInput.style.pointerEvents = 'auto';
-                chatWindow.style.pointerEvents = 'auto';
                 
                 // Убеждаемся, что чат открыт и кликабелен
                 if (isOpen) {
@@ -263,7 +262,6 @@
             chatInput.style.pointerEvents = 'auto';
             chatSend.style.pointerEvents = 'auto';
             fileInput.style.pointerEvents = 'auto';
-            chatWindow.style.pointerEvents = 'auto';
             
             const errorDiv = document.createElement('div');
             errorDiv.className = 'support-chat-message support error';
@@ -298,15 +296,15 @@
             return;
         }
         
-        // Find the parent container (support-chat-window)
-        const chatWindow = inputAreaContainer.closest('.support-chat-window');
-        if (!chatWindow) {
-            console.error('chatWindow not found');
+        // Find the parent container (support-chat-content)
+        const chatContent = inputAreaContainer.closest('.support-chat-content');
+        if (!chatContent) {
+            console.error('chatContent not found');
             return;
         }
         
         // Remove existing preview container if any
-        let previewContainer = chatWindow.querySelector('.support-chat-images-preview-container');
+        let previewContainer = chatContent.querySelector('.support-chat-images-preview-container');
         if (!previewContainer) {
             previewContainer = document.createElement('div');
             previewContainer.className = 'support-chat-images-preview-container';
@@ -399,22 +397,26 @@
         console.error('chatInputArea not found');
     }
     
-    // Toggle chat
-    chatToggle.addEventListener('click', function() {
-        isOpen = !isOpen;
-        chatWindow.classList.toggle('open', isOpen);
-        chatWidget.classList.toggle('open', isOpen);
-        
-        // Блокируем прокрутку body только на мобильных (как у корзины)
-        if (window.innerWidth <= 768) {
-            if (isOpen) {
-                document.body.classList.add('chat-open');
-            } else {
-                document.body.classList.remove('chat-open');
-            }
+    // Toggle chat (как корзина)
+    chatToggle.addEventListener('click', function(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
         }
         
-        if (isOpen) {
+        const isOpening = !chatModal.classList.contains('active');
+        chatModal.classList.toggle('active');
+        
+        // Блокируем прокрутку body (как у корзины)
+        if (isOpening) {
+            document.body.classList.add('chat-open');
+            isOpen = true;
+        } else {
+            document.body.classList.remove('chat-open');
+            isOpen = false;
+        }
+        
+        if (isOpening) {
             chatInput.focus();
             scrollToBottom();
             chatBadge.style.display = 'none';
@@ -424,26 +426,19 @@
     // Close chat
     chatClose.addEventListener('click', function() {
         isOpen = false;
-        chatWindow.classList.remove('open');
-        chatWidget.classList.remove('open');
-        // Убираем блокировку прокрутки только на мобильных
-        if (window.innerWidth <= 768) {
+        chatModal.classList.remove('active');
+        document.body.classList.remove('chat-open');
+    });
+    
+    // Закрываем чат при клике на overlay (как корзина)
+    chatModal.addEventListener('click', function(e) {
+        // Закрываем только если клик был на сам modal (overlay), а не на content
+        if (e.target === chatModal) {
+            isOpen = false;
+            chatModal.classList.remove('active');
             document.body.classList.remove('chat-open');
         }
     });
-    
-    // Закрываем чат при клике на overlay (только на мобильных)
-    const chatOverlay = chatWidget.querySelector('.support-chat-overlay');
-    if (chatOverlay) {
-        chatOverlay.addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
-                isOpen = false;
-                chatWindow.classList.remove('open');
-                chatWidget.classList.remove('open');
-                document.body.classList.remove('chat-open');
-            }
-        });
-    }
     
     // Send button click
     chatSend.addEventListener('click', function() {
