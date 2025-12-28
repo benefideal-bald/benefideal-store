@@ -79,7 +79,10 @@
             div.innerHTML = `
                 <div class="support-chat-message-content">
                     <i class="fas fa-headset"></i>
-                    ${images.length > 0 ? images.map(filename => `<img src="/uploads/support/${filename}" alt="Изображение" class="support-chat-image">`).join('') : ''}
+                    ${images.length > 0 ? images.map(filename => {
+                        const imageUrl = `/uploads/support/${encodeURIComponent(filename)}`;
+                        return `<img src="${imageUrl}" alt="Изображение" class="support-chat-image" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect width=\'200\' height=\'200\' fill=\'%23f3f4f6\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%239ca3af\' font-family=\'Arial\' font-size=\'14\'%3EИзображение%3C/text%3E%3C/svg%3E'; console.error('Failed to load image:', '${filename}');">
+                    `).join('') : ''}
                     ${msg.text ? `<p>${escapeHtml(msg.text)}</p>` : ''}
                     <span class="support-chat-time">${formatTime(msg.timestamp)}</span>
                 </div>
