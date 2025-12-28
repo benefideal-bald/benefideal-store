@@ -310,7 +310,7 @@
             previewContainer.className = 'support-chat-images-preview-container';
             previewContainer.style.cssText = 'padding: 8px; background: var(--gray-50, #f3f4f6); border-bottom: 1px solid var(--gray-200, #e5e7eb); width: 100%; display: flex; flex-wrap: wrap; gap: 8px;';
             // Insert before input area
-            inputAreaContainer.parentElement.insertBefore(previewContainer, inputAreaContainer);
+            chatContent.insertBefore(previewContainer, chatInputArea);
         }
         
         // Process each file
