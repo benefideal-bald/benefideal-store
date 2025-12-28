@@ -4472,7 +4472,13 @@ input[type="radio"][name="paymentMethod"] {
         bottom: 0;
         background: rgba(0, 0, 0, 0.7);
         z-index: 9998;
-        pointer-events: none;
+        pointer-events: auto; /* Кликабельный для закрытия */
+    }
+    
+    /* Окно чата должно быть выше overlay */
+    .support-chat-window {
+        z-index: 9999 !important;
+        pointer-events: auto !important;
     }
     
     /* Блокируем прокрутку body когда чат открыт */
