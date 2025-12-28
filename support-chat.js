@@ -368,14 +368,19 @@
         chatWindow.classList.toggle('open', isOpen);
         chatWidget.classList.toggle('open', isOpen);
         
-        // Блокируем прокрутку body на мобильных (как у корзины)
+        // Блокируем прокрутку body только на мобильных (как у корзины)
+        if (window.innerWidth <= 768) {
+            if (isOpen) {
+                document.body.classList.add('chat-open');
+            } else {
+                document.body.classList.remove('chat-open');
+            }
+        }
+        
         if (isOpen) {
-            document.body.classList.add('chat-open');
             chatInput.focus();
             scrollToBottom();
             chatBadge.style.display = 'none';
-        } else {
-            document.body.classList.remove('chat-open');
         }
     });
     
@@ -384,7 +389,10 @@
         isOpen = false;
         chatWindow.classList.remove('open');
         chatWidget.classList.remove('open');
-        document.body.classList.remove('chat-open');
+        // Убираем блокировку прокрутки только на мобильных
+        if (window.innerWidth <= 768) {
+            document.body.classList.remove('chat-open');
+        }
     });
     
     // Закрываем чат при клике на overlay (только на мобильных)

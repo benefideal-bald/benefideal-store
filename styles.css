@@ -4622,36 +4622,34 @@ input[type="radio"][name="paymentMethod"] {
     color: #991b1b;
 }
 
-/* Overlay для чата на мобильных (как у корзины) - темнее и неподвижный */
-.support-chat-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 9998;
-    backdrop-filter: none;
-    /* Фиксируем overlay - он не двигается */
-    position: fixed;
-    width: 100vw;
-    height: 100vh;
-    min-height: 100vh;
-}
-
-.support-chat-widget.open .support-chat-overlay {
-    display: block;
-}
-
-/* Блокируем прокрутку body когда чат открыт */
-body.chat-open {
-    overflow: hidden !important;
-    position: fixed;
-    width: 100%;
-}
-
 @media (max-width: 768px) {
+    /* Overlay для чата на мобильных (как у корзины) - темнее и неподвижный */
+    .support-chat-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 9998;
+        backdrop-filter: none;
+        /* Фиксируем overlay - он не двигается */
+        width: 100vw;
+        height: 100vh;
+        min-height: 100vh;
+    }
+
+    .support-chat-widget.open .support-chat-overlay {
+        display: block;
+    }
+
+    /* Блокируем прокрутку body когда чат открыт (только на мобильных) */
+    body.chat-open {
+        overflow: hidden !important;
+        position: fixed;
+        width: 100%;
+    }
     .support-chat-widget {
         bottom: 15px;
         right: 15px;
