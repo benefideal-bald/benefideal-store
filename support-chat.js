@@ -371,7 +371,10 @@
     }
     
     // Toggle chat
-    chatToggle.addEventListener('click', function() {
+    chatToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         isOpen = !isOpen;
         chatWindow.classList.toggle('open', isOpen);
         chatWidget.classList.toggle('open', isOpen);
@@ -386,8 +389,10 @@
         }
         
         if (isOpen) {
-            chatInput.focus();
-            scrollToBottom();
+            setTimeout(() => {
+                chatInput.focus();
+                scrollToBottom();
+            }, 100);
             chatBadge.style.display = 'none';
         }
     });

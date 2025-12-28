@@ -4434,6 +4434,8 @@ input[type="radio"][name="paymentMethod"] {
         width: 56px;
         height: 56px;
         font-size: 1.3rem;
+        z-index: 10000 !important; /* Кнопка выше overlay */
+        position: relative !important;
     }
     
     /* Чат на мобильных - по центру, как корзина */
@@ -4473,6 +4475,12 @@ input[type="radio"][name="paymentMethod"] {
         background: rgba(0, 0, 0, 0.7);
         z-index: 9998;
         pointer-events: auto; /* Кликабельный для закрытия */
+    }
+    
+    /* Кнопка должна быть выше overlay */
+    .support-chat-toggle {
+        z-index: 10000 !important;
+        position: relative !important;
     }
     
     /* Окно чата должно быть выше overlay */
