@@ -161,7 +161,13 @@
         
         // Clear input
         chatInput.value = '';
+        chatInput.style.height = '40px'; // Reset textarea height
         fileInput.value = '';
+        
+        // КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что элементы не заблокированы
+        chatInput.disabled = false;
+        chatSend.disabled = false;
+        fileInput.disabled = false;
         
         // Show sending indicator
         const sendingDiv = document.createElement('div');
@@ -204,6 +210,16 @@
                 chatMessages.appendChild(successDiv);
                 scrollToBottom();
                 
+                // КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что чат остается кликабельным после отправки
+                // На мобильных не должно быть блокировки прокрутки, если чат открыт
+                if (window.innerWidth <= 768 && isOpen) {
+                    // Чат открыт - оставляем блокировку прокрутки
+                    // Но убеждаемся, что элементы кликабельны
+                    chatInput.disabled = false;
+                    chatSend.disabled = false;
+                    fileInput.disabled = false;
+                }
+                
                 // Save clientId for deletion on page unload
                 if (data.clientId) {
                     currentClientId = data.clientId;
@@ -227,6 +243,11 @@
         } catch (error) {
             console.error('Error sending message:', error);
             sendingDiv.remove();
+            
+            // КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что элементы разблокированы после ошибки
+            chatInput.disabled = false;
+            chatSend.disabled = false;
+            fileInput.disabled = false;
             
             const errorDiv = document.createElement('div');
             errorDiv.className = 'support-chat-message support error';
