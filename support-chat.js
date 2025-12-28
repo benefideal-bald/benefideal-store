@@ -391,7 +391,7 @@
     });
     
     // Send button click
-    activeSend.addEventListener('click', function() {
+    chatSend.addEventListener('click', function() {
         const text = chatInput.value.trim();
         if (text || (selectedFiles && selectedFiles.length > 0)) {
             // Remove preview container if exists
