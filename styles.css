@@ -4327,16 +4327,11 @@ input[type="radio"][name="paymentMethod"] {
    SUPPORT CHAT WIDGET
    ======================================== */
 
-/* Support Chat Widget (десктоп - как раньше) */
-.support-chat-widget {
+/* Support Chat Toggle Button (видна везде) */
+.support-chat-toggle {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 9999;
-    font-family: var(--font-primary);
-}
-
-.support-chat-toggle {
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -4350,10 +4345,20 @@ input[type="radio"][name="paymentMethod"] {
         0 2px 8px rgba(20, 184, 166, 0.3),
         0 1px 4px rgba(0, 0, 0, 0.2);
     transition: all var(--transition-base);
-    position: relative;
+    z-index: 9998;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-family: var(--font-primary);
+}
+
+/* Support Chat Widget (десктоп - как раньше) */
+.support-chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    font-family: var(--font-primary);
 }
 
 .support-chat-toggle:hover {
@@ -4467,15 +4472,13 @@ input[type="radio"][name="paymentMethod"] {
         flex-direction: column;
     }
     
-    /* Кнопка открытия чата на мобильных (отдельно от виджета) */
+    /* Кнопка открытия чата на мобильных */
     .support-chat-toggle {
-        position: fixed;
         bottom: 15px;
         right: 15px;
         width: 56px;
         height: 56px;
         font-size: 1.3rem;
-        z-index: 9998;
     }
 }
 
