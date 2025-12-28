@@ -1644,19 +1644,30 @@
         
         async function loadSupportMessages() {
             try {
+                const chatsListEl = document.getElementById('chatsList');
+                if (!chatsListEl) {
+                    console.error('chatsList element not found');
+                    return;
+                }
+                
+                chatsListEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка чатов...</div>';
+                
                 const response = await fetch('/api/admin/support-messages?password=' + encodeURIComponent(adminPassword));
                 const data = await response.json();
                 
                 if (!data.success) {
-                    document.getElementById('chatsList').innerHTML = '<div class="error">Ошибка загрузки сообщений</div>';
+                    chatsListEl.innerHTML = '<div class="error">Ошибка загрузки сообщений</div>';
                     return;
                 }
                 
-                allChats = data.chats || [];
+                // Упрощенная логика: просто сохраняем чаты и ответы
+                allChats = Array.isArray(data.chats) ? data.chats : [];
                 allReplies = data.replies || {};
                 
+                console.log(`📥 Loaded ${allChats.length} chats, ${Object.keys(allReplies).length} reply groups`);
+                
                 if (allChats.length === 0) {
-                    document.getElementById('chatsList').innerHTML = '<div class="empty">Нет сообщений</div>';
+                    chatsListEl.innerHTML = '<div class="empty">Нет сообщений</div>';
                     return;
                 }
                 
@@ -1669,45 +1680,90 @@
                 }
             } catch (error) {
                 console.error('Error loading messages:', error);
-                document.getElementById('chatsList').innerHTML = '<div class="error">Ошибка загрузки сообщений</div>';
+                const chatsListEl = document.getElementById('chatsList');
+                if (chatsListEl) {
+                    chatsListEl.innerHTML = '<div class="error">Ошибка загрузки сообщений</div>';
+                }
             }
         }
         
         function renderChatsList() {
+            const chatsListEl = document.getElementById('chatsList');
+            if (!chatsListEl) {
+                console.error('chatsList element not found');
+                return;
+            }
+            
+            if (!Array.isArray(allChats) || allChats.length === 0) {
+                chatsListEl.innerHTML = '<div class="empty">Нет чатов</div>';
+                return;
+            }
+            
             let html = '';
             allChats.forEach((chat) => {
-                const lastMessage = chat.messages[0]; // Messages are sorted newest first
-                const lastMessageText = lastMessage ? (lastMessage.message || (lastMessage.hasImage ? '📷 Изображение' : '')) : '';
+                if (!chat || !chat.clientId) {
+                    console.warn('Invalid chat:', chat);
+                    return;
+                }
+                
+                // Получаем последнее сообщение (сообщения отсортированы от новых к старым)
+                const lastMessage = Array.isArray(chat.messages) && chat.messages.length > 0 ? chat.messages[0] : null;
+                const lastMessageText = lastMessage ? (
+                    lastMessage.message || 
+                    (lastMessage.hasImage || (lastMessage.imageFilenames && lastMessage.imageFilenames.length > 0) ? '📷 Изображение' : '')
+                ) : 'Нет сообщений';
                 const lastMessageTime = lastMessage ? new Date(lastMessage.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
                 const isActive = currentChatId === chat.clientId;
                 
+                // Экранируем специальные символы для безопасности
+                const safeClientId = String(chat.clientId).replace(/'/g, "\\'");
+                const safeText = String(lastMessageText).substring(0, 50); // Ограничиваем длину
+                
                 html += `
-                    <div class="chat-item ${isActive ? 'active' : ''}" onclick="selectChat('${chat.clientId}')">
+                    <div class="chat-item ${isActive ? 'active' : ''}" onclick="selectChat('${safeClientId}')">
                         <div class="chat-item-header">
-                            <i class="fas fa-user"></i> Клиент #${chat.clientId.substring(0, 8)}
+                            <i class="fas fa-user"></i> Клиент #${safeClientId.substring(0, 8)}
                         </div>
-                        <div class="chat-item-preview">${lastMessageText || 'Нет сообщений'}</div>
+                        <div class="chat-item-preview">${safeText}</div>
                         <div class="chat-item-time">${lastMessageTime}</div>
                     </div>
                 `;
             });
             
-            document.getElementById('chatsList').innerHTML = html;
+            chatsListEl.innerHTML = html;
         }
         
         window.selectChat = function(clientId) {
-            currentChatId = clientId;
-            const chat = allChats.find(c => c.clientId === clientId);
+            if (!clientId) {
+                console.error('selectChat called without clientId');
+                return;
+            }
             
-            if (!chat) return;
+            currentChatId = clientId;
+            const chat = Array.isArray(allChats) ? allChats.find(c => c && c.clientId === clientId) : null;
+            
+            if (!chat) {
+                console.error('Chat not found for clientId:', clientId);
+                return;
+            }
             
             // Update active state in list
             renderChatsList();
             
             // Show chat header
-            document.getElementById('chatClientInfo').textContent = `Клиент #${chat.clientId} (IP: ${chat.clientIP})`;
-            document.getElementById('chatHeader').style.display = 'block';
-            document.getElementById('chatInputArea').style.display = 'flex';
+            const chatClientInfo = document.getElementById('chatClientInfo');
+            const chatHeader = document.getElementById('chatHeader');
+            const chatInputArea = document.getElementById('chatInputArea');
+            
+            if (chatClientInfo) {
+                chatClientInfo.textContent = `Клиент #${chat.clientId} (IP: ${chat.clientIP || 'неизвестен'})`;
+            }
+            if (chatHeader) {
+                chatHeader.style.display = 'block';
+            }
+            if (chatInputArea) {
+                chatInputArea.style.display = 'flex';
+            }
             
             // Render chat messages
             renderChatMessages(chat);
@@ -1715,34 +1771,50 @@
         
         function renderChatMessages(chat) {
             const messagesContainer = document.getElementById('chatMessages');
+            if (!messagesContainer) {
+                console.error('chatMessages container not found');
+                return;
+            }
             
-            // Combine all messages and replies in chronological order
+            if (!chat || !Array.isArray(chat.messages)) {
+                messagesContainer.innerHTML = '<div class="chat-empty"><p>Нет сообщений в этом чате</p></div>';
+                return;
+            }
+            
+            // Упрощенная логика: просто объединяем сообщения и ответы в хронологическом порядке
             const allMessages = [];
             
             chat.messages.forEach(msg => {
-                // Add client message
+                if (!msg) return;
+                
+                // Добавляем сообщение клиента
                 allMessages.push({
                     type: 'client',
-                    messageId: msg.messageId,
-                    text: msg.message,
-                    images: msg.imageFilenames || (msg.imageFilename ? [msg.imageFilename] : []),
-                    timestamp: msg.timestamp
+                    messageId: msg.messageId || msg.message_id,
+                    text: msg.message || msg.message_text || '',
+                    images: msg.imageFilenames || (msg.imageFilename ? [msg.imageFilename] : []) || [],
+                    timestamp: msg.timestamp || 0
                 });
                 
-                // Add admin replies
-                const replies = allReplies[msg.messageId] || [];
-                replies.forEach(reply => {
-                    allMessages.push({
-                        type: 'admin',
-                        text: reply.text,
-                        images: reply.imageFilenames || [],
-                        timestamp: reply.timestamp
+                // Добавляем ответы админа
+                const messageId = msg.messageId || msg.message_id;
+                const replies = messageId && allReplies[messageId] ? allReplies[messageId] : [];
+                
+                if (Array.isArray(replies)) {
+                    replies.forEach(reply => {
+                        if (!reply) return;
+                        allMessages.push({
+                            type: 'admin',
+                            text: reply.text || reply.reply_text || '',
+                            images: reply.imageFilenames || [],
+                            timestamp: reply.timestamp || 0
+                        });
                     });
-                });
+                }
             });
             
-            // Sort by timestamp (oldest first)
-            allMessages.sort((a, b) => a.timestamp - b.timestamp);
+            // Сортируем по времени (старые первыми)
+            allMessages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
             
             if (allMessages.length === 0) {
                 messagesContainer.innerHTML = '<div class="chat-empty"><p>Нет сообщений в этом чате</p></div>';
@@ -1751,31 +1823,37 @@
             
             let html = '';
             allMessages.forEach(msg => {
-                const time = new Date(msg.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                if (!msg) return;
+                
+                const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+                const safeText = String(msg.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 
                 html += `
                     <div class="chat-message ${msg.type}">
-                        ${msg.images && msg.images.length > 0 ? `
+                        ${msg.images && Array.isArray(msg.images) && msg.images.length > 0 ? `
                             <div class="chat-message-images">
-                                ${msg.images.map(filename => `
-                                    <img src="/uploads/support/${filename}" alt="Изображение" class="chat-message-image">
-                                `).join('')}
+                                ${msg.images.map(filename => {
+                                    const safeFilename = String(filename).replace(/"/g, '&quot;');
+                                    return `<img src="/uploads/support/${safeFilename}" alt="Изображение" class="chat-message-image" onerror="this.style.display='none'">`;
+                                }).join('')}
                             </div>
                         ` : ''}
-                        ${msg.text ? `
+                        ${safeText ? `
                             <div class="chat-message-bubble">
-                                ${msg.text}
+                                ${safeText}
                             </div>
                         ` : ''}
-                        <div class="chat-message-time">${time}</div>
+                        ${time ? `<div class="chat-message-time">${time}</div>` : ''}
                     </div>
                 `;
             });
             
             messagesContainer.innerHTML = html;
             
-            // Scroll to bottom
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            // Прокручиваем вниз
+            setTimeout(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 100);
         }
         
         window.sendChatReply = async function() {
