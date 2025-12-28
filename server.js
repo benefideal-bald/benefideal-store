@@ -16,15 +16,10 @@ const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = '8460494431:AAFOmSEPrzQ1j4_L-4vBG_c38iL2rfx41us';
 const CHAT_ID = 8334777900;
 
-// Health check endpoint - МАКСИМАЛЬНО ПРОСТОЙ для Railway
-// Отвечаем мгновенно, без каких-либо проверок
+// Health check endpoint - FIRST, before any middleware or DB initialization
+// This ensures Railway/Render healthcheck passes immediately
 app.get('/health', (req, res) => {
-    res.status(200).send('ok');
-});
-
-// Запускаем сервер СРАЗУ после healthcheck, ДО всего остального
-const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Server running on port ${PORT}`);
+    res.status(200).json({ status: 'ok' });
 });
 
 // Middleware
