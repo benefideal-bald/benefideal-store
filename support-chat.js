@@ -35,21 +35,44 @@
         const activeFileInput = isMobile ? chatModalFileInput : fileInput;
         const activeInputArea = activeWindow ? activeWindow.querySelector('.support-chat-input-area') : null;
         
-        // Check if all elements exist
-        if (!chatToggle || !activeWindow || !activeClose || !activeMessages || !activeInput || !activeSend || !activeFileInput || !chatBadge || !activeInputArea) {
-            console.error('❌ Support chat elements not found:', {
-                chatToggle: !!chatToggle,
-                activeWindow: !!activeWindow,
-                activeClose: !!activeClose,
-                activeMessages: !!activeMessages,
-                activeInput: !!activeInput,
-                activeSend: !!activeSend,
-                activeFileInput: !!activeFileInput,
-                chatBadge: !!chatBadge,
-                activeInputArea: !!activeInputArea,
-                isMobile: isMobile
-            });
+        // Check if all elements exist (для мобильных chatModal может быть null, но это нормально)
+        if (!chatToggle) {
+            console.error('❌ Support chat toggle button not found');
             return;
+        }
+        
+        if (isMobile) {
+            // На мобильных проверяем модальные элементы
+            if (!chatModal || !chatModalContent || !activeClose || !activeMessages || !activeInput || !activeSend || !activeFileInput || !chatBadge || !activeInputArea) {
+                console.error('❌ Support chat mobile elements not found:', {
+                    chatModal: !!chatModal,
+                    chatModalContent: !!chatModalContent,
+                    activeClose: !!activeClose,
+                    activeMessages: !!activeMessages,
+                    activeInput: !!activeInput,
+                    activeSend: !!activeSend,
+                    activeFileInput: !!activeFileInput,
+                    chatBadge: !!chatBadge,
+                    activeInputArea: !!activeInputArea
+                });
+                return;
+            }
+        } else {
+            // На десктопе проверяем десктопные элементы
+            if (!chatWidget || !chatWindow || !activeClose || !activeMessages || !activeInput || !activeSend || !activeFileInput || !chatBadge || !activeInputArea) {
+                console.error('❌ Support chat desktop elements not found:', {
+                    chatWidget: !!chatWidget,
+                    chatWindow: !!chatWindow,
+                    activeClose: !!activeClose,
+                    activeMessages: !!activeMessages,
+                    activeInput: !!activeInput,
+                    activeSend: !!activeSend,
+                    activeFileInput: !!activeFileInput,
+                    chatBadge: !!chatBadge,
+                    activeInputArea: !!activeInputArea
+                });
+                return;
+            }
         }
         
         console.log('✅ Support chat initialized', isMobile ? '(mobile)' : '(desktop)');
