@@ -553,12 +553,15 @@
     window.addEventListener('pagehide', function(event) {
         // event.persisted === false означает, что страница НЕ сохраняется в кэше = закрытие вкладки
         // event.persisted === true означает, что страница сохраняется в кэше = обновление/навигация
+        console.log('📄 pagehide event:', { persisted: event.persisted, type: event.persisted === false ? 'CLOSING TAB' : 'RELOAD/NAVIGATION' });
         if (event.persisted === false) {
             // Это закрытие вкладки - удаляем чат
+            console.log('🗑️ Tab closing - deleting chat');
             deleteChatOnUnload();
         } else {
             // Это обновление страницы (F5, Ctrl+R) или навигация - НЕ удаляем чат
-            console.log('🔄 Page reload/navigation detected (pagehide persisted=true) - keeping chat');
+            console.log('🔄 Page reload/navigation detected (pagehide persisted=true) - KEEPING chat in localStorage');
+            // КРИТИЧЕСКИ ВАЖНО: При обновлении страницы НЕ удаляем localStorage - чат должен сохраниться!
         }
     });
     
