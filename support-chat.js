@@ -200,7 +200,7 @@
                 // Show success message
                 const successDiv = document.createElement('div');
                 successDiv.className = 'support-chat-message support';
-                successDiv.innerHTML = '<div class="support-chat-message-content"><i class="fas fa-check-circle"></i><p>Сообщение отправлено! Мы ответим вам в ближайшее время.</p></div>';
+                successDiv.innerHTML = '<div class="support-chat-message-content"><i class="fas fa-check-circle"></i><p>Сообщение отправлено! Осторожно, при обновлении страницы чат очищается.</p></div>';
                 chatMessages.appendChild(successDiv);
                 scrollToBottom();
                 
