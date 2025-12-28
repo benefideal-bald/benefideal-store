@@ -35,44 +35,36 @@
         const activeFileInput = isMobile ? chatModalFileInput : fileInput;
         const activeInputArea = activeWindow ? activeWindow.querySelector('.support-chat-input-area') : null;
         
-        // Check if all elements exist (для мобильных chatModal может быть null, но это нормально)
+        // Проверяем только кнопку - она обязательна
         if (!chatToggle) {
             console.error('❌ Support chat toggle button not found');
             return;
         }
         
-        if (isMobile) {
-            // На мобильных проверяем модальные элементы
-            if (!chatModal || !chatModalContent || !activeClose || !activeMessages || !activeInput || !activeSend || !activeFileInput || !chatBadge || !activeInputArea) {
-                console.error('❌ Support chat mobile elements not found:', {
-                    chatModal: !!chatModal,
-                    chatModalContent: !!chatModalContent,
-                    activeClose: !!activeClose,
-                    activeMessages: !!activeMessages,
-                    activeInput: !!activeInput,
-                    activeSend: !!activeSend,
-                    activeFileInput: !!activeFileInput,
-                    chatBadge: !!chatBadge,
-                    activeInputArea: !!activeInputArea
-                });
-                return;
-            }
-        } else {
-            // На десктопе проверяем десктопные элементы
-            if (!chatWidget || !chatWindow || !activeClose || !activeMessages || !activeInput || !activeSend || !activeFileInput || !chatBadge || !activeInputArea) {
-                console.error('❌ Support chat desktop elements not found:', {
-                    chatWidget: !!chatWidget,
-                    chatWindow: !!chatWindow,
-                    activeClose: !!activeClose,
-                    activeMessages: !!activeMessages,
-                    activeInput: !!activeInput,
-                    activeSend: !!activeSend,
-                    activeFileInput: !!activeFileInput,
-                    chatBadge: !!chatBadge,
-                    activeInputArea: !!activeInputArea
-                });
-                return;
-            }
+        // Логируем найденные элементы для отладки
+        console.log('🔍 Chat elements check:', {
+            isMobile: isMobile,
+            chatToggle: !!chatToggle,
+            chatWidget: !!chatWidget,
+            chatWindow: !!chatWindow,
+            chatModal: !!chatModal,
+            chatModalContent: !!chatModalContent,
+            activeWindow: !!activeWindow,
+            activeClose: !!activeClose,
+            activeMessages: !!activeMessages,
+            activeInput: !!activeInput,
+            activeSend: !!activeSend,
+            activeFileInput: !!activeFileInput,
+            chatBadge: !!chatBadge,
+            activeInputArea: !!activeInputArea
+        });
+        
+        // Если критичные элементы не найдены - предупреждаем, но продолжаем
+        if (isMobile && !chatModal) {
+            console.warn('⚠️ Mobile chat modal not found, desktop mode will be used');
+        }
+        if (!isMobile && !chatWidget) {
+            console.warn('⚠️ Desktop chat widget not found');
         }
         
         console.log('✅ Support chat initialized', isMobile ? '(mobile)' : '(desktop)');
@@ -442,31 +434,49 @@
     
     // Toggle chat
     chatToggle.addEventListener('click', function(e) {
+        console.log('🔘 Chat toggle clicked, isMobile:', isMobile, 'isOpen:', isOpen);
+        
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
         
         isOpen = !isOpen;
+        console.log('🔘 New isOpen state:', isOpen);
         
         if (isMobile) {
             // Мобильные: используем модальное окно
-            const isOpening = !chatModal.classList.contains('active');
-            chatModal.classList.toggle('active');
-            
-            if (isOpening) {
-                document.body.classList.add('chat-open');
+            if (chatModal) {
+                const isOpening = !chatModal.classList.contains('active');
+                chatModal.classList.toggle('active');
+                console.log('📱 Mobile modal toggled, isOpening:', isOpening);
+                
+                if (isOpening) {
+                    document.body.classList.add('chat-open');
+                } else {
+                    document.body.classList.remove('chat-open');
+                }
             } else {
-                document.body.classList.remove('chat-open');
+                console.error('❌ chatModal not found on mobile!');
             }
         } else {
             // Десктоп: используем старое окно
-            chatWidget.classList.toggle('open', isOpen);
+            if (chatWidget) {
+                chatWidget.classList.toggle('open', isOpen);
+                console.log('💻 Desktop widget toggled, isOpen:', isOpen);
+            } else {
+                console.error('❌ chatWidget not found on desktop!');
+            }
         }
         
-        if (isOpen) {
-            activeInput.focus();
-            scrollToBottom();
+        if (isOpen && activeInput) {
+            setTimeout(() => {
+                activeInput.focus();
+                scrollToBottom();
+            }, 100);
+        }
+        
+        if (chatBadge) {
             chatBadge.style.display = 'none';
         }
     });
