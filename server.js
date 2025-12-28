@@ -7058,14 +7058,6 @@ console.log('  POST /api/review/verify - Verify review eligibility');
 console.log('  POST /api/subscription - Submit subscription');
 console.log('  GET  /api/debug/sync-reviews-from-root - Sync reviews from root to data/');
 
-// Handle server errors
-server.on('error', (err) => {
-    console.error('❌ Server error:', err);
-    if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use`);
-    }
-});
-
 // Test payment endpoint (СБП с загрузкой чека)
 const upload = multer({ 
     dest: 'uploads/receipts/',
