@@ -791,6 +791,7 @@
                     </div>
                 </div>
                 <div id="chatInputArea" class="chat-input-area" style="display: none;">
+                    <div id="adminImagePreviewContainer" class="chat-images-preview-container" style="display: none;"></div>
                     <label for="adminChatFileInput" style="cursor: pointer; padding: var(--space-2); display: flex; align-items: center; justify-content: center; color: var(--gray-600);">
                         <i class="fas fa-paperclip"></i>
                         <input type="file" id="adminChatFileInput" accept="image/*" multiple style="display: none;">
@@ -1540,7 +1541,8 @@
             const input = document.getElementById('chatInput');
             const fileInput = document.getElementById('adminChatFileInput');
             const replyText = input.value.trim();
-            const files = fileInput ? Array.from(fileInput.files) : [];
+            // Используем adminSelectedFiles если есть, иначе берем из fileInput
+            const files = adminSelectedFiles.length > 0 ? adminSelectedFiles : (fileInput ? Array.from(fileInput.files) : []);
             
             if (!replyText && files.length === 0) {
                 alert('Введите текст ответа или выберите изображение');
@@ -1585,6 +1587,14 @@
                     input.value = '';
                     if (fileInput) {
                         fileInput.value = '';
+                    }
+                    // Очищаем превью изображений
+                    adminSelectedFiles = [];
+                    adminSelectedPreviews = [];
+                    const adminPreviewContainer = document.getElementById('adminImagePreviewContainer');
+                    if (adminPreviewContainer) {
+                        adminPreviewContainer.innerHTML = '';
+                        adminPreviewContainer.style.display = 'none';
                     }
                     // Reload messages to show new reply
                     await loadSupportMessages();
