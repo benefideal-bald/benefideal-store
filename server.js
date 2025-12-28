@@ -27,8 +27,10 @@ app.get('/health', (req, res) => {
 // КРИТИЧЕСКИ ВАЖНО: Запускаем сервер СРАЗУ после healthcheck, ДО middleware и БД
 // Это позволяет Railway получить ответ от healthcheck немедленно
 // Используем минимальную конфигурацию для быстрого старта
-const server = app.listen(PORT, () => {
+// Railway требует, чтобы сервер слушал на 0.0.0.0 для доступа извне
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${PORT} (started early for healthcheck)`);
+    console.log(`✅ Healthcheck endpoint ready at /health`);
 });
 
 // Middleware
