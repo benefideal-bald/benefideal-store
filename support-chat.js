@@ -216,9 +216,18 @@
                 chatSend.disabled = false;
                 fileInput.disabled = false;
                 
+                // Принудительно убираем любые блокировки стилей
+                chatInput.style.pointerEvents = 'auto';
+                chatSend.style.pointerEvents = 'auto';
+                fileInput.style.pointerEvents = 'auto';
+                chatWindow.style.pointerEvents = 'auto';
+                
                 // Убеждаемся, что чат открыт и кликабелен
                 if (isOpen) {
-                    chatInput.focus();
+                    // Небольшая задержка перед фокусом, чтобы браузер успел обработать изменения
+                    setTimeout(() => {
+                        chatInput.focus();
+                    }, 100);
                 }
                 
                 // Save clientId for deletion on page unload
