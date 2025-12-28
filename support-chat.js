@@ -4,7 +4,10 @@
     
     // Wait for DOM to be ready
     function initChat() {
-        const chatModal = document.getElementById('supportChatModal');
+        const isMobile = window.innerWidth <= 768;
+        
+        // Элементы для десктопа
+        const chatWidget = document.getElementById('supportChatWidget');
         const chatToggle = document.getElementById('supportChatToggle');
         const chatWindow = document.getElementById('supportChatWindow');
         const chatClose = document.getElementById('supportChatClose');
@@ -13,26 +16,43 @@
         const chatSend = document.getElementById('supportChatSend');
         const fileInput = document.getElementById('supportChatFileInput');
         const chatBadge = document.getElementById('supportChatBadge');
-        const chatInputArea = document.querySelector('.support-chat-input-area');
+        
+        // Элементы для мобильных
+        const chatModal = document.getElementById('supportChatModal');
+        const chatModalContent = document.getElementById('supportChatModalContent');
+        const chatModalClose = document.getElementById('supportChatModalClose');
+        const chatModalMessages = document.getElementById('supportChatModalMessages');
+        const chatModalInput = document.getElementById('supportChatModalInput');
+        const chatModalSend = document.getElementById('supportChatModalSend');
+        const chatModalFileInput = document.getElementById('supportChatModalFileInput');
+        
+        // Выбираем активные элементы в зависимости от устройства
+        const activeWindow = isMobile ? chatModalContent : chatWindow;
+        const activeClose = isMobile ? chatModalClose : chatClose;
+        const activeMessages = isMobile ? chatModalMessages : chatMessages;
+        const activeInput = isMobile ? chatModalInput : chatInput;
+        const activeSend = isMobile ? chatModalSend : chatSend;
+        const activeFileInput = isMobile ? chatModalFileInput : fileInput;
+        const activeInputArea = activeWindow ? activeWindow.querySelector('.support-chat-input-area') : null;
         
         // Check if all elements exist
-        if (!chatModal || !chatToggle || !chatWindow || !chatClose || !chatMessages || !chatInput || !chatSend || !fileInput || !chatBadge || !chatInputArea) {
+        if (!chatToggle || !activeWindow || !activeClose || !activeMessages || !activeInput || !activeSend || !activeFileInput || !chatBadge || !activeInputArea) {
             console.error('❌ Support chat elements not found:', {
-                chatModal: !!chatModal,
                 chatToggle: !!chatToggle,
-                chatWindow: !!chatWindow,
-                chatClose: !!chatClose,
-                chatMessages: !!chatMessages,
-                chatInput: !!chatInput,
-                chatSend: !!chatSend,
-                fileInput: !!fileInput,
+                activeWindow: !!activeWindow,
+                activeClose: !!activeClose,
+                activeMessages: !!activeMessages,
+                activeInput: !!activeInput,
+                activeSend: !!activeSend,
+                activeFileInput: !!activeFileInput,
                 chatBadge: !!chatBadge,
-                chatInputArea: !!chatInputArea
+                activeInputArea: !!activeInputArea,
+                isMobile: isMobile
             });
             return;
         }
         
-        console.log('✅ Support chat initialized');
+        console.log('✅ Support chat initialized', isMobile ? '(mobile)' : '(desktop)');
     
     let isOpen = false;
     let messageHistory = [];

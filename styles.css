@@ -4327,11 +4327,16 @@ input[type="radio"][name="paymentMethod"] {
    SUPPORT CHAT WIDGET
    ======================================== */
 
-/* Кнопка открытия чата (как кнопка корзины) */
-.support-chat-toggle {
+/* Support Chat Widget (десктоп - как раньше) */
+.support-chat-widget {
     position: fixed;
     bottom: 20px;
     right: 20px;
+    z-index: 9999;
+    font-family: var(--font-primary);
+}
+
+.support-chat-toggle {
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -4345,11 +4350,10 @@ input[type="radio"][name="paymentMethod"] {
         0 2px 8px rgba(20, 184, 166, 0.3),
         0 1px 4px rgba(0, 0, 0, 0.2);
     transition: all var(--transition-base);
-    z-index: 9998;
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--font-primary);
 }
 
 .support-chat-toggle:hover {
@@ -4377,35 +4381,61 @@ input[type="radio"][name="paymentMethod"] {
     border: 2px solid var(--white);
 }
 
-/* Модальное окно чата (как корзина) */
+/* Окно чата на десктопе (как раньше) */
+.support-chat-window {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 380px;
+    max-width: calc(100vw - 40px);
+    height: 600px;
+    max-height: calc(100vh - 100px);
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.3),
+        0 10px 30px rgba(0, 0, 0, 0.2),
+        0 5px 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px) scale(0.95);
+    transition: all var(--transition-base);
+    overflow: hidden;
+}
+
+.support-chat-widget.open .support-chat-window {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+/* Модальное окно чата - ТОЛЬКО для мобильных (скрыто на десктопе) */
 .support-chat-modal {
     display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    z-index: 10000;
-    align-items: center;
-    justify-content: center;
 }
 
-.support-chat-modal.active {
-    display: flex;
-}
-
-/* Отключаем backdrop-filter на мобильных и фиксируем фон (как корзина) */
+/* Модальное окно чата - ТОЛЬКО для мобильных (как корзина) */
 @media (max-width: 768px) {
+    /* Скрываем десктопный виджет на мобильных */
+    .support-chat-widget {
+        display: none;
+    }
+    
+    /* Показываем модальное окно на мобильных */
     .support-chat-modal {
-        backdrop-filter: none;
-        background: rgba(0, 0, 0, 0.7);
+        display: none;
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: none;
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
         width: 100vw;
         height: 100vh;
         min-height: 100vh;
@@ -4416,44 +4446,36 @@ input[type="radio"][name="paymentMethod"] {
     .support-chat-modal.active {
         display: flex;
     }
-}
-
-/* Блокируем прокрутку body когда чат открыт (как корзина) */
-body.chat-open {
-    overflow: hidden !important;
-}
-
-/* Контент чата (как cart-content) */
-.support-chat-content {
-    background: var(--white);
-    border-radius: var(--radius-2xl);
-    width: 100%;
-    max-width: 520px;
-    max-height: 85vh;
-    overflow: hidden;
-    box-shadow: var(--shadow-2xl);
-    animation: scaleIn 0.3s ease-out;
-    display: flex;
-    flex-direction: column;
-    margin: auto;
-}
-
-/* Чат на мобильных - чуть больше корзины */
-@media (max-width: 768px) {
-    .support-chat-content {
-        max-width: 100%;
-        width: calc(100% - var(--space-6) * 2);
-        margin: auto;
-        max-height: 85vh;
-        height: calc(100vh - 120px);
+    
+    /* Блокируем прокрутку body когда чат открыт (только на мобильных) */
+    body.chat-open {
+        overflow: hidden !important;
     }
     
+    /* Контент чата на мобильных (как cart-content) */
+    .support-chat-content {
+        background: var(--white);
+        border-radius: var(--radius-2xl);
+        width: calc(100% - var(--space-6) * 2);
+        max-width: 100%;
+        max-height: 85vh;
+        height: calc(100vh - 120px);
+        margin: auto;
+        box-shadow: var(--shadow-2xl);
+        animation: scaleIn 0.3s ease-out;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Кнопка открытия чата на мобильных (отдельно от виджета) */
     .support-chat-toggle {
+        position: fixed;
         bottom: 15px;
         right: 15px;
         width: 56px;
         height: 56px;
         font-size: 1.3rem;
+        z-index: 9998;
     }
 }
 
