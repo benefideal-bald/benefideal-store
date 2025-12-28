@@ -18,15 +18,10 @@ const CHAT_ID = 8334777900;
 
 // Health check endpoint - FIRST, before ANYTHING else
 // This ensures Railway/Render healthcheck passes immediately
-// КРИТИЧЕСКИ ВАЖНО: Регистрируем ДО middleware, чтобы отвечать мгновенно
+// КРИТИЧЕСКИ ВАЖНО: Максимально простой ответ - без try-catch, без логирования
+// Railway проверяет healthcheck очень рано, поэтому ответ должен быть мгновенным
 app.get('/health', (req, res) => {
-    // Отвечаем мгновенно, без задержек
     res.status(200).json({ status: 'ok' });
-});
-
-// Также регистрируем на корневом пути для совместимости
-app.get('/', (req, res) => {
-    res.status(200).json({ status: 'ok', service: 'benefideal-store' });
 });
 
 // Middleware
