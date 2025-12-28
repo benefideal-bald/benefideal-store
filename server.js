@@ -892,7 +892,13 @@ app.post('/api/admin/support-reply', (req, res, next) => {
             imageFiles = imageFiles ? [imageFiles] : [];
         }
         
-        const imageFilenames = imageFiles.map(file => file.filename || file.originalname);
+        const imageFilenames = imageFiles.map(file => {
+            const filename = file.filename || file.originalname;
+            console.log(`📷 Admin reply image file: ${filename}, path: ${file.path || 'N/A'}`);
+            return filename;
+        });
+        
+        console.log(`📤 Admin reply with ${imageFiles.length} images, filenames:`, imageFilenames);
         
         // КРИТИЧЕСКИ ВАЖНО: Сохраняем в SQLite базу данных - данные НЕ ПОТЕРЯЮТСЯ при деплое!
         // Используем prepare/run/finalize как для отзывов - это гарантирует надежное сохранение
