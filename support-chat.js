@@ -83,20 +83,20 @@
     
     // Render messages
     function renderMessages() {
-        chatMessages.innerHTML = '';
+        activeMessages.innerHTML = '';
         
         // Welcome message (показываем только если нет истории сообщений)
         if (messageHistory.length === 0) {
             const welcome = document.createElement('div');
             welcome.className = 'support-chat-welcome';
             welcome.innerHTML = '<i class="fas fa-robot"></i><p>Здравствуйте! Чем могу помочь?</p>';
-            chatMessages.appendChild(welcome);
+            activeMessages.appendChild(welcome);
         }
         
         // Render history
         messageHistory.forEach(msg => {
             const messageDiv = createMessageElement(msg);
-            chatMessages.appendChild(messageDiv);
+            activeMessages.appendChild(messageDiv);
         });
         
         scrollToBottom();
@@ -156,7 +156,7 @@
     
     // Scroll to bottom
     function scrollToBottom() {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        activeMessages.scrollTop = activeMessages.scrollHeight;
     }
     
     // Send message
@@ -180,20 +180,20 @@
         renderMessages();
         
         // Clear input
-        chatInput.value = '';
-        chatInput.style.height = '40px'; // Reset textarea height
-        fileInput.value = '';
+        activeInput.value = '';
+        activeInput.style.height = '40px'; // Reset textarea height
+        activeFileInput.value = '';
         
         // КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что элементы не заблокированы
-        chatInput.disabled = false;
-        chatSend.disabled = false;
-        fileInput.disabled = false;
+        activeInput.disabled = false;
+        activeSend.disabled = false;
+        activeFileInput.disabled = false;
         
         // Show sending indicator
         const sendingDiv = document.createElement('div');
         sendingDiv.className = 'support-chat-message support';
         sendingDiv.innerHTML = '<div class="support-chat-message-content"><i class="fas fa-headset"></i><p>Отправка...</p></div>';
-        chatMessages.appendChild(sendingDiv);
+        activeMessages.appendChild(sendingDiv);
         scrollToBottom();
         
         try {
@@ -227,25 +227,25 @@
                 const successDiv = document.createElement('div');
                 successDiv.className = 'support-chat-message support';
                 successDiv.innerHTML = '<div class="support-chat-message-content"><i class="fas fa-check-circle"></i><p>Сообщение отправлено! Осторожно, при обновлении страницы чат очищается.</p></div>';
-                chatMessages.appendChild(successDiv);
+                activeMessages.appendChild(successDiv);
                 scrollToBottom();
                 
                 // КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что чат остается кликабельным после отправки
                 // Разблокируем все элементы после успешной отправки
-                chatInput.disabled = false;
-                chatSend.disabled = false;
-                fileInput.disabled = false;
+                activeInput.disabled = false;
+                activeSend.disabled = false;
+                activeFileInput.disabled = false;
                 
                 // Принудительно убираем любые блокировки стилей
-                chatInput.style.pointerEvents = 'auto';
-                chatSend.style.pointerEvents = 'auto';
-                fileInput.style.pointerEvents = 'auto';
+                activeInput.style.pointerEvents = 'auto';
+                activeSend.style.pointerEvents = 'auto';
+                activeFileInput.style.pointerEvents = 'auto';
                 
                 // Убеждаемся, что чат открыт и кликабелен
                 if (isOpen) {
                     // Небольшая задержка перед фокусом, чтобы браузер успел обработать изменения
                     setTimeout(() => {
-                        chatInput.focus();
+                        activeInput.focus();
                     }, 100);
                 }
                 
@@ -274,25 +274,25 @@
             sendingDiv.remove();
             
             // КРИТИЧЕСКИ ВАЖНО: Убеждаемся, что элементы разблокированы после ошибки
-            chatInput.disabled = false;
-            chatSend.disabled = false;
-            fileInput.disabled = false;
+            activeInput.disabled = false;
+            activeSend.disabled = false;
+            activeFileInput.disabled = false;
             
             // Принудительно убираем любые блокировки стилей
-            chatInput.style.pointerEvents = 'auto';
-            chatSend.style.pointerEvents = 'auto';
-            fileInput.style.pointerEvents = 'auto';
+            activeInput.style.pointerEvents = 'auto';
+            activeSend.style.pointerEvents = 'auto';
+            activeFileInput.style.pointerEvents = 'auto';
             
             const errorDiv = document.createElement('div');
             errorDiv.className = 'support-chat-message support error';
             errorDiv.innerHTML = '<div class="support-chat-message-content"><i class="fas fa-exclamation-circle"></i><p>Ошибка отправки. Попробуйте еще раз.</p></div>';
-            chatMessages.appendChild(errorDiv);
+            activeMessages.appendChild(errorDiv);
             scrollToBottom();
         }
     }
     
     // Handle file input (multiple files support)
-    fileInput.addEventListener('change', function(e) {
+    activeFileInput.addEventListener('change', function(e) {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
         
@@ -417,51 +417,62 @@
         console.error('chatInputArea not found');
     }
     
-    // Toggle chat (как корзина)
+    // Toggle chat
     chatToggle.addEventListener('click', function(e) {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
         
-        const isOpening = !chatModal.classList.contains('active');
-        chatModal.classList.toggle('active');
+        isOpen = !isOpen;
         
-        // Блокируем прокрутку body (как у корзины)
-        if (isOpening) {
-            document.body.classList.add('chat-open');
-            isOpen = true;
+        if (isMobile) {
+            // Мобильные: используем модальное окно
+            const isOpening = !chatModal.classList.contains('active');
+            chatModal.classList.toggle('active');
+            
+            if (isOpening) {
+                document.body.classList.add('chat-open');
+            } else {
+                document.body.classList.remove('chat-open');
+            }
         } else {
-            document.body.classList.remove('chat-open');
-            isOpen = false;
+            // Десктоп: используем старое окно
+            chatWidget.classList.toggle('open', isOpen);
         }
         
-        if (isOpening) {
-            chatInput.focus();
+        if (isOpen) {
+            activeInput.focus();
             scrollToBottom();
             chatBadge.style.display = 'none';
         }
     });
     
     // Close chat
-    chatClose.addEventListener('click', function() {
+    activeClose.addEventListener('click', function() {
         isOpen = false;
-        chatModal.classList.remove('active');
-        document.body.classList.remove('chat-open');
-    });
-    
-    // Закрываем чат при клике на overlay (как корзина)
-    chatModal.addEventListener('click', function(e) {
-        // Закрываем только если клик был на сам modal (overlay), а не на content
-        if (e.target === chatModal) {
-            isOpen = false;
+        if (isMobile) {
             chatModal.classList.remove('active');
             document.body.classList.remove('chat-open');
+        } else {
+            chatWidget.classList.remove('open');
         }
     });
     
+    // Закрываем чат при клике на overlay (только на мобильных)
+    if (isMobile && chatModal) {
+        chatModal.addEventListener('click', function(e) {
+            // Закрываем только если клик был на сам modal (overlay), а не на content
+            if (e.target === chatModal) {
+                isOpen = false;
+                chatModal.classList.remove('active');
+                document.body.classList.remove('chat-open');
+            }
+        });
+    }
+    
     // Send button click
-    chatSend.addEventListener('click', function() {
+    activeSend.addEventListener('click', function() {
         const text = chatInput.value.trim();
         if (text || (selectedFiles && selectedFiles.length > 0)) {
             // Remove preview container if exists
@@ -476,21 +487,21 @@
             // Clear file selection
             selectedFiles = [];
             selectedFilePreviews = [];
-            fileInput.value = '';
+            activeFileInput.value = '';
         }
     });
     
     // Auto-resize textarea
-    chatInput.addEventListener('input', function() {
+    activeInput.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 150) + 'px';
     });
     
     // Enter key to send (Shift+Enter for new line)
-    chatInput.addEventListener('keydown', function(e) {
+    activeInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            const text = chatInput.value.trim();
+            const text = activeInput.value.trim();
             if (text || (selectedFiles && selectedFiles.length > 0)) {
                 // Remove preview container if exists
                 const previewContainer = document.querySelector('.support-chat-images-preview-container');
@@ -502,13 +513,13 @@
                 sendMessage(text, selectedFiles.length > 0 ? selectedFiles : null, selectedFilePreviews.length > 0 ? selectedFilePreviews : null);
                 
                 // Clear input and reset height
-                chatInput.value = '';
-                chatInput.style.height = 'auto';
+                activeInput.value = '';
+                activeInput.style.height = 'auto';
                 
                 // Clear file selection
                 selectedFiles = [];
                 selectedFilePreviews = [];
-                fileInput.value = '';
+                activeFileInput.value = '';
             }
         }
     });
