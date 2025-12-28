@@ -7029,20 +7029,18 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Server already started early (before DB initialization) for healthcheck
-// Just log additional info when DB is ready
-if (serverStarted) {
-    console.log(`✅ Server fully initialized`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Database path: ${dbPath}`);
-    console.log('Subscription reminders scheduled');
-    console.log('API routes available:');
-    console.log('  GET  /api/test - Test endpoint');
-    console.log('  GET  /api/reviews - Get reviews');
-    console.log('  POST /api/review - Submit review');
-    console.log('  POST /api/review/verify - Verify review eligibility');
-    console.log('  POST /api/subscription - Submit subscription');
-    console.log('  GET  /api/debug/sync-reviews-from-root - Sync reviews from root to data/');
-}
+// Log additional info when all routes are registered
+console.log(`✅ Server fully initialized`);
+console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`Database path: ${dbPath}`);
+console.log('Subscription reminders scheduled');
+console.log('API routes available:');
+console.log('  GET  /api/test - Test endpoint');
+console.log('  GET  /api/reviews - Get reviews');
+console.log('  POST /api/review - Submit review');
+console.log('  POST /api/review/verify - Verify review eligibility');
+console.log('  POST /api/subscription - Submit subscription');
+console.log('  GET  /api/debug/sync-reviews-from-root - Sync reviews from root to data/');
 
 // Handle server errors
 server.on('error', (err) => {
