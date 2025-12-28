@@ -565,29 +565,31 @@
     // Load clientId from localStorage if exists
     currentClientId = localStorage.getItem('support_client_id');
     
-    // Проверяем, был ли чат удален (если clientId есть, но сообщений нет - значит чат был удален)
-    // В этом случае очищаем все и начинаем заново
+    // КРИТИЧЕСКИ ВАЖНО: Загружаем историю из localStorage при обновлении страницы
+    // История сохраняется автоматически при каждом сообщении через saveHistory()
     const savedHistory = localStorage.getItem('support_chat_history');
     const savedMessageIds = JSON.parse(localStorage.getItem('support_message_ids') || '[]');
     
-    // Если есть clientId, но нет сохраненных сообщений - значит чат был удален, очищаем все
-    if (currentClientId && (!savedHistory || savedHistory === '[]' || savedMessageIds.length === 0)) {
-        console.log('🧹 Chat was deleted, clearing all data');
-        localStorage.removeItem('support_chat_history');
-        localStorage.removeItem('support_message_ids');
-        localStorage.removeItem('support_client_id');
-        currentClientId = null;
-        messageHistory = [];
-    }
-    
-    // Load history on init (только если есть сохраненные данные)
+    // Загружаем историю из localStorage (она сохраняется при каждом сообщении)
     if (savedHistory && savedHistory !== '[]') {
-        loadHistory();
-        
-        // Start polling for all messages in history that have messageId
-        savedMessageIds.forEach(messageId => {
-            startPollingForReplies(messageId);
-        });
+        try {
+            const parsedHistory = JSON.parse(savedHistory);
+            if (parsedHistory && parsedHistory.length > 0) {
+                console.log('📥 Loading chat history from localStorage:', parsedHistory.length, 'messages');
+                loadHistory();
+                
+                // Start polling for all messages in history that have messageId
+                savedMessageIds.forEach(messageId => {
+                    startPollingForReplies(messageId);
+                });
+            } else {
+                // История пустая - показываем приветственное сообщение
+                renderMessages();
+            }
+        } catch (e) {
+            console.error('Error parsing saved history:', e);
+            renderMessages();
+        }
     } else {
         // Если нет истории, просто показываем приветственное сообщение
         renderMessages();
