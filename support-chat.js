@@ -259,6 +259,12 @@
             chatSend.disabled = false;
             fileInput.disabled = false;
             
+            // Принудительно убираем любые блокировки стилей
+            chatInput.style.pointerEvents = 'auto';
+            chatSend.style.pointerEvents = 'auto';
+            fileInput.style.pointerEvents = 'auto';
+            chatWindow.style.pointerEvents = 'auto';
+            
             const errorDiv = document.createElement('div');
             errorDiv.className = 'support-chat-message support error';
             errorDiv.innerHTML = '<div class="support-chat-message-content"><i class="fas fa-exclamation-circle"></i><p>Ошибка отправки. Попробуйте еще раз.</p></div>';
