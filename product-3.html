@@ -175,6 +175,48 @@
         </div>
     </div>
 
+    <!-- Support Chat Widget -->
+    <div class="support-chat-widget" id="supportChatWidget">
+        <button class="support-chat-toggle" id="supportChatToggle" aria-label="Открыть чат поддержки">
+            <i class="fas fa-comments"></i>
+            <span class="support-chat-badge" id="supportChatBadge" style="display: none;">1</span>
+        </button>
+        
+        <div class="support-chat-window" id="supportChatWindow">
+            <div class="support-chat-header">
+                <div class="support-chat-header-info">
+                    <i class="fas fa-headset"></i>
+                    <div>
+                        <h3>Поддержка</h3>
+                        <p>Обычно отвечаем в течение минуты</p>
+                    </div>
+                </div>
+                <button class="support-chat-close" id="supportChatClose" aria-label="Закрыть чат">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="support-chat-messages" id="supportChatMessages">
+                <div class="support-chat-welcome">
+                    <i class="fas fa-robot"></i>
+                    <p>Здравствуйте! Чем могу помочь?</p>
+                </div>
+            </div>
+            
+            <div class="support-chat-input-area">
+                <label class="support-chat-file-label" for="supportChatFileInput">
+                    <i class="fas fa-paperclip"></i>
+                    <input type="file" id="supportChatFileInput" accept="image/*" multiple style="display: none;">
+                </label>
+                <textarea id="supportChatInput" class="support-chat-input" placeholder="Напишите ваш вопрос..." maxlength="5000" rows="1"></textarea>
+                <button class="support-chat-send" id="supportChatSend" aria-label="Отправить сообщение">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js?v=4.0"></script>
+    <script src="support-chat.js?v=4.1"></script>
 </body>
 </html>
