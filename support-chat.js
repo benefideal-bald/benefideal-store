@@ -438,23 +438,14 @@
         }
     });
     
-    // Предотвращаем закрытие при клике на само окно чата (но не блокируем клики по кнопкам внутри)
-    chatWindow.addEventListener('click', function(e) {
-        // Не блокируем клики по кнопкам и интерактивным элементам
-        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea') || e.target.closest('label')) {
-            return; // Позволяем кликам по кнопкам работать нормально
-        }
-        e.stopPropagation();
-    });
+    // НЕ блокируем клики внутри окна чата - пусть все работает нормально
+    // Убрали обработчик на chatWindow, который блокировал клики
     
-    // Send button click - используем capture phase для надежности
+    // Send button click - простой обработчик без блокировок
     chatSend.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
+        console.log('Send button clicked - event:', e);
         
-        console.log('Send button clicked');
-        
+        // Не блокируем событие - пусть работает нормально
         const text = chatInput.value.trim();
         if (text || (selectedFiles && selectedFiles.length > 0)) {
             // Remove preview container if exists
@@ -471,7 +462,13 @@
             selectedFilePreviews = [];
             fileInput.value = '';
         }
-    }, true); // Используем capture phase
+    });
+    
+    // Также добавляем обработчик через mousedown для надежности
+    chatSend.addEventListener('mousedown', function(e) {
+        console.log('Send button mousedown');
+        e.preventDefault(); // Предотвращаем фокус на кнопке
+    });
     
     // Auto-resize textarea
     chatInput.addEventListener('input', function() {
