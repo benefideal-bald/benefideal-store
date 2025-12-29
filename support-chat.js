@@ -380,12 +380,16 @@
         console.error('chatInputArea not found');
     }
     
-    // Toggle chat
-    chatToggle.addEventListener('click', function(e) {
+    // Toggle chat - используем capture phase для надежности
+    function handleToggleClick(e) {
+        console.log('🔥 Toggle button clicked!', e);
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         
         isOpen = !isOpen;
+        console.log('Chat isOpen:', isOpen);
+        
         chatWindow.classList.toggle('open', isOpen);
         chatWidget.classList.toggle('open', isOpen);
         
@@ -405,7 +409,13 @@
             }, 100);
             chatBadge.style.display = 'none';
         }
-    });
+    }
+    
+    // Добавляем обработчик в capture phase (сработает первым)
+    chatToggle.addEventListener('click', handleToggleClick, true);
+    
+    // Также добавляем в bubble phase
+    chatToggle.addEventListener('click', handleToggleClick, false);
     
     // Close chat
     chatClose.addEventListener('click', function() {
@@ -420,10 +430,10 @@
     });
     
     // Закрываем чат при клике на overlay (только на мобильных, как корзина)
-    // ВАЖНО: используем capture phase и проверяем ДО того, как событие дойдет до кнопки
     chatWidget.addEventListener('click', function(e) {
-        // Игнорируем клики на кнопку toggle - она обрабатывается отдельно
+        // ИГНОРИРУЕМ клики на кнопку toggle - она обрабатывается отдельно
         if (e.target === chatToggle || chatToggle.contains(e.target)) {
+            console.log('Toggle button click - ignoring widget handler');
             return;
         }
         
