@@ -429,12 +429,18 @@
     });
     
     // Предотвращаем закрытие при клике на само окно чата
+    // НО не блокируем клики по кнопкам и интерактивным элементам
     chatWindow.addEventListener('click', function(e) {
+        // Не блокируем клики по кнопкам, input, textarea, label
+        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea') || e.target.closest('label')) {
+            return; // Позволяем кликам работать нормально
+        }
         e.stopPropagation();
     });
     
     // Send button click
-    chatSend.addEventListener('click', function() {
+    chatSend.addEventListener('click', function(e) {
+        e.stopPropagation(); // Останавливаем распространение, чтобы не сработал обработчик на chatWindow
         const text = chatInput.value.trim();
         if (text || (selectedFiles && selectedFiles.length > 0)) {
             // Remove preview container if exists
