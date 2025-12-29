@@ -4487,17 +4487,9 @@ input[type="radio"][name="paymentMethod"] {
         pointer-events: auto !important;
     }
     
-    /* Все элементы внутри окна чата должны быть кликабельны, кроме overlay */
-    .support-chat-window,
-    .support-chat-window *:not(::before):not(::after) {
-        pointer-events: auto !important;
-    }
-    
-    /* Кнопка отправки - особый приоритет */
+    /* Кнопка отправки должна быть кликабельна */
     .support-chat-send {
-        pointer-events: auto !important;
         cursor: pointer !important;
-        z-index: 10002 !important;
     }
     
     /* Кнопка должна быть выше overlay */
