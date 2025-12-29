@@ -447,10 +447,14 @@
         e.stopPropagation();
     });
     
-    // Send button click
+    // Send button click - используем capture phase для надежности
     chatSend.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
+        
+        console.log('Send button clicked');
+        
         const text = chatInput.value.trim();
         if (text || (selectedFiles && selectedFiles.length > 0)) {
             // Remove preview container if exists
@@ -467,7 +471,7 @@
             selectedFilePreviews = [];
             fileInput.value = '';
         }
-    });
+    }, true); // Используем capture phase
     
     // Auto-resize textarea
     chatInput.addEventListener('input', function() {

@@ -4494,6 +4494,20 @@ input[type="radio"][name="paymentMethod"] {
         pointer-events: auto !important;
     }
     
+    /* Кнопка отправки должна быть кликабельна */
+    .support-chat-send {
+        z-index: 10001 !important;
+        pointer-events: auto !important;
+        position: relative !important;
+    }
+    
+    /* Input area должна быть кликабельна */
+    .support-chat-input-area {
+        z-index: 10000 !important;
+        pointer-events: auto !important;
+        position: relative !important;
+    }
+    
     /* Блокируем прокрутку body когда чат открыт */
     body.chat-open {
         overflow: hidden !important;
@@ -4701,6 +4715,10 @@ input[type="radio"][name="paymentMethod"] {
     justify-content: center;
     transition: all var(--transition-base);
     box-shadow: 0 2px 8px rgba(20, 184, 166, 0.3);
+    position: relative;
+    z-index: 10000;
+    pointer-events: auto !important;
+    flex-shrink: 0;
 }
 
 .support-chat-send:hover {
