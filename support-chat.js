@@ -269,57 +269,21 @@
             return;
         }
         
-        // Find the parent container (support-chat-window or support-chat-content)
-        const chatContent = inputAreaContainer.closest('.support-chat-window') || inputAreaContainer.closest('.support-chat-content');
-        if (!chatContent) {
-            console.error('chatContent not found, using chatWindow');
-            // Fallback to chatWindow if chatContent not found
-            const chatWindow = document.getElementById('supportChatWindow');
-            if (!chatWindow) {
-                console.error('chatWindow also not found');
-                return;
-            }
-            // Use chatWindow as container
-            const chatWindowForPreview = chatWindow;
-            let previewContainer = chatWindowForPreview.querySelector('.support-chat-images-preview-container');
-            if (!previewContainer) {
-                previewContainer = document.createElement('div');
-                previewContainer.className = 'support-chat-images-preview-container';
-                previewContainer.style.cssText = 'padding: 8px; background: var(--gray-50, #f3f4f6); border-bottom: 1px solid var(--gray-200, #e5e7eb); width: 100%; display: flex; flex-wrap: wrap; gap: 8px;';
-                // Insert before input area
-                chatWindowForPreview.insertBefore(previewContainer, chatInputArea);
-            }
-            
-            // Process each file
-            files.forEach((file) => {
-                const fileIndex = selectedFiles.length;
-                selectedFiles.push(file);
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const preview = e.target.result;
-                    selectedFilePreviews.push(preview);
-                    
-                    // Create preview item with green border
-                    const previewItem = document.createElement('div');
-                    previewItem.className = 'support-chat-image-preview-item';
-                    previewItem.dataset.index = fileIndex;
-                    previewItem.style.cssText = 'position: relative; display: inline-block;';
-                    previewItem.innerHTML = `
-                        <img src="${preview}" alt="Превью" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; display: block; border: 2px solid #10b981; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
-                        <button type="button" class="support-chat-remove-image" data-index="${fileIndex}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 32px; height: 32px; background: rgba(220, 53, 69, 0.95); color: white; border: 2px solid white; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 10;" onclick="if (window.removeSelectedFileByIndex) { window.removeSelectedFileByIndex(${fileIndex}); }">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    `;
-                    
-                    previewContainer.appendChild(previewItem);
-                };
-                reader.readAsDataURL(file);
-            });
-            
-            // Clear file input to allow selecting same files again
-            fileInput.value = '';
+        // Find the parent container (support-chat-window)
+        const chatWindow = document.getElementById('supportChatWindow');
+        if (!chatWindow) {
+            console.error('supportChatWindow not found');
             return;
+        }
+        
+        // Use chatWindow as container for preview
+        let previewContainer = chatWindow.querySelector('.support-chat-images-preview-container');
+        if (!previewContainer) {
+            previewContainer = document.createElement('div');
+            previewContainer.className = 'support-chat-images-preview-container';
+            previewContainer.style.cssText = 'padding: 8px; background: var(--gray-50, #f3f4f6); border-bottom: 1px solid var(--gray-200, #e5e7eb); width: 100%; display: flex; flex-wrap: wrap; gap: 8px;';
+            // Insert before input area
+            chatWindow.insertBefore(previewContainer, chatInputArea);
         }
         
         // Remove existing preview container if any
