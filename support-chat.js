@@ -442,7 +442,11 @@
     }, false); // Используем bubble phase, чтобы не блокировать клики по кнопкам
     
     // Send button click - простой рабочий обработчик
-    chatSend.addEventListener('click', function(e) {
+    // Добавляем несколько обработчиков для надежности
+    function handleSendButtonClick(e) {
+        console.log('🔥 Send button clicked!', e);
+        e.stopPropagation(); // Останавливаем распространение, чтобы не сработал обработчик на chatWidget
+        
         const text = chatInput.value.trim();
         if (text || (selectedFiles && selectedFiles.length > 0)) {
             // Remove preview container if exists
@@ -459,6 +463,18 @@
             selectedFilePreviews = [];
             fileInput.value = '';
         }
+    }
+    
+    // Добавляем обработчик в capture phase (сработает первым)
+    chatSend.addEventListener('click', handleSendButtonClick, true);
+    
+    // Также добавляем в bubble phase
+    chatSend.addEventListener('click', handleSendButtonClick, false);
+    
+    // И через mousedown для максимальной надежности
+    chatSend.addEventListener('mousedown', function(e) {
+        console.log('🔥 Send button mousedown!');
+        // Не вызываем preventDefault, чтобы click тоже сработал
     });
     
     // Auto-resize textarea
