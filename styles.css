@@ -4482,24 +4482,8 @@ input[type="radio"][name="paymentMethod"] {
         pointer-events: auto; /* Кликабельный для закрытия */
     }
     
-    /* Убеждаемся, что окно чата и все его элементы выше overlay */
+    /* Убеждаемся, что окно чата выше overlay */
     .support-chat-widget.open .support-chat-window {
-        pointer-events: auto !important;
-        z-index: 9999 !important;
-    }
-    
-    /* Кнопка отправки должна быть точно кликабельна */
-    .support-chat-send {
-        position: relative;
-        z-index: 10000 !important;
-        pointer-events: auto !important;
-        cursor: pointer !important;
-    }
-    
-    /* Input area тоже должна быть кликабельна */
-    .support-chat-input-area {
-        position: relative;
-        z-index: 10000 !important;
         pointer-events: auto !important;
     }
     
@@ -4741,11 +4725,7 @@ input[type="radio"][name="paymentMethod"] {
     justify-content: center;
     transition: all var(--transition-base);
     box-shadow: 0 2px 8px rgba(20, 184, 166, 0.3);
-    position: relative;
-    z-index: 100000 !important; /* Очень высокий z-index чтобы быть выше всего */
-    pointer-events: auto !important;
     flex-shrink: 0;
-    -webkit-tap-highlight-color: transparent;
 }
 
 .support-chat-send:hover {
