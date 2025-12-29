@@ -420,28 +420,26 @@
     });
     
     // Закрываем чат при клике на overlay (только на мобильных, как корзина)
+    // ВАЖНО: используем capture phase и проверяем ДО того, как событие дойдет до кнопки
     chatWidget.addEventListener('click', function(e) {
         // Игнорируем клики на кнопку toggle - она обрабатывается отдельно
         if (e.target === chatToggle || chatToggle.contains(e.target)) {
             return;
         }
         
-        // ИГНОРИРУЕМ клики внутри окна чата (включая кнопку отправки)
-        if (chatWindow.contains(e.target)) {
-            return; // Не закрываем чат при клике внутри окна
+        // ИГНОРИРУЕМ ВСЕ клики внутри окна чата (включая кнопку отправки, input, textarea и т.д.)
+        if (chatWindow && chatWindow.contains(e.target)) {
+            return; // Не закрываем чат при клике внутри окна - пусть все работает нормально
         }
         
         // На мобильных закрываем при клике на виджет (но не на окно)
         if (window.innerWidth <= 768 && isOpen) {
-            // Проверяем, что клик был не на окно
-            if (!chatWindow.contains(e.target)) {
-                isOpen = false;
-                chatWindow.classList.remove('open');
-                chatWidget.classList.remove('open');
-                document.body.classList.remove('chat-open');
-            }
+            isOpen = false;
+            chatWindow.classList.remove('open');
+            chatWidget.classList.remove('open');
+            document.body.classList.remove('chat-open');
         }
-    });
+    }, false); // Используем bubble phase, чтобы не блокировать клики по кнопкам
     
     // Send button click - простой рабочий обработчик
     chatSend.addEventListener('click', function(e) {

@@ -4482,8 +4482,24 @@ input[type="radio"][name="paymentMethod"] {
         pointer-events: auto; /* Кликабельный для закрытия */
     }
     
-    /* Убеждаемся, что overlay не перекрывает окно чата */
+    /* Убеждаемся, что окно чата и все его элементы выше overlay */
     .support-chat-widget.open .support-chat-window {
+        pointer-events: auto !important;
+        z-index: 9999 !important;
+    }
+    
+    /* Кнопка отправки должна быть точно кликабельна */
+    .support-chat-send {
+        position: relative;
+        z-index: 10000 !important;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
+    
+    /* Input area тоже должна быть кликабельна */
+    .support-chat-input-area {
+        position: relative;
+        z-index: 10000 !important;
         pointer-events: auto !important;
     }
     
