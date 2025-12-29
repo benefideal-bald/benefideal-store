@@ -4742,9 +4742,10 @@ input[type="radio"][name="paymentMethod"] {
     transition: all var(--transition-base);
     box-shadow: 0 2px 8px rgba(20, 184, 166, 0.3);
     position: relative;
-    z-index: 10000;
+    z-index: 100000 !important; /* Очень высокий z-index чтобы быть выше всего */
     pointer-events: auto !important;
     flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .support-chat-send:hover {
