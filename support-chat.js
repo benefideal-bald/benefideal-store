@@ -286,16 +286,6 @@
             chatWindow.insertBefore(previewContainer, chatInputArea);
         }
         
-        // Remove existing preview container if any
-        let previewContainer = chatContent.querySelector('.support-chat-images-preview-container');
-        if (!previewContainer) {
-            previewContainer = document.createElement('div');
-            previewContainer.className = 'support-chat-images-preview-container';
-            previewContainer.style.cssText = 'padding: 8px; background: var(--gray-50, #f3f4f6); border-bottom: 1px solid var(--gray-200, #e5e7eb); width: 100%; display: flex; flex-wrap: wrap; gap: 8px;';
-            // Insert before input area
-            chatContent.insertBefore(previewContainer, chatInputArea);
-        }
-        
         // Process each file
         files.forEach((file) => {
             const fileIndex = selectedFiles.length;
@@ -421,23 +411,26 @@
     
     // Закрываем чат при клике на overlay (только на мобильных, как корзина)
     chatWidget.addEventListener('click', function(e) {
-        // Игнорируем клики на кнопку toggle - она обрабатывается отдельно
+        // Игнорируем клики на кнопку - она обрабатывается отдельно
         if (e.target === chatToggle || chatToggle.contains(e.target)) {
             return;
         }
         
-        // ИГНОРИРУЕМ все клики внутри окна чата (включая кнопку отправки)
-        if (chatWindow && chatWindow.contains(e.target)) {
-            return; // Не закрываем чат при клике внутри окна
-        }
-        
         // На мобильных закрываем при клике на виджет (но не на окно)
         if (window.innerWidth <= 768 && isOpen) {
-            isOpen = false;
-            chatWindow.classList.remove('open');
-            chatWidget.classList.remove('open');
-            document.body.classList.remove('chat-open');
+            // Проверяем, что клик был не на окно
+            if (!chatWindow.contains(e.target)) {
+                isOpen = false;
+                chatWindow.classList.remove('open');
+                chatWidget.classList.remove('open');
+                document.body.classList.remove('chat-open');
+            }
         }
+    });
+    
+    // Предотвращаем закрытие при клике на само окно чата
+    chatWindow.addEventListener('click', function(e) {
+        e.stopPropagation();
     });
     
     // Send button click
