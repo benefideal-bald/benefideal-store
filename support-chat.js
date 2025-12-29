@@ -421,26 +421,23 @@
     
     // Закрываем чат при клике на overlay (только на мобильных, как корзина)
     chatWidget.addEventListener('click', function(e) {
-        // Игнорируем клики на кнопку - она обрабатывается отдельно
+        // Игнорируем клики на кнопку toggle - она обрабатывается отдельно
         if (e.target === chatToggle || chatToggle.contains(e.target)) {
             return;
         }
         
+        // ИГНОРИРУЕМ все клики внутри окна чата (включая кнопку отправки)
+        if (chatWindow && chatWindow.contains(e.target)) {
+            return; // Не закрываем чат при клике внутри окна
+        }
+        
         // На мобильных закрываем при клике на виджет (но не на окно)
         if (window.innerWidth <= 768 && isOpen) {
-            // Проверяем, что клик был не на окно
-            if (!chatWindow.contains(e.target)) {
-                isOpen = false;
-                chatWindow.classList.remove('open');
-                chatWidget.classList.remove('open');
-                document.body.classList.remove('chat-open');
-            }
+            isOpen = false;
+            chatWindow.classList.remove('open');
+            chatWidget.classList.remove('open');
+            document.body.classList.remove('chat-open');
         }
-    });
-    
-    // Предотвращаем закрытие при клике на само окно чата
-    chatWindow.addEventListener('click', function(e) {
-        e.stopPropagation();
     });
     
     // Send button click
