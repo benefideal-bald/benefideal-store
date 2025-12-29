@@ -421,9 +421,14 @@
     
     // Закрываем чат при клике на overlay (только на мобильных, как корзина)
     chatWidget.addEventListener('click', function(e) {
-        // Игнорируем клики на кнопку - она обрабатывается отдельно
+        // Игнорируем клики на кнопку toggle - она обрабатывается отдельно
         if (e.target === chatToggle || chatToggle.contains(e.target)) {
             return;
+        }
+        
+        // ИГНОРИРУЕМ клики на кнопку отправки и все элементы внутри окна чата
+        if (chatWindow.contains(e.target)) {
+            return; // Не закрываем чат при клике внутри окна
         }
         
         // На мобильных закрываем при клике на виджет (но не на окно)
@@ -441,11 +446,14 @@
     // НЕ блокируем клики внутри окна чата - пусть все работает нормально
     // Убрали обработчик на chatWindow, который блокировал клики
     
-    // Send button click - простой обработчик без блокировок
-    chatSend.addEventListener('click', function(e) {
-        console.log('Send button clicked - event:', e);
+    // Send button click - используем capture phase и останавливаем распространение
+    function handleSendClick(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
         
-        // Не блокируем событие - пусть работает нормально
+        console.log('✅ Send button clicked!');
+        
         const text = chatInput.value.trim();
         if (text || (selectedFiles && selectedFiles.length > 0)) {
             // Remove preview container if exists
@@ -462,13 +470,13 @@
             selectedFilePreviews = [];
             fileInput.value = '';
         }
-    });
+    }
     
-    // Также добавляем обработчик через mousedown для надежности
-    chatSend.addEventListener('mousedown', function(e) {
-        console.log('Send button mousedown');
-        e.preventDefault(); // Предотвращаем фокус на кнопке
-    });
+    // Добавляем обработчик в capture phase (до всех остальных)
+    chatSend.addEventListener('click', handleSendClick, true);
+    
+    // Также добавляем обработчик в bubble phase для надежности
+    chatSend.addEventListener('click', handleSendClick, false);
     
     // Auto-resize textarea
     chatInput.addEventListener('input', function() {
